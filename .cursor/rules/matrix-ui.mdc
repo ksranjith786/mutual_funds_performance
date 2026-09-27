@@ -1,24 +1,28 @@
 ---
-description: Return matrix UI behavior and styling in index.html
+description: Return matrix and Fund Comparator UI contracts
 globs: index.html
 alwaysApply: false
 ---
 
 # index.html contracts
 
-Single HtmlService page. Tailwind via CDN, Inter font, emerald/slate/amber palette, `en-IN` currency. No build step and no extra framework. Theme control is fixed at the bottom left (`Light` / `Dark` / `System`, stored as `mf-matrix-theme`). `html.dark` restyles the chrome. Heat-map cell colors stay the same.
+One HtmlService page. Tailwind CDN, Inter, Dew 2.0 type scale (12 / 14 / 18 / 24, weights 400–600), Dew surfaces and brand blue `#276cf0`. `en-IN` currency. No build step. Heat-map fills come from `getHeatmapStyle`. Cells have no border. Corpus and Net Profit use the absolute-return color. NAV, units, and invested stay plain. Percents use `formatPct` (`+12.3%`). Table figures use IBM Plex Sans at weight 500 with tabular lining figures. Labels stay Inter. Do not use a monospace face for amounts or rates.
 
-## Client state
-`allFunds`, `currentDisplayFunds`, `top2FilterActive` (default **true**), `activeMetric` (`xirr` | `cagr`), sort field default `1Y` descending.
+## Chrome
+- View dropdown in the header, immediately before **Refresh Data**: `matrix` (Return Matrix) or `compare` (Fund Comparator).
+- Theme control fixed bottom left: Light / Dark / System, stored as `mf-matrix-theme`. `html.dark` swaps Dew tokens.
+- Page must fit desktop and phone. `overflow-x: hidden` on the page. Below 768px, KPI cards are 2×2, the matrix scrolls inside `.matrix-scroll`, only Fund Name stays frozen, and the group header row is hidden.
 
-Data load: `google.script.run.getFundMatrixData`. Filters, Top 2, sort, and the metric switch stay in the browser. Changing SIP amount, SIP day, or dates calls `loadMatrixData` again.
-
-## Filters and table
+## Return Matrix
+`allFunds`, `currentDisplayFunds`, `top2FilterActive` (default true), `activeMetric` (`xirr` | `cagr`), sort default `1Y` descending.
+Changing SIP amount, SIP day, or dates calls `getFundMatrixData`. Filters, Top 2, sort, and the metric switch stay in the browser.
 - Category, AMC, and Scheme are checkbox lists with Select All. Select All applies no restriction. The three lists intersect. Top 2 then keeps two schemes per remaining category by the active 1Y series.
-- Tenure columns, in order: `5D` `15D` `1M` `3M` `6M` `9M` `1Y` `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`. Header groups are Short and Long. `1Y` is emerald; `5Y` is amber.
-- The SIP XIRR / Trailing CAGR switch re-renders tenure cells from `tenureXirr` or `tenureCagr`. Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return do not follow the switch.
+- Tenures, in order: `5D` `15D` `1M` `3M` `6M` `9M` `1Y` `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`. Groups are Short and Long. Keep columns compact.
+- The SIP XIRR / Trailing CAGR switch re-renders tenure cells only. Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return do not follow it.
 - Every metric column has a sort icon. Nulls sort last.
-- Heat colors come from `getHeatmapStyle`. Corpus and Net Profit use the absolute-return color. NAV, units, and invested stay plain. Percents use `formatPct` (`+12.3%`).
-- The matrix scrolls inside `.matrix-scroll`. Both header rows stay fixed. Columns through Fund Name (`#`, Code, Fund Name) stay fixed on horizontal scroll.
-- Row up/down reorders the current view only.
-- **Fund Comparator** tab: user checks funds. Max benefit is the highest `customRangeXirr` (net profit breaks a tie). The within-category checkbox ranks inside each category; unchecked ranks the selected funds as one pool. The summary also names the overall winner across every tracked scheme.
+- Desktop freeze: `#`, Code, Fund Name. Move up is green, move down is red, 1px apart, and exempt from the 32px button height. Up/down reorders the current view only.
+
+## Fund Comparator
+User checks funds. Unchecked, the selected funds are one pool, plus the overall leader. **Compare within category** adds the leader of each selected fund’s full category.
+Max benefit is the highest `customRangeXirr` for the same SIP (From, To, amount, day). Net profit breaks a tie. Sale Date does not pick the winner. The table always shows the best of the selected funds and the overall leader across every tracked scheme. With **Compare within category** checked, it also shows the leader of each selected fund’s full category, even when that fund was not checked.
+Table columns stay compact: rank, fund, category pill, corpus, net profit, absolute, custom XIRR, then `3M` `6M` `1Y` `3Y` `5Y` `10Y` from the active series. Winning row uses a brand mark, not a full-row fill.

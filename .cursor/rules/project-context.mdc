@@ -5,20 +5,20 @@ alwaysApply: true
 
 # Mutual Fund Return Matrix
 
-Google Apps Script bound to one Google Sheet. Local `code.gs` and `index.html` mirror that project. Do not re-ask sheet names, columns, tenures, or entry points.
-
-## Files
-- `code.gs` — menu, web app, and calculations.
-- `index.html` — UI. Apps Script file name is `Index` (`HtmlService.createTemplateFromFile('Index')`).
-- `scheme_codes.csv` / `nav_data.csv` are the sheet sources. Runtime reads the spreadsheet, not the repo files.
+Google Apps Script bound to one Google Sheet. Local `code.gs` and `index.html` mirror that project. The HTML file in Apps Script must be named `Index`. Do not re-ask sheet names, columns, tenures, or entry points.
 
 ## Sheets
-- `scheme_codes`: `scheme_code`, `scheme_name`, `amc_name`, `fund_category`, `plan`, `option`, `min_nav_date`
-- `nav_data`: `scheme_code`, `scheme_name`, `date`, `nav` (~172k rows). Never load the full CSV into context; sample headers or filter by scheme.
+Runtime reads the spreadsheet, not the repo CSVs. Never load all of `nav_data` into context.
+- `scheme_codes`: `scheme_code`, `scheme_name`, `amc_name`, `fund_category`, `plan`, `option`, `min_nav_date`. Names, AMC, and category come from here.
+- `nav_data`: `scheme_code`, `date`, `nav`. Join on `scheme_code` only. `scheme_name` on this sheet is unused and may be removed.
 
-## Two return series
-- Tenure columns look back from **Sale Date** on historical NAV. Each tenure has SIP XIRR and trailing CAGR. The toolbar switch chooses which one is shown.
-- **Custom Range** uses **From Date** through **To Date** only: Custom Range XIRR, SIP Corpus, Net Profit, Absolute return.
+## Returns
+- Tenure columns look back from **Sale Date**. Each tenure stores SIP XIRR and trailing CAGR. The toolbar switch chooses which is shown.
+- **Custom Range** uses **From Date** through **To Date**, SIP amount, and SIP day only: Custom Range XIRR, SIP Corpus, Net Profit, Absolute return. Sale Date does not change these.
+- NAV is the last published NAV on or before the date. Do not invent a NAV.
 
 ## Defaults
 SIP ₹1,000 on the 5th. From Date is today minus 1 year. To Date and Sale Date are today. Top 2 per category by the active 1Y series is on. Category, AMC, and Scheme filters start on Select All.
+
+## UI facts
+Header dropdown, immediately before Refresh Data, switches Return Matrix and Fund Comparator. Theme control is bottom left: Light / Dark / System. Dew 2.0 tokens. Desktop and phone both render; the page itself does not scroll sideways.

@@ -2,72 +2,166 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mutual Fund Valuation & Return Matrix</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .heatmap-cell { transition: transform 0.15s ease-in-out; }
+    /* Freshworks Dew 2.0 tokens. Type scale: 12 / 14 / 18 / 24. Weights: 400, 500, 600. */
+    :root {
+      --color-text-brand: #003fd2;
+      --color-text-primary: #12334c;
+      --color-text-secondary: #485a68;
+      --color-text-placeholder: #8e9dac;
+      --color-text-on-brand: #ffffff;
+      --color-text-semantic-success: #00795c;
+      --color-fill-surface: #ffffff;
+      --color-fill-container: #f6f7f8;
+      --color-fill-base: #e6e6e6;
+      --color-fill-brand: #276cf0;
+      --color-fill-semantic-success-mildest: #daf3ee;
+      --color-fill-semantic-warning-mildest: #feecd5;
+      --color-fill-semantic-warning-bold: #ac5000;
+      --color-boundary-border-mildest: #eaeef2;
+      --color-boundary-border-mild: #c9d3db;
+      --color-boundary-divider: #c9d3db;
+      --shadow-sm: 0 1px 2px rgba(18, 51, 76, 0.06), 0 1px 3px rgba(18, 51, 76, 0.08);
+      --row-hover: #f6f7f8;
+    }
+    html.dark {
+      --color-text-brand: #4c91ff;
+      --color-text-primary: #c9d3db;
+      --color-text-secondary: #abb8c4;
+      --color-text-placeholder: #6f8396;
+      --color-text-on-brand: #f6f7f8;
+      --color-text-semantic-success: #9ddfd0;
+      --color-fill-surface: #1a1a1a;
+      --color-fill-container: #0b0b0b;
+      --color-fill-base: #272727;
+      --color-fill-brand: #003fd2;
+      --color-fill-semantic-success-mildest: #00382b;
+      --color-fill-semantic-warning-mildest: #522400;
+      --color-fill-semantic-warning-bold: #cf6121;
+      --color-boundary-border-mildest: #27313b;
+      --color-boundary-border-mild: #303c46;
+      --color-boundary-divider: #303c46;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+      --row-hover: #272727;
+    }
+    body {
+      font-family: Inter, sans-serif;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 400;
+      background: var(--color-fill-container);
+      color: var(--color-text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, .text-xl { font-size: 18px !important; line-height: 24px !important; font-weight: 600 !important; letter-spacing: -0.01em; }
+    .text-2xl { font-size: 24px !important; line-height: 32px !important; font-weight: 600 !important; letter-spacing: -0.02em; }
+    .text-sm { font-size: 14px !important; line-height: 20px !important; }
+    .text-xs, .text-\[11px\], .text-\[10px\] { font-size: 12px !important; line-height: 16px !important; }
+    .font-bold, .font-extrabold, .font-semibold { font-weight: 600 !important; }
+    .font-medium { font-weight: 500 !important; }
+    button, input, select { font-family: Inter, sans-serif; font-size: 12px; line-height: 16px; }
+    input, select { height: 32px; border-radius: 8px; }
+    .rounded-xl { border-radius: 12px !important; }
+    .rounded-lg { border-radius: 8px !important; }
+    .shadow-sm { box-shadow: var(--shadow-sm) !important; }
+    body.bg-slate-50 { background: var(--color-fill-container) !important; color: var(--color-text-primary); }
+    .bg-white { background-color: var(--color-fill-surface) !important; }
+    .bg-slate-50 { background-color: var(--color-fill-container) !important; }
+    .bg-slate-100, .bg-slate-100\/90 { background-color: var(--color-fill-base) !important; }
+    .text-slate-900, .text-slate-800 { color: var(--color-text-primary) !important; }
+    .text-slate-700, .text-slate-600, .text-slate-500 { color: var(--color-text-secondary) !important; }
+    .text-slate-400 { color: var(--color-text-placeholder) !important; }
+    .border-slate-200, .border-slate-100 { border-color: var(--color-boundary-border-mildest) !important; }
+    .bg-emerald-600 { background-color: var(--color-fill-brand) !important; color: var(--color-text-on-brand) !important; }
+    .bg-emerald-100 { background-color: var(--color-fill-semantic-success-mildest) !important; }
+    .text-emerald-800, .text-emerald-700, .text-emerald-600 { color: var(--color-text-semantic-success) !important; }
+    .border-emerald-200 { border-color: var(--color-fill-semantic-success-mildest) !important; }
+    .bg-amber-500 { background-color: var(--color-fill-semantic-warning-bold) !important; color: var(--color-text-on-brand) !important; }
+    .border-amber-600 { border-color: var(--color-fill-semantic-warning-bold) !important; }
+    .bg-amber-700 { background-color: rgba(0, 0, 0, 0.18) !important; color: var(--color-text-on-brand) !important; }
+    input, select { background: var(--color-fill-container); color: var(--color-text-primary); border-color: var(--color-boundary-border-mild); }
+    html.dark input, html.dark select { color-scheme: dark; }
+    /* Table figures only. Labels stay Inter. IBM Plex Sans is built for columns of amounts and rates. */
+    .heatmap-cell, .font-mono, .cmp-rank {
+      font-family: "IBM Plex Sans", Inter, sans-serif !important;
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-weight: 500 !important;
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: 0.01em;
+    }
+    .heatmap-cell { border: 0 !important; transition: transform 0.15s ease-in-out; }
+    .compare-card { border: 1px solid var(--color-boundary-border-mildest); border-radius: 12px; background: var(--color-fill-surface); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .compare-card-title { padding: 8px 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-secondary); background: var(--color-fill-container); border-bottom: 1px solid var(--color-boundary-border-mildest); }
+    .compare-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; line-height: 16px; }
+    .compare-table th { position: sticky; top: 0; z-index: 1; padding: 8px 6px; text-align: left; vertical-align: bottom; font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; color: var(--color-text-secondary); background: var(--color-fill-surface); border-bottom: 1px solid var(--color-boundary-divider); }
+    .compare-table td { padding: 6px; vertical-align: middle; border-bottom: 1px solid var(--color-boundary-border-mildest); }
+    .compare-table th.num-right { text-align: right; }
+    .compare-table th.num-center { text-align: center; }
+    .compare-table tbody tr:last-child td { border-bottom: 0; }
+    .compare-table tbody tr:hover td.cmp-text { background: var(--row-hover); }
+    .cmp-rank { width: 1.6rem; text-align: center; color: var(--color-text-placeholder); font-variant-numeric: tabular-nums; }
+    .cmp-name { max-width: 11rem; font-weight: 600; color: var(--color-text-primary); }
+    .cmp-name div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cmp-cat { display: inline-block; max-width: 6.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 6px; border-radius: 99px; background: var(--color-fill-base); color: var(--color-text-secondary); }
+    .compare-best td.cmp-rank { box-shadow: inset 2px 0 0 var(--color-fill-brand); color: var(--color-text-brand); font-weight: 600; }
+    .cmp-tag { display: inline-block; margin-top: 2px; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--color-text-brand); }
     .heatmap-cell:hover { transform: scale(1.08); z-index: 10; }
     .filter-panel { max-height: 240px; }
     /* Header sticks on vertical scroll. #, Code, and Fund Name stick on horizontal scroll. */
     .matrix-scroll { max-height: calc(100vh - 11rem); overflow: auto; }
     .matrix-scroll table { border-collapse: separate; border-spacing: 0; }
-    .matrix-scroll th, .matrix-scroll td { border-bottom: 1px solid #f1f5f9; }
-    .matrix-scroll thead th { position: sticky; z-index: 3; background: #f1f5f9; }
+    .matrix-scroll th, .matrix-scroll td { border-bottom: 1px solid var(--color-boundary-divider); }
+    .matrix-scroll thead th { position: sticky; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 12px; font-weight: 600; }
     .matrix-scroll thead tr:first-child th { top: 0; }
     .matrix-scroll thead tr:nth-child(2) th { top: 2.05rem; }
-    .matrix-scroll thead th.tone-short { background: #ecfdf5; }
-    .matrix-scroll thead th.tone-long { background: #fffbeb; }
-    .matrix-scroll thead th.tone-1y { background: #ecfdf5; }
-    .matrix-scroll thead th.tone-5y { background: #fffbeb; }
-    .freeze-move { position: sticky; left: 0; min-width: 4.25rem; width: 4.25rem; }
-    .freeze-code { position: sticky; left: 4.25rem; min-width: 5.75rem; width: 5.75rem; }
-    .freeze-name { position: sticky; left: 10rem; min-width: 13.5rem; width: 13.5rem; box-shadow: 2px 0 0 #e2e8f0; }
+    .matrix-scroll thead th.tone-short, .matrix-scroll thead th.tone-1y { background: var(--color-fill-semantic-success-mildest); color: var(--color-text-semantic-success); }
+    .matrix-scroll thead th.tone-long, .matrix-scroll thead th.tone-5y { background: var(--color-fill-semantic-warning-mildest); color: var(--color-fill-semantic-warning-bold); }
+    .freeze-move { position: sticky; left: 0; min-width: 2.75rem; width: 2.75rem; }
+    .freeze-code { position: sticky; left: 2.75rem; min-width: 4.25rem; width: 4.25rem; }
+    .freeze-name { position: sticky; left: 7rem; min-width: 10.5rem; width: 10.5rem; box-shadow: 2px 0 0 var(--color-boundary-border-mildest); }
     .matrix-scroll thead .freeze-move,
     .matrix-scroll thead .freeze-code,
     .matrix-scroll thead .freeze-name { z-index: 5; }
     .matrix-scroll tbody .freeze-move,
     .matrix-scroll tbody .freeze-code,
-    .matrix-scroll tbody .freeze-name { z-index: 2; background: #fff; }
+    .matrix-scroll tbody .freeze-name { z-index: 2; background: var(--color-fill-surface); }
     .matrix-scroll tbody tr:hover .freeze-move,
     .matrix-scroll tbody tr:hover .freeze-code,
-    .matrix-scroll tbody tr:hover .freeze-name { background: #f8fafc; }
-    html.dark body { background: #0b1220; color: #e2e8f0; }
-    html.dark .bg-white { background-color: #1e293b; }
-    html.dark .bg-slate-50 { background-color: #0f172a; }
-    html.dark .bg-slate-100 { background-color: #334155; }
-    html.dark .text-slate-900 { color: #f8fafc; }
-    html.dark .text-slate-800,
-    html.dark .text-slate-700 { color: #e2e8f0; }
-    html.dark .text-slate-600,
-    html.dark .text-slate-500 { color: #94a3b8; }
-    html.dark .text-slate-400 { color: #64748b; }
-    html.dark .border-slate-200,
-    html.dark .border-slate-100 { border-color: #334155; }
-    html.dark input,
-    html.dark select { background-color: #0f172a; color: #e2e8f0; border-color: #334155; color-scheme: dark; }
-    html.dark .matrix-scroll th,
-    html.dark .matrix-scroll td { border-bottom-color: #334155; }
-    html.dark .matrix-scroll thead th { background: #1e293b; color: #cbd5e1; }
-    html.dark .matrix-scroll thead th.tone-short,
-    html.dark .matrix-scroll thead th.tone-1y { background: #064e3b; color: #a7f3d0; }
-    html.dark .matrix-scroll thead th.tone-long,
-    html.dark .matrix-scroll thead th.tone-5y { background: #451a03; color: #fde68a; }
-    html.dark .freeze-name { box-shadow: 2px 0 0 #334155; }
-    html.dark .matrix-scroll tbody .freeze-move,
-    html.dark .matrix-scroll tbody .freeze-code,
-    html.dark .matrix-scroll tbody .freeze-name { background: #1e293b; }
-    html.dark .matrix-scroll tbody tr:hover .freeze-move,
-    html.dark .matrix-scroll tbody tr:hover .freeze-code,
-    html.dark .matrix-scroll tbody tr:hover .freeze-name { background: #334155; }
-    html.dark tbody tr:hover { background-color: #243044; }
-    .theme-switch button.is-active { color: #047857; font-weight: 700; }
-    html.dark .theme-switch button.is-active { color: #6ee7b7; }
-    html.dark .theme-switch button:hover { color: #e2e8f0; }
-    .compare-winner { background: #ecfdf5; }
-    html.dark .compare-winner { background: #064e3b; }
+    .matrix-scroll tbody tr:hover .freeze-name,
+    tbody tr:hover { background: var(--row-hover); }
+    .theme-switch { font-size: 12px; line-height: 16px; color: var(--color-text-placeholder); }
+    .theme-switch button.is-active { color: var(--color-text-brand, #003fd2); font-weight: 600; }
+    html.dark .theme-switch button.is-active { color: #4c91ff; }
+    .compare-winner { background: var(--color-fill-semantic-success-mildest); }
+    html, body { max-width: 100%; overflow-x: hidden; }
+    main, header, #panelMatrix, #panelCompare { min-width: 0; max-width: 100%; }
+    .matrix-scroll { -webkit-overflow-scrolling: touch; }
+    .filter-panel { max-width: calc(100vw - 2rem); }
+    button { min-height: 32px; }
+    .move-pair { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1; }
+    .move-btn { min-height: 0; width: 14px; height: 11px; padding: 0; border: 0; background: transparent; font-size: 9px; line-height: 11px; cursor: pointer; }
+    .move-up { color: #00795c; }
+    .move-down { color: #cd2629; }
+    .move-btn:disabled { opacity: 0.28; cursor: default; }
+    .move-btn:hover:not(:disabled) { background: var(--color-fill-base); border-radius: 2px; }
+    @media (max-width: 767px) {
+      h1, .text-xl { font-size: 16px !important; line-height: 22px !important; }
+      .text-2xl { font-size: 20px !important; line-height: 28px !important; }
+      .matrix-scroll { max-height: 70vh; }
+      .matrix-scroll thead tr:first-child { display: none; }
+      .matrix-scroll thead tr:nth-child(2) th { top: 0; }
+      .freeze-move, .freeze-code { left: auto; width: auto; min-width: 0; box-shadow: none; }
+      .freeze-name { left: 0; width: 42vw; min-width: 9.5rem; max-width: 12rem; }
+      .page-header-row { align-items: stretch; }
+      .theme-switch { left: max(12px, env(safe-area-inset-left)); bottom: max(6px, env(safe-area-inset-bottom)); }
+    }
   </style>
   <script>
     (function () {
@@ -82,9 +176,9 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-8">
 
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-      <div>
-        <div class="flex items-center space-x-2">
+    <div class="page-header-row max-w-[1600px] mx-auto px-3 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
           <h1 class="text-xl font-bold text-slate-900 tracking-tight">Mutual Fund Valuation & Return Matrix</h1>
           <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
             Live Matrix (5D – 12Y)
@@ -94,16 +188,22 @@
           Tenure XIRR and trailing CAGR look back from Sale Date. Custom Range uses From Date to To Date.
         </p>
       </div>
-      <button id="refreshBtn" onclick="loadMatrixData()" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+        <select id="viewSelect" onchange="setTab(this.value)" aria-label="Choose view" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full sm:w-44">
+          <option value="matrix">Return Matrix</option>
+          <option value="compare">Fund Comparator</option>
+        </select>
+      <button id="refreshBtn" onclick="loadMatrixData()" class="inline-flex items-center justify-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors w-full sm:w-auto">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
         <span>Refresh Data</span>
       </button>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex-1 w-full space-y-4">
+  <main class="max-w-[1600px] mx-auto px-3 sm:px-6 py-4 sm:py-5 flex-1 w-full space-y-4">
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Tracked Schemes</span>
         <p id="kpiTotalFunds" class="text-2xl font-bold text-slate-900 mt-1">-</p>
@@ -174,11 +274,6 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-2 text-xs">
-      <button type="button" id="tabMatrixBtn" onclick="setTab('matrix')" class="px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white">Return Matrix</button>
-      <button type="button" id="tabCompareBtn" onclick="setTab('compare')" class="px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-600">Fund Comparator</button>
-    </div>
-
     <div id="panelMatrix" class="space-y-4">
     <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 text-xs">
       <div class="flex flex-col sm:flex-row items-center gap-2">
@@ -221,7 +316,7 @@
           </label>
           <input type="text" id="compareSearch" oninput="renderComparePicker()" placeholder="Search funds to add..." class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
-        <p class="text-[11px] text-slate-400">Max benefit is the highest Custom Range XIRR for the same SIP. Net profit breaks a tie. Leave the box unchecked to rank the selected funds across categories.</p>
+        <p class="text-[11px] text-slate-400">Your selection is ranked by Custom Range XIRR. The table also shows the overall leader. Check the box to add the leader of each selected fund’s category.</p>
         <div id="comparePicker" class="max-h-48 overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
       </div>
       <div id="compareSummary" class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-xs text-slate-600">Select at least two funds to compare.</div>
@@ -362,7 +457,7 @@
       group += '</tr>';
 
       var cols = '<tr>';
-      cols += '<th class="freeze-move py-3 px-2 text-center"># / Move</th>';
+      cols += '<th class="freeze-move py-2 px-0 text-center">#</th>';
       FIXED_COLS.forEach(function(col) {
         var align = col.numeric ? 'text-right' : 'text-left';
         var freeze = col.key === 'code' ? 'freeze-code ' : (col.key === 'name' ? 'freeze-name ' : '');
@@ -371,7 +466,7 @@
       });
       TENURES.forEach(function(tenure) {
         var tone = tenure.key === '1Y' ? 'tone-1y text-emerald-800' : (tenure.key === '5Y' ? 'tone-5y text-amber-900' : '');
-        cols += '<th onclick="handleSort(\'' + tenure.key + '\')" class="py-3 px-1 text-center min-w-[58px] cursor-pointer hover:bg-slate-200/70 ' + tone + '">';
+        cols += '<th onclick="handleSort(\'' + tenure.key + '\')" class="py-2 px-1 text-center min-w-[46px] cursor-pointer hover:bg-slate-200/70 ' + tone + '">';
         cols += '<div class="inline-flex items-center justify-center space-x-0.5"><span>' + tenure.key + '</span><span id="sortIcon-' + tenure.key + '" class="text-[10px] text-slate-400">⇅</span></div></th>';
       });
       cols += '</tr>';
@@ -656,10 +751,10 @@
       var html = '';
       funds.forEach(function(fund, idx) {
         html += '<tr class="hover:bg-slate-50/80 transition-colors">';
-        html += '<td class="freeze-move py-2 px-1 text-center text-slate-500 font-semibold text-[11px]">';
-        html += '<div class="flex items-center justify-center space-x-1"><span class="w-3 text-slate-400">' + (idx + 1) + '</span><div class="flex flex-col space-y-0.5">';
-        html += '<button type="button" title="Move Up" onclick="moveRow(' + idx + ', \'up\', event)" ' + (idx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-emerald-700"') + '>▲</button>';
-        html += '<button type="button" title="Move Down" onclick="moveRow(' + idx + ', \'down\', event)" ' + (idx === funds.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-emerald-700"') + '>▼</button>';
+        html += '<td class="freeze-move py-1 px-0 text-center text-slate-500 font-semibold text-[11px]">';
+        html += '<div class="flex items-center justify-center gap-0.5"><span class="w-3 text-slate-400">' + (idx + 1) + '</span><div class="move-pair">';
+        html += '<button type="button" class="move-btn move-up" title="Move up" onclick="moveRow(' + idx + ', \'up\', event)" ' + (idx === 0 ? 'disabled' : '') + '>▲</button>';
+        html += '<button type="button" class="move-btn move-down" title="Move down" onclick="moveRow(' + idx + ', \'down\', event)" ' + (idx === funds.length - 1 ? 'disabled' : '') + '>▼</button>';
         html += '</div></div></td>';
 
         html += '<td class="freeze-code py-2.5 px-2 font-mono text-[11px] font-semibold text-slate-700"><span class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">' + esc(fund.code) + '</span></td>';
@@ -744,17 +839,18 @@
 
     function formatPct(val) {
       if (val === null || val === undefined || isNaN(val)) return '-';
-      return (val > 0 ? '+' : '') + (val * 100).toFixed(1) + '%';
+      var pct = (val * 100).toFixed(1);
+      if (val < 0) pct = '\u2212' + pct.slice(1);
+      else if (val > 0) pct = '+' + pct;
+      return pct + '%';
     }
 
     function setTab(tab) {
       activeTab = tab === 'compare' ? 'compare' : 'matrix';
+      var view = document.getElementById('viewSelect');
+      if (view && view.value !== activeTab) view.value = activeTab;
       document.getElementById('panelMatrix').classList.toggle('hidden', activeTab !== 'matrix');
       document.getElementById('panelCompare').classList.toggle('hidden', activeTab !== 'compare');
-      var on = 'px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white';
-      var off = 'px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-600';
-      document.getElementById('tabMatrixBtn').className = activeTab === 'matrix' ? on : off;
-      document.getElementById('tabCompareBtn').className = activeTab === 'compare' ? on : off;
       if (activeTab === 'compare') renderComparator();
     }
 
@@ -823,13 +919,20 @@
       }
 
       var selectedBest = pickMaxBenefit(selected);
-      var html = '<p class="text-sm font-semibold text-slate-800 mb-2">Summary</p>';
-      html += '<p>' + benefitSentence('In this comparison', selectedBest, selected.length) + '</p>';
+      var categoryLeaders = {};
       if (within) {
-        var grouped = groupByCategory(selected);
-        Object.keys(grouped).sort().forEach(function(category) {
-          var winner = pickMaxBenefit(grouped[category]);
-          html += '<p class="mt-1">' + benefitSentence('Within ' + category, winner, grouped[category].length) + '</p>';
+        var seenCats = {};
+        selected.forEach(function(fund) { seenCats[fund.category || 'Other'] = true; });
+        Object.keys(seenCats).forEach(function(category) {
+          categoryLeaders[category] = pickMaxBenefit(fundsInCategory(category));
+        });
+      }
+      var html = '<p class="text-sm font-semibold text-slate-800 mb-2">Summary</p>';
+      html += '<p>' + benefitSentence('Best of your selection', selectedBest, selected.length) + '</p>';
+      if (within) {
+        Object.keys(categoryLeaders).sort().forEach(function(category) {
+          var pool = fundsInCategory(category);
+          html += '<p class="mt-1">' + benefitSentence('Leads ' + category, categoryLeaders[category], pool.length) + '</p>';
         });
       }
       html += overallLine(bookBest);
@@ -838,35 +941,77 @@
       var blocks = within ? groupByCategory(selected) : { 'Selected funds': selected };
       var tableHtml = '';
       Object.keys(blocks).sort().forEach(function(title) {
-        var rows = blocks[title].slice().sort(function(a, b) {
-          var av = a.customRangeXirr === null || a.customRangeXirr === undefined || isNaN(a.customRangeXirr) ? -999 : a.customRangeXirr;
-          var bv = b.customRangeXirr === null || b.customRangeXirr === undefined || isNaN(b.customRangeXirr) ? -999 : b.customRangeXirr;
-          return bv - av;
-        });
-        var winner = pickMaxBenefit(rows);
-        tableHtml += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
-        tableHtml += '<div class="px-4 py-2 text-xs font-bold text-slate-700 border-b border-slate-100">' + esc(title) + '</div>';
-        tableHtml += '<div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead><tr class="text-[11px] uppercase text-slate-500">';
-        tableHtml += '<th class="py-2 px-3">Fund</th><th class="py-2 px-2">Category</th><th class="py-2 px-2 text-right">Corpus</th><th class="py-2 px-2 text-right">Net Profit</th><th class="py-2 px-2 text-right">Absolute</th><th class="py-2 px-2 text-right">Custom XIRR</th><th class="py-2 px-2 text-right">1Y</th><th class="py-2 px-2 text-right">3Y</th><th class="py-2 px-2 text-right">5Y</th>';
-        tableHtml += '</tr></thead><tbody>';
-        rows.forEach(function(fund) {
-          var mark = winner && winner.code === fund.code ? ' compare-winner' : '';
-          var series = activeSeries(fund) || {};
-          tableHtml += '<tr class="border-t border-slate-100' + mark + '">';
-          tableHtml += '<td class="py-2 px-3 font-semibold">' + esc(fund.name) + (mark ? ' <span class="text-[10px] text-emerald-700">Max benefit</span>' : '') + '</td>';
-          tableHtml += '<td class="py-2 px-2">' + esc(fund.category) + '</td>';
-          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatInr(fund.sipCorpus) + '</td>';
-          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatInr(fund.netProfit) + '</td>';
-          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatPct(fund.absoluteReturn) + '</td>';
-          tableHtml += '<td class="py-2 px-2 text-right font-mono font-bold">' + formatPct(fund.customRangeXirr) + '</td>';
-          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatPct(series['1Y']) + '</td>';
-          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatPct(series['3Y']) + '</td>';
-          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatPct(series['5Y']) + '</td>';
-          tableHtml += '</tr>';
-        });
-        tableHtml += '</tbody></table></div></div>';
+        var rows = blocks[title].slice();
+        if (within && categoryLeaders[title]) addFund(rows, categoryLeaders[title]);
+        if (!within) addFund(rows, bookBest);
+        rows.sort(compareByXirr);
+        var categoryBest = within ? categoryLeaders[title] : null;
+        tableHtml += renderCompareCard(title, rows, selectedBest, bookBest, categoryBest);
       });
+      if (within) tableHtml += renderCompareCard('Overall', [bookBest].filter(Boolean), selectedBest, bookBest, null);
       results.innerHTML = tableHtml;
+    }
+
+    function fundsInCategory(category) {
+      return allFunds.filter(function(fund) { return (fund.category || 'Other') === category; });
+    }
+
+    function addFund(list, fund) {
+      if (!fund) return;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].code === fund.code) return;
+      }
+      list.push(fund);
+    }
+
+    function compareByXirr(a, b) {
+      var av = a.customRangeXirr === null || a.customRangeXirr === undefined || isNaN(a.customRangeXirr) ? -999 : a.customRangeXirr;
+      var bv = b.customRangeXirr === null || b.customRangeXirr === undefined || isNaN(b.customRangeXirr) ? -999 : b.customRangeXirr;
+      return bv - av;
+    }
+
+    function compareTags(fund, selectedBest, bookBest, categoryBest) {
+      var tags = [];
+      if (selectedBest && fund.code === selectedBest.code) tags.push('Best of selection');
+      if (categoryBest && fund.code === categoryBest.code) tags.push('Leads category');
+      if (bookBest && fund.code === bookBest.code) tags.push('Overall');
+      return tags;
+    }
+
+    function renderCompareCard(title, rows, selectedBest, bookBest, categoryBest) {
+      var tableHtml = '<div class="compare-card">';
+      tableHtml += '<div class="compare-card-title">' + esc(title) + '</div>';
+      tableHtml += '<div class="overflow-x-auto"><table class="compare-table"><thead><tr>';
+      tableHtml += '<th class="cmp-rank">#</th><th>Fund</th><th>Category</th>';
+      tableHtml += '<th class="num-right">Corpus</th><th class="num-right">Net Profit</th>';
+      tableHtml += '<th class="num-center">Absolute</th><th class="num-center">Custom XIRR</th>';
+      tableHtml += '<th class="num-center">3M</th><th class="num-center">6M</th><th class="num-center">1Y</th>';
+      tableHtml += '<th class="num-center">3Y</th><th class="num-center">5Y</th><th class="num-center">10Y</th>';
+      tableHtml += '</tr></thead><tbody>';
+      rows.forEach(function(fund, index) {
+        if (!fund) return;
+        var tags = compareTags(fund, selectedBest, bookBest, categoryBest);
+        var series = activeSeries(fund) || {};
+        tableHtml += '<tr class="' + (tags.length ? 'compare-best' : '') + '">';
+        tableHtml += '<td class="cmp-text cmp-rank">' + (index + 1) + '</td>';
+        tableHtml += '<td class="cmp-text cmp-name"><div title="' + esc(fund.name) + '">' + esc(fund.name) + '</div>';
+        tags.forEach(function(tag) { tableHtml += '<span class="cmp-tag">' + esc(tag) + '</span>'; });
+        tableHtml += '</td>';
+        tableHtml += '<td class="cmp-text"><span class="cmp-cat" title="' + esc(fund.category) + '">' + esc(fund.category) + '</span></td>';
+        tableHtml += heatMoneyCell(fund.sipCorpus, fund.absoluteReturn);
+        tableHtml += heatMoneyCell(fund.netProfit, fund.absoluteReturn);
+        tableHtml += heatRateCell(fund.absoluteReturn, 'standard');
+        tableHtml += heatRateCell(fund.customRangeXirr, 'standard');
+        tableHtml += heatRateCell(series['3M'], heatScale(tenureByKey('3M')));
+        tableHtml += heatRateCell(series['6M'], heatScale(tenureByKey('6M')));
+        tableHtml += heatRateCell(series['1Y'], heatScale(tenureByKey('1Y')));
+        tableHtml += heatRateCell(series['3Y'], heatScale(tenureByKey('3Y')));
+        tableHtml += heatRateCell(series['5Y'], heatScale(tenureByKey('5Y')));
+        tableHtml += heatRateCell(series['10Y'], heatScale(tenureByKey('10Y')));
+        tableHtml += '</tr>';
+      });
+      tableHtml += '</tbody></table></div></div>';
+      return tableHtml;
     }
 
     function groupByCategory(funds) {
@@ -879,16 +1024,28 @@
       return groups;
     }
 
+    function tenureByKey(key) {
+      for (var i = 0; i < TENURES.length; i++) {
+        if (TENURES[i].key === key) return TENURES[i];
+      }
+      return { key: key, annualized: true };
+    }
+
+    function rateChip(value, scale) {
+      var style = getHeatmapStyle(value, scale || 'standard');
+      return '<span class="heatmap-cell inline-block align-middle px-1.5 py-0.5 rounded border" style="background-color:' + style.bg + ';color:' + style.text + ';border-color:' + style.border + '">' + formatPct(value) + '</span>';
+    }
+
     function benefitSentence(label, fund, count) {
       if (!fund) return esc(label) + ': no fund in this set has a Custom Range XIRR yet.';
       return esc(label) + ' (' + count + ' fund' + (count === 1 ? '' : 's') + '): <span class="font-semibold text-slate-800">' + esc(fund.name) + '</span> leads with ' +
-        formatPct(fund.customRangeXirr) + ' XIRR, corpus ' + formatInr(fund.sipCorpus) + ' and net profit ' + formatInr(fund.netProfit) + '.';
+        rateChip(fund.customRangeXirr, 'standard') + ' XIRR, corpus ' + formatInr(fund.sipCorpus) + ' and net profit ' + formatInr(fund.netProfit) + '.';
     }
 
     function overallLine(fund) {
       if (!fund) return '<p class="mt-2">Overall max benefit is not available until NAV history covers the custom range.</p>';
       return '<p class="mt-2">Overall, across every tracked scheme, <span class="font-semibold text-slate-800">' + esc(fund.name) + '</span> (' + esc(fund.category) + ') has the highest benefit at ' +
-        formatPct(fund.customRangeXirr) + ' XIRR and net profit ' + formatInr(fund.netProfit) + '.</p>';
+        rateChip(fund.customRangeXirr, 'standard') + ' XIRR and net profit ' + formatInr(fund.netProfit) + '.</p>';
     }
 
     function getHeatmapStyle(ratio, scale) {

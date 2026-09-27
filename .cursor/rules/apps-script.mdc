@@ -9,17 +9,18 @@ alwaysApply: false
 Match the existing `var` / `function` style. Sheet names are exact: `scheme_codes`, `nav_data`.
 
 ## Entry points — do not rename
-`onOpen` menu **Mutual Fund Matrix**; `showSidebar`; `showDialog` (1250×820); `doGet`; `getFundMatrixData(params)`.
+`onOpen` menu **Mutual Fund Matrix**; `showSidebar`; `showDialog` (1250×820); `doGet` (viewport meta); `getFundMatrixData(params)`.
 
 ## NAV
-`loadNavIndex` reads `nav_data` once per call. `lookupNav` returns the last NAV on or before the date. Do not synthesize NAV and do not cache the sheet in `CacheService`.
+`loadNavIndex` reads `nav_data` once per call and keeps only scheme codes listed on `scheme_codes`. Match by `scheme_code`, not by fund name. `lookupNav` is the last NAV on or before the day. Do not synthesize NAV. Do not cache the sheet in `CacheService`.
 
 ## Params
 `sipAmount` (1000), `sipDay` (5), `fromDate` (today minus 1 year), `toDate` (today), `saleDate` (today). Dates are `yyyy-MM-dd`.
 
-Custom range: SIP day each month from From through To, redeemed at the To Date NAV. Results: `customRangeXirr`, `sipCorpus`, `netProfit`, `absoluteReturn`, plus `navStart`, `navEnd`, `units`, `investedAmount`. `saleNav` is the Sale Date NAV.
+Custom range: one SIP on `sipDay` each month from From through To, redeemed at the To Date NAV. Fields: `customRangeXirr`, `sipCorpus`, `netProfit`, `absoluteReturn`, `navStart`, `navEnd`, `units`, `investedAmount`. `saleNav` is the Sale Date NAV and is not an input to the custom range.
 
 ## Tenures (`TENURE_CONFIG`)
-Calendar lookbacks from Sale Date. Short: `5D` `15D` `1M` `3M` `6M` `9M` `1Y`. Long: `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`.
-`tenureXirr` is annualized. It is `null` when the fund starts after the window, or when the window has no SIP date.
-`tenureCagr` is the NAV change over the same window. Under 1Y it is absolute. From 1Y it is annualized. Keep this order identical to the client `TENURES` array.
+Calendar lookbacks from Sale Date, not fixed day counts. Short: `5D` `15D` `1M` `3M` `6M` `9M` `1Y`. Long: `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`. `7Y` is intentional.
+`tenureXirr` is an annualized Newton XIRR on a 365.25-day year. It is `null` when the fund has no NAV on or before the window start, or when the window has no SIP date (typical for 5D and 15D). Do not relabel a shorter history as a full tenure.
+`tenureCagr` is the point-to-point NAV change. Under 1Y it is absolute. From 1Y it is annualized with 365.25. It can be present when XIRR is null.
+Keep this order identical to the client `TENURES` array.
