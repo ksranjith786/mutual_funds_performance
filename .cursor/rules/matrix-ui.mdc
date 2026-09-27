@@ -21,3 +21,4 @@ Data load: `google.script.run.getFundMatrixData`. Filters, Top 2, sort, and the 
 - Heat colors come from `getHeatmapStyle`. Corpus and Net Profit use the absolute-return color. NAV, units, and invested stay plain. Percents use `formatPct` (`+12.3%`).
 - The matrix scrolls inside `.matrix-scroll`. Both header rows stay fixed. Columns through Fund Name (`#`, Code, Fund Name) stay fixed on horizontal scroll.
 - Row up/down reorders the current view only.
+- **Fund Comparator** tab: user checks funds. Max benefit is the highest `customRangeXirr` (net profit breaks a tie). The within-category checkbox ranks inside each category; unchecked ranks the selected funds as one pool. The summary also names the overall winner across every tracked scheme.

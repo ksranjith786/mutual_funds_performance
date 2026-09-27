@@ -66,6 +66,8 @@
     .theme-switch button.is-active { color: #047857; font-weight: 700; }
     html.dark .theme-switch button.is-active { color: #6ee7b7; }
     html.dark .theme-switch button:hover { color: #e2e8f0; }
+    .compare-winner { background: #ecfdf5; }
+    html.dark .compare-winner { background: #064e3b; }
   </style>
   <script>
     (function () {
@@ -172,6 +174,12 @@
       </div>
     </div>
 
+    <div class="flex items-center gap-2 text-xs">
+      <button type="button" id="tabMatrixBtn" onclick="setTab('matrix')" class="px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white">Return Matrix</button>
+      <button type="button" id="tabCompareBtn" onclick="setTab('compare')" class="px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-600">Fund Comparator</button>
+    </div>
+
+    <div id="panelMatrix" class="space-y-4">
     <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 text-xs">
       <div class="flex flex-col sm:flex-row items-center gap-2">
         <button id="toggleTop2Btn" onclick="toggleTop2Filter()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-amber-500 border-amber-600 text-white shadow-sm transition-all" title="Top 2 schemes in each category by the active 1Y series">
@@ -201,6 +209,23 @@
         <span id="footerCount">Loading schemes...</span>
         <span id="footerRange">Custom Range XIRR uses From Date to To Date. Tenure columns look back from Sale Date.</span>
       </div>
+    </div>
+    </div>
+
+    <div id="panelCompare" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
+            <input type="checkbox" id="compareWithin" onchange="renderComparator()">
+            Compare within category
+          </label>
+          <input type="text" id="compareSearch" oninput="renderComparePicker()" placeholder="Search funds to add..." class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+        </div>
+        <p class="text-[11px] text-slate-400">Max benefit is the highest Custom Range XIRR for the same SIP. Net profit breaks a tie. Leave the box unchecked to rank the selected funds across categories.</p>
+        <div id="comparePicker" class="max-h-48 overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
+      </div>
+      <div id="compareSummary" class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-xs text-slate-600">Select at least two funds to compare.</div>
+      <div id="compareResults" class="space-y-4"></div>
     </div>
   </main>
 
@@ -259,6 +284,8 @@
     var filterSelected = { category: {}, amc: {}, scheme: {} };
     var filterAll = { category: true, amc: true, scheme: true };
     var openPanel = null;
+    var activeTab = 'matrix';
+    var compareSelected = {};
 
     window.onload = function() {
       var today = new Date();
@@ -387,6 +414,8 @@
           rebuildFilters(response);
           updateKPIs(allFunds);
           applyFilters();
+          renderComparePicker();
+          renderComparator();
         })
         .withFailureHandler(function(err) {
           btn.classList.remove('opacity-50', 'pointer-events-none');
@@ -489,6 +518,7 @@
       }
       renderLegend();
       applyFilters();
+      renderComparator();
     }
 
     function toggleTop2Filter() {
@@ -715,6 +745,150 @@
     function formatPct(val) {
       if (val === null || val === undefined || isNaN(val)) return '-';
       return (val > 0 ? '+' : '') + (val * 100).toFixed(1) + '%';
+    }
+
+    function setTab(tab) {
+      activeTab = tab === 'compare' ? 'compare' : 'matrix';
+      document.getElementById('panelMatrix').classList.toggle('hidden', activeTab !== 'matrix');
+      document.getElementById('panelCompare').classList.toggle('hidden', activeTab !== 'compare');
+      var on = 'px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white';
+      var off = 'px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-600';
+      document.getElementById('tabMatrixBtn').className = activeTab === 'matrix' ? on : off;
+      document.getElementById('tabCompareBtn').className = activeTab === 'compare' ? on : off;
+      if (activeTab === 'compare') renderComparator();
+    }
+
+    function renderComparePicker() {
+      var box = document.getElementById('comparePicker');
+      if (!box) return;
+      var query = (document.getElementById('compareSearch').value || '').trim().toLowerCase();
+      var funds = allFunds.filter(function(fund) {
+        if (!query) return true;
+        return fund.name.toLowerCase().indexOf(query) !== -1 || String(fund.code).indexOf(query) !== -1 || (fund.category || '').toLowerCase().indexOf(query) !== -1;
+      });
+      var groups = {};
+      funds.forEach(function(fund) {
+        var category = fund.category || 'Other';
+        if (!groups[category]) groups[category] = [];
+        groups[category].push(fund);
+      });
+      var html = '';
+      Object.keys(groups).sort().forEach(function(category) {
+        html += '<div class="mt-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">' + esc(category) + '</div>';
+        groups[category].forEach(function(fund) {
+          html += '<label class="flex items-start gap-2 px-1 py-1 hover:bg-slate-50 rounded">';
+          html += '<input type="checkbox" ' + (compareSelected[fund.code] ? 'checked' : '') + ' onchange="setCompareFund(\'' + esc(fund.code) + '\', this.checked)">';
+          html += '<span>' + esc(fund.name) + ' <span class="text-slate-400">' + esc(fund.code) + '</span></span></label>';
+        });
+      });
+      box.innerHTML = html || '<p class="text-slate-400 px-1 py-2">No funds loaded yet.</p>';
+    }
+
+    function setCompareFund(code, checked) {
+      if (checked) compareSelected[code] = true;
+      else delete compareSelected[code];
+      renderComparator();
+    }
+
+    // Max benefit is Custom Range XIRR for this SIP. Same amount and dates for every fund.
+    // Net profit is the tie break. Null XIRR cannot win.
+    function pickMaxBenefit(list) {
+      var best = null;
+      list.forEach(function(fund) {
+        if (fund.customRangeXirr === null || fund.customRangeXirr === undefined || isNaN(fund.customRangeXirr)) return;
+        if (!best) {
+          best = fund;
+          return;
+        }
+        if (fund.customRangeXirr > best.customRangeXirr) best = fund;
+        else if (fund.customRangeXirr === best.customRangeXirr && (fund.netProfit || 0) > (best.netProfit || 0)) best = fund;
+      });
+      return best;
+    }
+
+    function renderComparator() {
+      var summary = document.getElementById('compareSummary');
+      var results = document.getElementById('compareResults');
+      if (!summary || !results) return;
+      var selected = allFunds.filter(function(fund) { return compareSelected[fund.code]; });
+      var within = document.getElementById('compareWithin').checked;
+      var bookBest = pickMaxBenefit(allFunds);
+      if (selected.length < 2) {
+        summary.innerHTML = '<p>Select at least two funds. Max benefit uses Custom Range XIRR from ' +
+          esc(formatLongDate(document.getElementById('inputFromDate').value)) + ' to ' +
+          esc(formatLongDate(document.getElementById('inputToDate').value)) + '.</p>' +
+          overallLine(bookBest);
+        results.innerHTML = '';
+        return;
+      }
+
+      var selectedBest = pickMaxBenefit(selected);
+      var html = '<p class="text-sm font-semibold text-slate-800 mb-2">Summary</p>';
+      html += '<p>' + benefitSentence('In this comparison', selectedBest, selected.length) + '</p>';
+      if (within) {
+        var grouped = groupByCategory(selected);
+        Object.keys(grouped).sort().forEach(function(category) {
+          var winner = pickMaxBenefit(grouped[category]);
+          html += '<p class="mt-1">' + benefitSentence('Within ' + category, winner, grouped[category].length) + '</p>';
+        });
+      }
+      html += overallLine(bookBest);
+      summary.innerHTML = html;
+
+      var blocks = within ? groupByCategory(selected) : { 'Selected funds': selected };
+      var tableHtml = '';
+      Object.keys(blocks).sort().forEach(function(title) {
+        var rows = blocks[title].slice().sort(function(a, b) {
+          var av = a.customRangeXirr === null || a.customRangeXirr === undefined || isNaN(a.customRangeXirr) ? -999 : a.customRangeXirr;
+          var bv = b.customRangeXirr === null || b.customRangeXirr === undefined || isNaN(b.customRangeXirr) ? -999 : b.customRangeXirr;
+          return bv - av;
+        });
+        var winner = pickMaxBenefit(rows);
+        tableHtml += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
+        tableHtml += '<div class="px-4 py-2 text-xs font-bold text-slate-700 border-b border-slate-100">' + esc(title) + '</div>';
+        tableHtml += '<div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead><tr class="text-[11px] uppercase text-slate-500">';
+        tableHtml += '<th class="py-2 px-3">Fund</th><th class="py-2 px-2">Category</th><th class="py-2 px-2 text-right">Corpus</th><th class="py-2 px-2 text-right">Net Profit</th><th class="py-2 px-2 text-right">Absolute</th><th class="py-2 px-2 text-right">Custom XIRR</th><th class="py-2 px-2 text-right">1Y</th><th class="py-2 px-2 text-right">3Y</th><th class="py-2 px-2 text-right">5Y</th>';
+        tableHtml += '</tr></thead><tbody>';
+        rows.forEach(function(fund) {
+          var mark = winner && winner.code === fund.code ? ' compare-winner' : '';
+          var series = activeSeries(fund) || {};
+          tableHtml += '<tr class="border-t border-slate-100' + mark + '">';
+          tableHtml += '<td class="py-2 px-3 font-semibold">' + esc(fund.name) + (mark ? ' <span class="text-[10px] text-emerald-700">Max benefit</span>' : '') + '</td>';
+          tableHtml += '<td class="py-2 px-2">' + esc(fund.category) + '</td>';
+          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatInr(fund.sipCorpus) + '</td>';
+          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatInr(fund.netProfit) + '</td>';
+          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatPct(fund.absoluteReturn) + '</td>';
+          tableHtml += '<td class="py-2 px-2 text-right font-mono font-bold">' + formatPct(fund.customRangeXirr) + '</td>';
+          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatPct(series['1Y']) + '</td>';
+          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatPct(series['3Y']) + '</td>';
+          tableHtml += '<td class="py-2 px-2 text-right font-mono">' + formatPct(series['5Y']) + '</td>';
+          tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table></div></div>';
+      });
+      results.innerHTML = tableHtml;
+    }
+
+    function groupByCategory(funds) {
+      var groups = {};
+      funds.forEach(function(fund) {
+        var category = fund.category || 'Other';
+        if (!groups[category]) groups[category] = [];
+        groups[category].push(fund);
+      });
+      return groups;
+    }
+
+    function benefitSentence(label, fund, count) {
+      if (!fund) return esc(label) + ': no fund in this set has a Custom Range XIRR yet.';
+      return esc(label) + ' (' + count + ' fund' + (count === 1 ? '' : 's') + '): <span class="font-semibold text-slate-800">' + esc(fund.name) + '</span> leads with ' +
+        formatPct(fund.customRangeXirr) + ' XIRR, corpus ' + formatInr(fund.sipCorpus) + ' and net profit ' + formatInr(fund.netProfit) + '.';
+    }
+
+    function overallLine(fund) {
+      if (!fund) return '<p class="mt-2">Overall max benefit is not available until NAV history covers the custom range.</p>';
+      return '<p class="mt-2">Overall, across every tracked scheme, <span class="font-semibold text-slate-800">' + esc(fund.name) + '</span> (' + esc(fund.category) + ') has the highest benefit at ' +
+        formatPct(fund.customRangeXirr) + ' XIRR and net profit ' + formatInr(fund.netProfit) + '.</p>';
     }
 
     function getHeatmapStyle(ratio, scale) {
