@@ -11,16 +11,15 @@ Match the existing `var` / `function` style. Sheet names are exact: `scheme_code
 ## Entry points — do not rename
 `onOpen` menu **Mutual Fund Matrix**; `showSidebar`; `showDialog` (1250×820); `doGet`; `getFundMatrixData(params)`.
 
-## `getFundMatrixData` params
-`sipAmount` (1000), `sipDay` (5), `fromDate` (`2023-01-01`), `toDate`, `saleDate`. Dates are `yyyy-MM-dd` via `parseDate` (year-month-day).
+## NAV
+`loadNavIndex` reads `nav_data` once per call. `lookupNav` returns the last NAV on or before the date. Do not synthesize NAV and do not cache the sheet in `CacheService`.
 
-SIP: one installment on `sipDay` each month from `fromDate` through `toDate`. Cash flows are negative installments plus a positive sale value (`units × sale NAV`). XIRR is Newton–Raphson in `calculateXIRR`; `null` falls back to total return.
+## Params
+`sipAmount` (1000), `sipDay` (5), `fromDate` (today minus 1 year), `toDate` (today), `saleDate` (today). Dates are `yyyy-MM-dd`.
+
+Custom range: SIP day each month from From through To, redeemed at the To Date NAV. Results: `customRangeXirr`, `sipCorpus`, `netProfit`, `absoluteReturn`, plus `navStart`, `navEnd`, `units`, `investedAmount`. `saleNav` is the Sale Date NAV.
 
 ## Tenures (`TENURE_CONFIG`)
-Point-to-point, not annualized: `5D` `15D` `1M` `3M` `6M` `9M`.
-Annualized CAGR from sale date: `1Y` `2Y` `3Y` `5Y` `8Y` `10Y` `12Y`.
-If the tenure start is before `min_nav_date` and `days > 365`, that cell is `null`.
-
-Each fund object: `code`, `name`, `amc`, `category`, `type`, `minNavDate`, `navStart`, `navEnd`, `saleNav`, `units`, `investedAmount`, `saleValuation`, `totalReturnAmount`, `totalReturn`, `xirr`, `tenureReturns`. Response also returns `categories`, `amcs` (both prefixed with `All`), and `tenures`.
-
-Keep `TENURE_CONFIG` order identical to the client `TENURES` array.
+Calendar lookbacks from Sale Date. Short: `5D` `15D` `1M` `3M` `6M` `9M` `1Y`. Long: `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`.
+`tenureXirr` is annualized. It is `null` when the fund starts after the window, or when the window has no SIP date.
+`tenureCagr` is the NAV change over the same window. Under 1Y it is absolute. From 1Y it is annualized. Keep this order identical to the client `TENURES` array.

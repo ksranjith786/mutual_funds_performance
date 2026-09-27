@@ -16,8 +16,9 @@ Google Apps Script bound to one Google Sheet. Local `code.gs` and `index.html` m
 - `scheme_codes`: `scheme_code`, `scheme_name`, `amc_name`, `fund_category`, `plan`, `option`, `min_nav_date`
 - `nav_data`: `scheme_code`, `scheme_name`, `date`, `nav` (~172k rows). Never load the full CSV into context; sample headers or filter by scheme.
 
-## NAV today
-`getDynamicNAV` synthesizes NAV from a category CAGR and the scheme code. It does not read `nav_data`. Wiring real NAVs is new work.
+## Two return series
+- Tenure columns look back from **Sale Date** on historical NAV. Each tenure has SIP XIRR and trailing CAGR. The toolbar switch chooses which one is shown.
+- **Custom Range** uses **From Date** through **To Date** only: Custom Range XIRR, SIP Corpus, Net Profit, Absolute return.
 
 ## Defaults
-SIP ₹1,000 on the 5th, from `2023-01-01` through today; sale date is today. Keep server math in `code.gs` and rendering in `index.html`. Change only what the prompt asks.
+SIP ₹1,000 on the 5th. From Date is today minus 1 year. To Date and Sale Date are today. Top 2 per category by the active 1Y series is on. Category, AMC, and Scheme filters start on Select All.

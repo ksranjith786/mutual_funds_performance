@@ -9,15 +9,14 @@ alwaysApply: false
 Single HtmlService page. Tailwind via CDN, Inter font, emerald/slate/amber palette, `en-IN` currency. No build step and no extra framework.
 
 ## Client state
-`allFunds`, `currentDisplayFunds`, `top2FilterActive` (default **true**), `activeMetric` (`xirr` | `cagr`), sort field default `5Y` descending.
+`allFunds`, `currentDisplayFunds`, `top2FilterActive` (default **true**), `activeMetric` (`xirr` | `cagr`), sort field default `1Y` descending.
 
-Data load: `google.script.run.getFundMatrixData`. Category, AMC, search, Top 2, and sort stay in the browser. Changing SIP amount, SIP day, or dates calls `loadMatrixData` again.
+Data load: `google.script.run.getFundMatrixData`. Filters, Top 2, sort, and the metric switch stay in the browser. Changing SIP amount, SIP day, or dates calls `loadMatrixData` again.
 
 ## Filters and table
-- Top 2: best two schemes per `fund_category` by `tenureReturns['5Y']` (nulls last).
-- Search matches scheme name, code, or AMC.
-- 13 tenure columns match server keys, in order: `5D` `15D` `1M` `3M` `6M` `9M` `1Y` `2Y` `3Y` `5Y` `8Y` `10Y` `12Y`. `1Y` header is emerald; `5Y` is amber.
-- Heat colors come only from `getHeatmapStyle`. Percents use `formatPct` (`+12.3%`).
-- Row up/down reorders the current view only. `tbody` colspan is `26`.
-
-`setMetricMode` restyles the toggle and re-renders. Tenure cells still show `tenureReturns` until a prompt asks for a second series.
+- Category, AMC, and Scheme are checkbox lists with Select All. Select All applies no restriction. The three lists intersect. Top 2 then keeps two schemes per remaining category by the active 1Y series.
+- Tenure columns, in order: `5D` `15D` `1M` `3M` `6M` `9M` `1Y` `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`. Header groups are Short and Long. `1Y` is emerald; `5Y` is amber.
+- The SIP XIRR / Trailing CAGR switch re-renders tenure cells from `tenureXirr` or `tenureCagr`. Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return do not follow the switch.
+- Every metric column has a sort icon. Nulls sort last.
+- Heat colors come from `getHeatmapStyle`. Corpus and Net Profit use the absolute-return color. NAV, units, and invested stay plain. Percents use `formatPct` (`+12.3%`).
+- Row up/down reorders the current view only.

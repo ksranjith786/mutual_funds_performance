@@ -3,27 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>Mutual Fund Valuation & Return Matrix</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .heatmap-cell {
-      transition: transform 0.15s ease-in-out;
-    }
-    .heatmap-cell:hover {
-      transform: scale(1.08);
-      z-index: 10;
-    }
+    .heatmap-cell { transition: transform 0.15s ease-in-out; }
+    .heatmap-cell:hover { transform: scale(1.08); z-index: 10; }
+    .filter-panel { max-height: 240px; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-  <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
       <div>
         <div class="flex items-center space-x-2">
           <h1 class="text-xl font-bold text-slate-900 tracking-tight">Mutual Fund Valuation & Return Matrix</h1>
@@ -32,23 +25,18 @@
           </span>
         </div>
         <p class="text-xs text-slate-500 font-medium">
-          Comprehensive multi-tenure returns: 5D, 15D, 1M, 3M, 6M, 9M (Trailing) & 1Y, 2Y, 3Y, 5Y, 8Y, 10Y, 12Y (Annualized XIRR/CAGR)
+          Tenure XIRR and trailing CAGR look back from Sale Date. Custom Range uses From Date to To Date.
         </p>
       </div>
-
-      <div class="flex items-center space-x-2">
-        <button id="refreshBtn" onclick="loadMatrixData()" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-          <span>Refresh Data</span>
-        </button>
-      </div>
+      <button id="refreshBtn" onclick="loadMatrixData()" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <span>Refresh Data</span>
+      </button>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex-1 w-full space-y-4">
-    
-    <!-- KPI Summary Cards -->
+  <main class="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex-1 w-full space-y-4">
+
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Tracked Schemes</span>
@@ -56,9 +44,9 @@
         <span class="text-[11px] text-slate-400">Total schemes in database</span>
       </div>
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Average Total Return</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Average Absolute Return</span>
         <p id="kpiAvgReturn" class="text-2xl font-bold text-emerald-600 mt-1">-</p>
-        <span class="text-[11px] text-slate-400">Over active SIP schedule</span>
+        <span class="text-[11px] text-slate-400">Custom range, From Date to To Date</span>
       </div>
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Top Outperformer</span>
@@ -72,9 +60,8 @@
       </div>
     </div>
 
-    <!-- Parameter Inputs: Trigger Dynamic Re-calculation -->
     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 text-xs">
         <div>
           <label class="font-bold text-slate-600 block mb-1">Monthly SIP (₹)</label>
           <input type="number" id="inputSipAmount" value="1000" step="500" min="100" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
@@ -93,7 +80,7 @@
         </div>
         <div>
           <label class="font-bold text-slate-600 block mb-1">From Date</label>
-          <input type="date" id="inputFromDate" value="2023-01-01" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <input type="date" id="inputFromDate" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
           <label class="font-bold text-slate-600 block mb-1">To Date</label>
@@ -103,240 +90,234 @@
           <label class="font-bold text-slate-600 block mb-1">Sale Date</label>
           <input type="date" id="inputSaleDate" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
-        <div>
+        <div class="relative" id="wrap-category">
           <label class="font-bold text-slate-600 block mb-1">Category Filter</label>
-          <select id="filterCategory" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
-            <option value="All">All Categories</option>
-          </select>
+          <button type="button" id="btn-category" onclick="toggleFilterPanel('category')" class="w-full text-left bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold truncate">All Categories</button>
+          <div id="panel-category" class="hidden filter-panel overflow-y-auto absolute z-40 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg p-2"></div>
         </div>
-        <div>
+        <div class="relative" id="wrap-amc">
           <label class="font-bold text-slate-600 block mb-1">AMC Filter</label>
-          <select id="filterAmc" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
-            <option value="All">All AMCs</option>
-          </select>
+          <button type="button" id="btn-amc" onclick="toggleFilterPanel('amc')" class="w-full text-left bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold truncate">All AMCs</button>
+          <div id="panel-amc" class="hidden filter-panel overflow-y-auto absolute z-40 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg p-2"></div>
+        </div>
+        <div class="relative" id="wrap-scheme">
+          <label class="font-bold text-slate-600 block mb-1">Scheme Filter</label>
+          <button type="button" id="btn-scheme" onclick="toggleFilterPanel('scheme')" class="w-full text-left bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold truncate">All Schemes</button>
+          <div id="panel-scheme" class="hidden filter-panel overflow-y-auto absolute z-40 mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-lg p-2"></div>
         </div>
       </div>
     </div>
 
-    <!-- Toolbar: Search Scheme Name, Top 2 / Category toggle, Metric switch & Heatmap Legend -->
     <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 text-xs">
-      <div class="flex flex-col sm:flex-row items-center gap-2 flex-1">
-        <!-- Search Scheme Name -->
-        <div class="relative w-full sm:w-72">
-          <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Search Scheme Name or Code..." class="w-full pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-        </div>
-
-        <!-- Top 2 per category under 5Y ratio toggle -->
-        <button id="toggleTop2Btn" onclick="toggleTop2Filter()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-amber-500 border-amber-600 text-white shadow-sm transition-all" title="Toggle between Top 2 funds per category (5Y ratio) and All funds">
-          <span>Top 2 / Cat (5Y)</span>
+      <div class="flex flex-col sm:flex-row items-center gap-2">
+        <button id="toggleTop2Btn" onclick="toggleTop2Filter()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-amber-500 border-amber-600 text-white shadow-sm transition-all" title="Top 2 schemes in each category by the active 1Y series">
+          <span>Top 2 / Cat (1Y)</span>
           <span id="top2Badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-700 text-white">Active</span>
         </button>
-
-        <!-- Metric Switcher: SIP XIRR vs Trailing CAGR -->
-        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white shadow-2xs">
-          <button id="metricXirrBtn" onclick="setMetricMode('xirr')" class="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 text-white transition-colors">
-            SIP XIRR
-          </button>
-          <button id="metricCagrBtn" onclick="setMetricMode('cagr')" class="px-2.5 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors">
-            Trailing CAGR
-          </button>
+        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white">
+          <button id="metricXirrBtn" onclick="setMetricMode('xirr')" class="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 text-white transition-colors">SIP XIRR</button>
+          <button id="metricCagrBtn" onclick="setMetricMode('cagr')" class="px-2.5 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors">Trailing CAGR</button>
         </div>
       </div>
-
-      <!-- Color Scale Legend -->
-      <div class="flex items-center space-x-1.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-[10px] self-start lg:self-center">
-        <span class="font-bold text-slate-500 mr-1">Heat Map:</span>
-        <span class="px-1.5 py-0.5 rounded font-bold text-white bg-rose-600">&lt; -15%</span>
-        <span class="px-1.5 py-0.5 rounded font-bold text-rose-900 bg-rose-100">-5%</span>
-        <span class="px-1.5 py-0.5 rounded font-medium text-slate-500 bg-slate-100">0%</span>
-        <span class="px-1.5 py-0.5 rounded font-bold text-emerald-800 bg-emerald-100">+5%</span>
-        <span class="px-1.5 py-0.5 rounded font-bold text-white bg-emerald-500">+15%</span>
-        <span class="px-1.5 py-0.5 rounded font-bold text-white bg-emerald-700">&gt; +25%</span>
-      </div>
+      <div id="heatLegend" class="flex items-center flex-wrap gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-[10px] self-start lg:self-center"></div>
     </div>
 
-    <!-- Valuation & 13-Tenure Return Matrix Table -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr class="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px] tracking-wider select-none">
-              <th class="py-3 px-2 w-16 text-center sticky left-0 bg-slate-100"># / Move</th>
-              
-              <th onclick="handleSort('code')" class="py-3 px-3 cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center space-x-1">
-                  <span>Code</span>
-                  <span id="sortIcon-code" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('name')" class="py-3 px-3 min-w-[200px] cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center space-x-1">
-                  <span>Fund Name</span>
-                  <span id="sortIcon-name" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('amc')" class="py-3 px-2.5 cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center space-x-1">
-                  <span>AMC</span>
-                  <span id="sortIcon-amc" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('category')" class="py-3 px-3 cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center space-x-1">
-                  <span>Category</span>
-                  <span id="sortIcon-category" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('navStart')" class="py-3 px-2 text-right cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center justify-end space-x-1">
-                  <span>NAV Start</span>
-                  <span id="sortIcon-navStart" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('navEnd')" class="py-3 px-2 text-right cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center justify-end space-x-1">
-                  <span>NAV End</span>
-                  <span id="sortIcon-navEnd" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('units')" class="py-3 px-2 text-right cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center justify-end space-x-1">
-                  <span>Units</span>
-                  <span id="sortIcon-units" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('investedAmount')" class="py-3 px-2 text-right cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center justify-end space-x-1">
-                  <span>Invested</span>
-                  <span id="sortIcon-investedAmount" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('saleNav')" class="py-3 px-2 text-right cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center justify-end space-x-1">
-                  <span>Sale NAV</span>
-                  <span id="sortIcon-saleNav" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('totalReturn')" class="py-3 px-2 text-right cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center justify-end space-x-1">
-                  <span>Total Return</span>
-                  <span id="sortIcon-totalReturn" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <th onclick="handleSort('xirr')" class="py-3 px-2 text-right cursor-pointer hover:bg-slate-200/70 transition-colors">
-                <div class="flex items-center justify-end space-x-1">
-                  <span>SIP XIRR</span>
-                  <span id="sortIcon-xirr" class="text-slate-400">⇅</span>
-                </div>
-              </th>
-
-              <!-- 13 Tenure Headers with Sort Icons -->
-              <th onclick="handleSort('5D')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>5D</span><span id="sortIcon-5D" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('15D')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>15D</span><span id="sortIcon-15D" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('1M')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>1M</span><span id="sortIcon-1M" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('3M')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>3M</span><span id="sortIcon-3M" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('6M')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>6M</span><span id="sortIcon-6M" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('9M')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>9M</span><span id="sortIcon-9M" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('1Y')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer bg-emerald-50 text-emerald-800 font-bold hover:bg-emerald-100">
-                <div class="flex items-center justify-center space-x-0.5"><span>1Y</span><span id="sortIcon-1Y" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('2Y')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>2Y</span><span id="sortIcon-2Y" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('3Y')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>3Y</span><span id="sortIcon-3Y" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('5Y')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer bg-amber-50 text-amber-900 font-bold hover:bg-amber-100">
-                <div class="flex items-center justify-center space-x-0.5"><span>5Y</span><span id="sortIcon-5Y" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('8Y')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>8Y</span><span id="sortIcon-8Y" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('10Y')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>10Y</span><span id="sortIcon-10Y" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-              <th onclick="handleSort('12Y')" class="py-3 px-1 text-center min-w-[55px] cursor-pointer hover:bg-slate-200/70">
-                <div class="flex items-center justify-center space-x-0.5"><span>12Y</span><span id="sortIcon-12Y" class="text-[10px] text-slate-400">⇅</span></div>
-              </th>
-            </tr>
-          </thead>
+          <thead id="matrixTableHead" class="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px] tracking-wider select-none"></thead>
           <tbody id="matrixTableBody" class="divide-y divide-slate-100 font-normal">
             <tr>
-              <td colspan="26" class="py-12 text-center text-slate-400 font-medium">Loading valuation matrix...</td>
+              <td id="loadingCell" class="py-12 text-center text-slate-400 font-medium">Loading valuation matrix...</td>
             </tr>
           </tbody>
         </table>
       </div>
-
       <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
         <span id="footerCount">Loading schemes...</span>
-        <span>Short-term (&lt;1Y): Trailing CAGR · Long-term (&ge;1Y): Annualized CAGR/XIRR</span>
+        <span id="footerRange">Custom Range XIRR uses From Date to To Date. Tenure columns look back from Sale Date.</span>
       </div>
     </div>
-
   </main>
 
   <script>
-    const TENURES = ['5D', '15D', '1M', '3M', '6M', '9M', '1Y', '2Y', '3Y', '5Y', '8Y', '10Y', '12Y'];
-    let allFunds = [];
-    let currentDisplayFunds = [];
-    let top2FilterActive = true;
-    let activeMetric = 'xirr'; // 'xirr' | 'cagr'
-    let currentSortField = '5Y';
-    let currentSortAsc = false;
+    // Keep TENURES in the same order as TENURE_CONFIG in code.gs, including 7Y.
+    // Tenure cells switch between tenureXirr and tenureCagr. They look back from Sale Date.
+    // customRangeXirr, sipCorpus, netProfit, and absoluteReturn stay on From Date to To Date
+    // and do not follow the SIP XIRR / Trailing CAGR switch.
+    // Top 2 uses the active 1Y series. Filters start on Select All, which means no restriction.
+    // Default sort is 1Y descending. Heat colors on corpus and net profit follow absoluteReturn.
+    var TENURES = [
+      { key: '5D', group: 'short', annualized: false },
+      { key: '15D', group: 'short', annualized: false },
+      { key: '1M', group: 'short', annualized: false },
+      { key: '3M', group: 'short', annualized: false },
+      { key: '6M', group: 'short', annualized: false },
+      { key: '9M', group: 'short', annualized: false },
+      { key: '1Y', group: 'short', annualized: true },
+      { key: '2Y', group: 'long', annualized: true },
+      { key: '3Y', group: 'long', annualized: true },
+      { key: '5Y', group: 'long', annualized: true },
+      { key: '7Y', group: 'long', annualized: true },
+      { key: '10Y', group: 'long', annualized: true },
+      { key: '12Y', group: 'long', annualized: true }
+    ];
+
+    var FIXED_COLS = [
+      { key: 'code', label: 'Code' },
+      { key: 'name', label: 'Fund Name' },
+      { key: 'amc', label: 'AMC' },
+      { key: 'category', label: 'Category' },
+      { key: 'navStart', label: 'NAV Start', numeric: true },
+      { key: 'navEnd', label: 'NAV End', numeric: true },
+      { key: 'units', label: 'Units', numeric: true },
+      { key: 'investedAmount', label: 'Invested', numeric: true },
+      { key: 'sipCorpus', label: 'SIP Corpus', numeric: true, heat: 'absolute' },
+      { key: 'netProfit', label: 'Net Profit', numeric: true, heat: 'absolute' },
+      { key: 'absoluteReturn', label: 'Absolute Return', numeric: true, heat: 'self' },
+      { key: 'saleNav', label: 'Sale NAV', numeric: true },
+      { key: 'customRangeXirr', label: 'Custom Range XIRR', numeric: true, heat: 'self' }
+    ];
+
+    var FILTERS = {
+      category: { title: 'Categories', allLabel: 'All Categories', emptyLabel: 'No category' },
+      amc: { title: 'AMCs', allLabel: 'All AMCs', emptyLabel: 'No AMC' },
+      scheme: { title: 'Schemes', allLabel: 'All Schemes', emptyLabel: 'No scheme' }
+    };
+
+    var allFunds = [];
+    var currentDisplayFunds = [];
+    var top2FilterActive = true;
+    var activeMetric = 'xirr';
+    var currentSortField = '1Y';
+    var currentSortAsc = false;
+    var filterOptions = { category: [], amc: [], scheme: [] };
+    var filterSelected = { category: {}, amc: {}, scheme: {} };
+    var filterAll = { category: true, amc: true, scheme: true };
+    var openPanel = null;
 
     window.onload = function() {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('inputToDate').value = today;
-      document.getElementById('inputSaleDate').value = today;
+      var today = new Date();
+      document.getElementById('inputToDate').value = isoDate(today);
+      document.getElementById('inputSaleDate').value = isoDate(today);
+      document.getElementById('inputFromDate').value = isoDate(shiftYears(today, -1));
+      renderHeader();
+      renderLegend();
+      document.getElementById('loadingCell').colSpan = columnCount();
       loadMatrixData();
     };
 
-    function loadMatrixData() {
-      const btn = document.getElementById('refreshBtn');
-      btn.classList.add('opacity-50', 'pointer-events-none');
+    document.addEventListener('click', function(event) {
+      if (!openPanel) return;
+      var wrap = document.getElementById('wrap-' + openPanel);
+      if (wrap && !wrap.contains(event.target)) {
+        closeFilterPanels();
+      }
+    });
 
-      const params = {
+    function columnCount() {
+      return 1 + FIXED_COLS.length + TENURES.length;
+    }
+
+    function isoDate(dateObj) {
+      var month = dateObj.getMonth() + 1;
+      var day = dateObj.getDate();
+      return dateObj.getFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
+    }
+
+    function shiftYears(dateObj, years) {
+      var shifted = new Date(dateObj.getFullYear() + years, dateObj.getMonth(), dateObj.getDate());
+      if (shifted.getDate() !== dateObj.getDate()) {
+        return new Date(dateObj.getFullYear() + years, dateObj.getMonth() + 1, 0);
+      }
+      return shifted;
+    }
+
+    function ordinal(n) {
+      var value = Math.abs(n) % 100;
+      if (value >= 11 && value <= 13) return n + 'th';
+      switch (value % 10) {
+        case 1: return n + 'st';
+        case 2: return n + 'nd';
+        case 3: return n + 'rd';
+        default: return n + 'th';
+      }
+    }
+
+    function formatLongDate(iso) {
+      if (!iso) return '';
+      var parts = iso.split('-');
+      var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return Number(parts[2]) + ' ' + months[Number(parts[1]) - 1] + ' ' + parts[0];
+    }
+
+    function esc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderHeader() {
+      var shortCount = TENURES.filter(function(t) { return t.group === 'short'; }).length;
+      var longCount = TENURES.length - shortCount;
+      var lead = 1 + FIXED_COLS.length;
+      var group = '<tr class="bg-slate-100 border-b border-slate-200">';
+      group += '<th colspan="' + lead + '" class="py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Scheme and custom range</th>';
+      group += '<th colspan="' + shortCount + '" class="py-2 px-2 text-center text-emerald-800 bg-emerald-50">Short Term</th>';
+      group += '<th colspan="' + longCount + '" class="py-2 px-2 text-center text-amber-900 bg-amber-50">Long Term</th>';
+      group += '</tr>';
+
+      var cols = '<tr>';
+      cols += '<th class="py-3 px-2 w-16 text-center sticky left-0 bg-slate-100"># / Move</th>';
+      FIXED_COLS.forEach(function(col) {
+        var align = col.numeric ? 'text-right' : 'text-left';
+        cols += '<th onclick="handleSort(\'' + col.key + '\')" class="py-3 px-2 cursor-pointer hover:bg-slate-200/70 ' + align + '">';
+        cols += '<div class="inline-flex items-center space-x-1 ' + (col.numeric ? 'justify-end' : '') + '"><span>' + col.label + '</span><span id="sortIcon-' + col.key + '" class="text-slate-400">⇅</span></div></th>';
+      });
+      TENURES.forEach(function(tenure) {
+        var tone = tenure.key === '1Y' ? 'bg-emerald-50 text-emerald-800' : (tenure.key === '5Y' ? 'bg-amber-50 text-amber-900' : '');
+        cols += '<th onclick="handleSort(\'' + tenure.key + '\')" class="py-3 px-1 text-center min-w-[58px] cursor-pointer hover:bg-slate-200/70 ' + tone + '">';
+        cols += '<div class="inline-flex items-center justify-center space-x-0.5"><span>' + tenure.key + '</span><span id="sortIcon-' + tenure.key + '" class="text-[10px] text-slate-400">⇅</span></div></th>';
+      });
+      cols += '</tr>';
+      document.getElementById('matrixTableHead').innerHTML = group + cols;
+      updateSortIcons();
+    }
+
+    function renderLegend() {
+      var label = activeMetric === 'xirr' ? 'SIP XIRR heat' : 'Trailing CAGR heat';
+      document.getElementById('heatLegend').innerHTML =
+        '<span class="font-bold text-slate-500 mr-1">' + label + ':</span>' +
+        '<span class="px-1.5 py-0.5 rounded font-bold text-white bg-rose-600">&lt; -15%</span>' +
+        '<span class="px-1.5 py-0.5 rounded font-bold text-rose-900 bg-rose-100">-5%</span>' +
+        '<span class="px-1.5 py-0.5 rounded font-medium text-slate-500 bg-slate-100">0%</span>' +
+        '<span class="px-1.5 py-0.5 rounded font-bold text-emerald-800 bg-emerald-100">+5%</span>' +
+        '<span class="px-1.5 py-0.5 rounded font-bold text-white bg-emerald-500">+15%</span>' +
+        '<span class="px-1.5 py-0.5 rounded font-bold text-white bg-emerald-700">&gt; +25%</span>';
+    }
+
+    function loadMatrixData() {
+      var btn = document.getElementById('refreshBtn');
+      btn.classList.add('opacity-50', 'pointer-events-none');
+      var params = {
         sipAmount: document.getElementById('inputSipAmount').value,
         sipDay: document.getElementById('inputSipDay').value,
         fromDate: document.getElementById('inputFromDate').value,
         toDate: document.getElementById('inputToDate').value,
         saleDate: document.getElementById('inputSaleDate').value
       };
-
       document.getElementById('kpiSipAmount').textContent = '₹' + Number(params.sipAmount).toLocaleString('en-IN');
-      document.getElementById('kpiSipDesc').textContent = 'Debited every ' + params.sipDay + 'th of month';
+      document.getElementById('kpiSipDesc').textContent = 'Debited every ' + ordinal(Number(params.sipDay)) + ' of month';
+      document.getElementById('footerRange').textContent =
+        'Custom Range XIRR: ' + formatLongDate(params.fromDate) + ' to ' + formatLongDate(params.toDate) +
+        '. Tenure columns look back from Sale Date ' + formatLongDate(params.saleDate) + '.';
 
       google.script.run
         .withSuccessHandler(function(response) {
           btn.classList.remove('opacity-50', 'pointer-events-none');
           allFunds = response.funds || [];
-
-          populateDropdown('filterCategory', response.categories || ['All']);
-          populateDropdown('filterAmc', response.amcs || ['All']);
-
+          rebuildFilters(response);
           updateKPIs(allFunds);
           applyFilters();
         })
@@ -347,25 +328,91 @@
         .getFundMatrixData(params);
     }
 
-    function populateDropdown(elemId, items) {
-      const select = document.getElementById(elemId);
-      const cur = select.value;
-      select.innerHTML = '';
-      items.forEach(function(item) {
-        const opt = document.createElement('option');
-        opt.value = item;
-        opt.textContent = item === 'All' ? (elemId === 'filterCategory' ? 'All Categories' : 'All AMCs') : item;
-        select.appendChild(opt);
+    function rebuildFilters(response) {
+      filterOptions.category = (response.categories || []).map(function(name) { return { value: name, label: name }; });
+      filterOptions.amc = (response.amcs || []).map(function(name) { return { value: name, label: name }; });
+      filterOptions.scheme = allFunds.map(function(fund) {
+        return { value: fund.code, label: fund.name + ' (' + fund.code + ')' };
+      }).sort(function(a, b) { return a.label.localeCompare(b.label); });
+
+      ['category', 'amc', 'scheme'].forEach(function(kind) {
+        var next = {};
+        filterOptions[kind].forEach(function(item) {
+          if (filterAll[kind] || filterSelected[kind][item.value]) next[item.value] = true;
+        });
+        if (filterAll[kind]) {
+          filterOptions[kind].forEach(function(item) { next[item.value] = true; });
+        }
+        filterSelected[kind] = next;
+        var every = filterOptions[kind].length > 0 && filterOptions[kind].every(function(item) { return next[item.value]; });
+        filterAll[kind] = every || filterOptions[kind].length === 0;
+        renderFilter(kind);
       });
-      if (items.indexOf(cur) !== -1) {
-        select.value = cur;
+    }
+
+    function toggleFilterPanel(kind) {
+      var panel = document.getElementById('panel-' + kind);
+      var willOpen = panel.classList.contains('hidden');
+      closeFilterPanels();
+      if (willOpen) {
+        panel.classList.remove('hidden');
+        openPanel = kind;
       }
     }
 
+    function closeFilterPanels() {
+      ['category', 'amc', 'scheme'].forEach(function(kind) {
+        document.getElementById('panel-' + kind).classList.add('hidden');
+      });
+      openPanel = null;
+    }
+
+    function renderFilter(kind) {
+      var meta = FILTERS[kind];
+      var panel = document.getElementById('panel-' + kind);
+      var html = '<label class="flex items-center gap-2 px-1 py-1 font-semibold border-b border-slate-100 mb-1">' +
+        '<input type="checkbox" ' + (filterAll[kind] ? 'checked' : '') + ' onchange="setFilterAll(\'' + kind + '\', this.checked)"> Select All</label>';
+      filterOptions[kind].forEach(function(item) {
+        html += '<label class="flex items-start gap-2 px-1 py-1 hover:bg-slate-50 rounded">' +
+          '<input type="checkbox" ' + (filterSelected[kind][item.value] ? 'checked' : '') +
+          ' onchange="setFilterItem(\'' + kind + '\', \'' + esc(item.value) + '\', this.checked)">' +
+          '<span class="leading-4">' + esc(item.label) + '</span></label>';
+      });
+      panel.innerHTML = html;
+
+      var selectedCount = filterOptions[kind].filter(function(item) { return filterSelected[kind][item.value]; }).length;
+      var button = document.getElementById('btn-' + kind);
+      if (filterAll[kind] || selectedCount === filterOptions[kind].length) {
+        button.textContent = meta.allLabel;
+      } else if (selectedCount === 0) {
+        button.textContent = meta.emptyLabel;
+      } else if (selectedCount === 1) {
+        var chosen = filterOptions[kind].filter(function(item) { return filterSelected[kind][item.value]; })[0];
+        button.textContent = chosen ? chosen.label : meta.title;
+      } else {
+        button.textContent = selectedCount + ' ' + meta.title;
+      }
+    }
+
+    function setFilterAll(kind, checked) {
+      filterAll[kind] = checked;
+      filterOptions[kind].forEach(function(item) { filterSelected[kind][item.value] = checked; });
+      renderFilter(kind);
+      applyFilters();
+    }
+
+    function setFilterItem(kind, value, checked) {
+      filterSelected[kind][value] = checked;
+      filterAll[kind] = filterOptions[kind].every(function(item) { return filterSelected[kind][item.value]; });
+      renderFilter(kind);
+      applyFilters();
+    }
+
+    // Re-renders only. Both series are already on each fund. Also re-ranks Top 2 by the active 1Y value.
     function setMetricMode(mode) {
       activeMetric = mode;
-      const xBtn = document.getElementById('metricXirrBtn');
-      const cBtn = document.getElementById('metricCagrBtn');
+      var xBtn = document.getElementById('metricXirrBtn');
+      var cBtn = document.getElementById('metricCagrBtn');
       if (mode === 'xirr') {
         xBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 text-white transition-colors';
         cBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors';
@@ -373,13 +420,14 @@
         cBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 text-white transition-colors';
         xBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors';
       }
-      renderTable(currentDisplayFunds);
+      renderLegend();
+      applyFilters();
     }
 
     function toggleTop2Filter() {
       top2FilterActive = !top2FilterActive;
-      const btn = document.getElementById('toggleTop2Btn');
-      const badge = document.getElementById('top2Badge');
+      var btn = document.getElementById('toggleTop2Btn');
+      var badge = document.getElementById('top2Badge');
       if (top2FilterActive) {
         btn.className = 'inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-amber-500 border-amber-600 text-white shadow-sm transition-all';
         badge.className = 'px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-700 text-white';
@@ -392,44 +440,49 @@
       applyFilters();
     }
 
-    function getTop2CodesPerCategory() {
-      const catMap = {};
-      allFunds.forEach(function(f) {
-        const c = f.category || 'Other';
-        if (!catMap[c]) catMap[c] = [];
-        catMap[c].push(f);
-      });
+    // Tenure display series. Custom-range columns must not read this.
+    function activeSeries(fund) {
+      return activeMetric === 'cagr' ? fund.tenureCagr : fund.tenureXirr;
+    }
 
-      const topCodes = {};
-      Object.keys(catMap).forEach(function(cat) {
-        const sorted = catMap[cat].slice().sort(function(a, b) {
-          const retA = (a.tenureReturns && a.tenureReturns['5Y'] !== null) ? a.tenureReturns['5Y'] : -999;
-          const retB = (b.tenureReturns && b.tenureReturns['5Y'] !== null) ? b.tenureReturns['5Y'] : -999;
-          return retB - retA;
+    function passesFilter(kind, value) {
+      if (filterAll[kind]) return true;
+      return !!filterSelected[kind][value];
+    }
+
+    function getTop2Codes(funds) {
+      var catMap = {};
+      funds.forEach(function(fund) {
+        var category = fund.category || 'Other';
+        if (!catMap[category]) catMap[category] = [];
+        catMap[category].push(fund);
+      });
+      var topCodes = {};
+      Object.keys(catMap).forEach(function(category) {
+        var sorted = catMap[category].slice().sort(function(a, b) {
+          return rankValue(b) - rankValue(a);
         });
-        sorted.slice(0, 2).forEach(function(f) {
-          topCodes[f.code] = true;
-        });
+        sorted.slice(0, 2).forEach(function(fund) { topCodes[fund.code] = true; });
       });
       return topCodes;
     }
 
+    function rankValue(fund) {
+      var series = activeSeries(fund);
+      var value = series ? series['1Y'] : null;
+      return value === null || value === undefined || isNaN(value) ? -999 : value;
+    }
+
     function applyFilters() {
-      const query = document.getElementById('searchInput').value.trim().toLowerCase();
-      const selectedCat = document.getElementById('filterCategory').value;
-      const selectedAmc = document.getElementById('filterAmc').value;
-      const topCodes = top2FilterActive ? getTop2CodesPerCategory() : null;
-
-      let filtered = allFunds.filter(function(f) {
-        if (top2FilterActive && !topCodes[f.code]) return false;
-        const matchCat = selectedCat === 'All' || f.category === selectedCat;
-        const matchAmc = selectedAmc === 'All' || f.amc.toLowerCase() === selectedAmc.toLowerCase();
-
-        const matchQuery = !query || f.name.toLowerCase().includes(query) || f.code.toLowerCase().includes(query) || f.amc.toLowerCase().includes(query);
-        return matchCat && matchAmc && matchQuery;
+      var filtered = allFunds.filter(function(fund) {
+        return passesFilter('category', fund.category) &&
+          passesFilter('amc', fund.amc) &&
+          passesFilter('scheme', fund.code);
       });
-
-      // Apply active sorting
+      if (top2FilterActive) {
+        var topCodes = getTop2Codes(filtered);
+        filtered = filtered.filter(function(fund) { return topCodes[fund.code]; });
+      }
       sortFundsList(filtered, currentSortField, currentSortAsc);
       currentDisplayFunds = filtered;
       renderTable(currentDisplayFunds);
@@ -448,130 +501,147 @@
     }
 
     function updateSortIcons() {
-      const allHeaders = ['code', 'name', 'amc', 'category', 'navStart', 'navEnd', 'units', 'investedAmount', 'saleNav', 'totalReturn', 'xirr'].concat(TENURES);
-      allHeaders.forEach(function(h) {
-        const iconElem = document.getElementById('sortIcon-' + h);
-        if (iconElem) {
-          if (h === currentSortField) {
-            iconElem.textContent = currentSortAsc ? '▲' : '▼';
-            iconElem.className = 'text-emerald-700 font-bold';
-          } else {
-            iconElem.textContent = '⇅';
-            iconElem.className = 'text-slate-400';
-          }
+      var headers = FIXED_COLS.map(function(col) { return col.key; }).concat(TENURES.map(function(t) { return t.key; }));
+      headers.forEach(function(header) {
+        var icon = document.getElementById('sortIcon-' + header);
+        if (!icon) return;
+        if (header === currentSortField) {
+          icon.textContent = currentSortAsc ? '▲' : '▼';
+          icon.className = 'text-emerald-700 font-bold';
+        } else {
+          icon.textContent = '⇅';
+          icon.className = 'text-slate-400';
         }
       });
     }
 
+    function fieldValue(fund, field) {
+      var tenure = TENURES.filter(function(item) { return item.key === field; })[0];
+      if (tenure) {
+        var series = activeSeries(fund);
+        return series ? series[field] : null;
+      }
+      return fund[field];
+    }
+
     function sortFundsList(list, field, asc) {
       list.sort(function(a, b) {
-        let valA, valB;
-        if (TENURES.indexOf(field) !== -1) {
-          valA = a.tenureReturns ? a.tenureReturns[field] : null;
-          valB = b.tenureReturns ? b.tenureReturns[field] : null;
-        } else if (typeof a[field] === 'string') {
-          return asc ? a[field].localeCompare(b[field]) : b[field].localeCompare(a[field]);
-        } else {
-          valA = a[field];
-          valB = b[field];
+        var valA = fieldValue(a, field);
+        var valB = fieldValue(b, field);
+        if (typeof valA === 'string' || typeof valB === 'string') {
+          return asc ? String(valA || '').localeCompare(String(valB || '')) : String(valB || '').localeCompare(String(valA || ''));
         }
-
-        if (valA === null && valB === null) return 0;
-        if (valA === null) return 1;
-        if (valB === null) return -1;
+        if (valA === null || valA === undefined || isNaN(valA)) return 1;
+        if (valB === null || valB === undefined || isNaN(valB)) return -1;
         return asc ? valA - valB : valB - valA;
       });
     }
 
     function moveRow(index, direction, event) {
       event.stopPropagation();
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      var targetIndex = direction === 'up' ? index - 1 : index + 1;
       if (targetIndex < 0 || targetIndex >= currentDisplayFunds.length) return;
-
-      const temp = currentDisplayFunds[index];
+      var temp = currentDisplayFunds[index];
       currentDisplayFunds[index] = currentDisplayFunds[targetIndex];
       currentDisplayFunds[targetIndex] = temp;
-
       renderTable(currentDisplayFunds);
     }
 
     function renderTable(funds) {
-      const tbody = document.getElementById('matrixTableBody');
-      if (funds.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="26" class="py-12 text-center text-slate-400">No schemes matched your criteria.</td></tr>';
+      var tbody = document.getElementById('matrixTableBody');
+      var span = columnCount();
+      if (!funds.length) {
+        tbody.innerHTML = '<tr><td colspan="' + span + '" class="py-12 text-center text-slate-400">No schemes matched your criteria.</td></tr>';
         document.getElementById('footerCount').textContent = 'Showing 0 schemes';
         return;
       }
 
-      let html = '';
-      funds.forEach(function(f, idx) {
-        const totalRetColor = f.totalReturn >= 0 ? 'text-emerald-700' : 'text-rose-600';
-
+      var html = '';
+      funds.forEach(function(fund, idx) {
         html += '<tr class="hover:bg-slate-50/80 transition-colors">';
-        
-        // Move Up / Down Buttons
         html += '<td class="py-2 px-1 text-center text-slate-500 font-semibold text-[11px] sticky left-0 bg-white border-r border-slate-100">';
-        html += '  <div class="flex items-center justify-center space-x-1">';
-        html += '    <span class="w-3 text-slate-400">' + (idx + 1) + '</span>';
-        html += '    <div class="flex flex-col space-y-0.5">';
-        html += '      <button type="button" title="Move Up" onclick="moveRow(' + idx + ', \'up\', event)" ' + (idx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-emerald-700"') + '>▲</button>';
-        html += '      <button type="button" title="Move Down" onclick="moveRow(' + idx + ', \'down\', event)" ' + (idx === funds.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-emerald-700"') + '>▼</button>';
-        html += '    </div>';
-        html += '  </div>';
-        html += '</td>';
+        html += '<div class="flex items-center justify-center space-x-1"><span class="w-3 text-slate-400">' + (idx + 1) + '</span><div class="flex flex-col space-y-0.5">';
+        html += '<button type="button" title="Move Up" onclick="moveRow(' + idx + ', \'up\', event)" ' + (idx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-emerald-700"') + '>▲</button>';
+        html += '<button type="button" title="Move Down" onclick="moveRow(' + idx + ', \'down\', event)" ' + (idx === funds.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-emerald-700"') + '>▼</button>';
+        html += '</div></div></td>';
 
-        html += '<td class="py-2.5 px-3 font-mono text-[11px] font-semibold text-slate-700"><span class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">' + f.code + '</span></td>';
-        html += '<td class="py-2.5 px-3 font-medium text-slate-900 max-w-[220px]"><div class="truncate font-semibold text-slate-800" title="' + f.name + '">' + f.name + '</div><div class="text-[10px] text-slate-400 truncate">Inception: ' + f.minNavDate + '</div></td>';
-        html += '<td class="py-2.5 px-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-semibold border border-slate-200">' + (f.amc || 'N/A') + '</span></td>';
-        html += '<td class="py-2.5 px-3"><span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">' + f.category + '</span></td>';
-        html += '<td class="py-2.5 px-2 text-right font-mono text-slate-600 font-medium">₹' + f.navStart.toFixed(2) + '</td>';
-        html += '<td class="py-2.5 px-2 text-right font-mono text-slate-900 font-semibold">₹' + f.navEnd.toFixed(2) + '</td>';
-        html += '<td class="py-2.5 px-2 text-right font-mono text-emerald-700 font-bold">' + f.units.toFixed(2) + '</td>';
-        html += '<td class="py-2.5 px-2 text-right font-mono text-slate-800">₹' + f.investedAmount.toLocaleString('en-IN') + '</td>';
-        html += '<td class="py-2.5 px-2 text-right font-mono text-slate-900 font-bold">₹' + f.saleNav.toFixed(2) + '</td>';
-        html += '<td class="py-2.5 px-2 text-right font-mono font-bold ' + totalRetColor + '">' + formatPct(f.totalReturn) + '</td>';
-        html += '<td class="py-2.5 px-2 text-right font-mono font-bold text-slate-800">' + formatPct(f.xirr) + '</td>';
+        html += '<td class="py-2.5 px-3 font-mono text-[11px] font-semibold text-slate-700"><span class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">' + esc(fund.code) + '</span></td>';
+        html += '<td class="py-2.5 px-3 font-medium text-slate-900 max-w-[220px]"><div class="truncate font-semibold text-slate-800" title="' + esc(fund.name) + '">' + esc(fund.name) + '</div><div class="text-[10px] text-slate-400 truncate">Inception: ' + esc(fund.minNavDate || '-') + '</div></td>';
+        html += '<td class="py-2.5 px-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-semibold border border-slate-200">' + esc(fund.amc || 'N/A') + '</span></td>';
+        html += '<td class="py-2.5 px-3"><span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">' + esc(fund.category) + '</span></td>';
+        html += moneyCell(fund.navStart, false);
+        html += moneyCell(fund.navEnd, true);
+        html += '<td class="py-2.5 px-2 text-right font-mono text-emerald-700 font-bold">' + formatUnits(fund.units) + '</td>';
+        html += moneyCell(fund.investedAmount, false);
+        html += heatMoneyCell(fund.sipCorpus, fund.absoluteReturn);
+        html += heatMoneyCell(fund.netProfit, fund.absoluteReturn);
+        html += heatRateCell(fund.absoluteReturn, 'standard');
+        html += moneyCell(fund.saleNav, true);
+        html += heatRateCell(fund.customRangeXirr, 'standard');
 
-        // 13 Tenure Cells
-        TENURES.forEach(function(t) {
-          const val = f.tenureReturns ? f.tenureReturns[t] : null;
-          const style = getHeatmapStyle(val);
-          const display = val !== null && !isNaN(val) ? formatPct(val) : '-';
-
-          html += '<td class="py-1 px-1 text-center">';
-          html += '  <div style="background-color:' + style.bg + '; color:' + style.text + '; border-color:' + style.border + '" class="heatmap-cell py-1 px-1 rounded text-[11px] font-bold border shadow-2xs">' + display + '</div>';
-          html += '</td>';
+        TENURES.forEach(function(tenure) {
+          var series = activeSeries(fund);
+          var value = series ? series[tenure.key] : null;
+          html += heatRateCell(value, heatScale(tenure));
         });
-
         html += '</tr>';
       });
 
       tbody.innerHTML = html;
-      document.getElementById('footerCount').textContent = 'Showing ' + funds.length + ' of ' + allFunds.length + ' schemes' + (top2FilterActive ? ' (Top 2 per Category under 5Y ratio)' : '');
+      var seriesName = activeMetric === 'xirr' ? 'SIP XIRR' : 'Trailing CAGR';
+      document.getElementById('footerCount').textContent =
+        'Showing ' + funds.length + ' of ' + allFunds.length + ' schemes' +
+        (top2FilterActive ? ' (Top 2 per category by 1Y ' + seriesName + ')' : '');
+    }
+
+    function moneyCell(value, strong) {
+      var cls = strong ? 'text-slate-900 font-semibold' : 'text-slate-600 font-medium';
+      return '<td class="py-2.5 px-2 text-right font-mono ' + cls + '">' + formatInr(value) + '</td>';
+    }
+
+    function heatMoneyCell(value, rate) {
+      var style = getHeatmapStyle(rate, 'standard');
+      return '<td class="py-1 px-1 text-right"><div style="background-color:' + style.bg + '; color:' + style.text + '; border-color:' + style.border + '" class="heatmap-cell py-1 px-1 rounded text-[11px] font-bold border">' + formatInr(value) + '</div></td>';
+    }
+
+    function heatRateCell(value, scale) {
+      var style = getHeatmapStyle(value, scale);
+      return '<td class="py-1 px-1 text-center"><div style="background-color:' + style.bg + '; color:' + style.text + '; border-color:' + style.border + '" class="heatmap-cell py-1 px-1 rounded text-[11px] font-bold border">' + formatPct(value) + '</div></td>';
+    }
+
+    // Sub-year SIP XIRR is annualized and needs a wider scale. Sub-year CAGR is an absolute change.
+    function heatScale(tenure) {
+      if (tenure.annualized) return 'standard';
+      return activeMetric === 'xirr' ? 'wide' : 'tight';
+    }
+
+    function formatUnits(value) {
+      if (value === null || value === undefined || isNaN(value)) return '-';
+      return Number(value).toFixed(2);
+    }
+
+    function formatInr(value) {
+      if (value === null || value === undefined || isNaN(value)) return '-';
+      return '₹' + Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function updateKPIs(funds) {
-      if (!funds || funds.length === 0) return;
       document.getElementById('kpiTotalFunds').textContent = funds.length;
-
-      let sumRet = 0;
-      let bestFund = null;
-      let maxRet = -Infinity;
-
-      funds.forEach(function(f) {
-        sumRet += f.totalReturn;
-        if (f.totalReturn > maxRet) {
-          maxRet = f.totalReturn;
-          bestFund = f;
-        }
+      if (!funds.length) return;
+      var sum = 0;
+      var counted = 0;
+      var best = null;
+      funds.forEach(function(fund) {
+        if (fund.absoluteReturn === null || fund.absoluteReturn === undefined || isNaN(fund.absoluteReturn)) return;
+        sum += fund.absoluteReturn;
+        counted += 1;
+        if (!best || fund.absoluteReturn > best.absoluteReturn) best = fund;
       });
-
-      const avgRet = sumRet / funds.length;
-      document.getElementById('kpiAvgReturn').textContent = formatPct(avgRet);
-
-      if (bestFund) {
-        document.getElementById('kpiBestFund').textContent = bestFund.name;
-        document.getElementById('kpiBestReturn').textContent = formatPct(bestFund.totalReturn) + ' Total Return (' + formatPct(bestFund.xirr) + ' XIRR)';
+      document.getElementById('kpiAvgReturn').textContent = counted ? formatPct(sum / counted) : '-';
+      if (best) {
+        document.getElementById('kpiBestFund').textContent = best.name;
+        document.getElementById('kpiBestReturn').textContent =
+          formatPct(best.absoluteReturn) + ' absolute · ' + formatPct(best.customRangeXirr) + ' XIRR';
       }
     }
 
@@ -580,18 +650,23 @@
       return (val > 0 ? '+' : '') + (val * 100).toFixed(1) + '%';
     }
 
-    function getHeatmapStyle(ratio) {
+    function getHeatmapStyle(ratio, scale) {
       if (ratio === null || ratio === undefined || isNaN(ratio)) {
         return { bg: '#f8fafc', text: '#94a3b8', border: '#e2e8f0' };
       }
-      if (ratio >= 0.40) return { bg: '#047857', text: '#ffffff', border: '#065f46' };
-      if (ratio >= 0.25) return { bg: '#059669', text: '#ffffff', border: '#047857' };
-      if (ratio >= 0.15) return { bg: '#10b981', text: '#ffffff', border: '#059669' };
-      if (ratio >= 0.07) return { bg: '#6ee7b7', text: '#064e3b', border: '#34d399' };
-      if (ratio >= 0.02) return { bg: '#a7f3d0', text: '#065f46', border: '#6ee7b7' };
-      if (ratio >= 0.00) return { bg: '#ecfdf5', text: '#047857', border: '#d1fae5' };
-      if (ratio >= -0.05) return { bg: '#fff1f2', text: '#9f1239', border: '#ffe4e6' };
-      if (ratio >= -0.15) return { bg: '#fecdd3', text: '#881337', border: '#fda4af' };
+      var bands = scale === 'wide'
+        ? [1.5, 0.8, 0.4, 0.15, 0.05]
+        : (scale === 'tight' ? [0.08, 0.04, 0.02, 0.01, 0.004] : [0.40, 0.25, 0.15, 0.07, 0.02]);
+      var lossMild = scale === 'tight' ? -0.01 : (scale === 'wide' ? -0.2 : -0.05);
+      var lossDeep = scale === 'tight' ? -0.03 : (scale === 'wide' ? -0.5 : -0.15);
+      if (ratio >= bands[0]) return { bg: '#047857', text: '#ffffff', border: '#065f46' };
+      if (ratio >= bands[1]) return { bg: '#059669', text: '#ffffff', border: '#047857' };
+      if (ratio >= bands[2]) return { bg: '#10b981', text: '#ffffff', border: '#059669' };
+      if (ratio >= bands[3]) return { bg: '#6ee7b7', text: '#064e3b', border: '#34d399' };
+      if (ratio >= bands[4]) return { bg: '#a7f3d0', text: '#065f46', border: '#6ee7b7' };
+      if (ratio >= 0) return { bg: '#ecfdf5', text: '#047857', border: '#d1fae5' };
+      if (ratio >= lossMild) return { bg: '#fff1f2', text: '#9f1239', border: '#ffe4e6' };
+      if (ratio >= lossDeep) return { bg: '#fecdd3', text: '#881337', border: '#fda4af' };
       return { bg: '#e11d48', text: '#ffffff', border: '#be123c' };
     }
   </script>
