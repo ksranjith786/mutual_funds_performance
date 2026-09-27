@@ -29,6 +29,7 @@
       --shadow-sm: 0 1px 2px rgba(18, 51, 76, 0.06), 0 1px 3px rgba(18, 51, 76, 0.08);
       --row-hover: #f3f6f8;
       --zebra: #fbfcfd;
+      --name-width: 200px;
     }
     html.dark {
       --color-text-brand: #4c91ff;
@@ -115,8 +116,7 @@
     .seg { display: inline-flex; align-items: center; padding: 2px; border-radius: 8px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); }
     .seg button { min-height: 0; height: 28px; border: 0; border-radius: 6px; padding: 0 10px; background: transparent; color: var(--color-text-secondary); font-weight: 600; }
     .seg button.is-on { background: var(--color-fill-brand); color: var(--color-text-on-brand); }
-    .meta-pill, .code-pill { display: inline-block; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; padding: 1px 8px; border-radius: 99px; background: var(--color-fill-container); color: var(--color-text-secondary); font-weight: 500; }
-    .code-pill { max-width: none; border-radius: 6px; font-weight: 500; }
+    .meta-pill { display: inline-block; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; padding: 1px 8px; border-radius: 99px; background: var(--color-fill-container); color: var(--color-text-secondary); font-weight: 500; }
     .summary-row { display: grid; grid-template-columns: 7.25rem 1fr; gap: 4px 12px; padding: 8px 0; border-top: 1px solid var(--color-boundary-border-mildest); }
     .summary-row:first-child { border-top: 0; padding-top: 0; }
     .summary-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
@@ -144,7 +144,9 @@
     .compare-best td.cmp-rank { box-shadow: inset 2px 0 0 var(--color-fill-brand); color: var(--color-text-brand); font-weight: 600; }
     .cmp-tag { display: inline-block; margin: 3px 4px 0 0; padding: 0 6px; border-radius: 99px; background: color-mix(in srgb, var(--color-fill-brand) 12%, var(--color-fill-surface)); font-size: 12px; font-weight: 600; line-height: 16px; color: var(--color-text-brand); }
     .filter-panel { max-height: 240px; }
-    /* Header sticks on vertical scroll. #, Code, and Fund Name stick on horizontal scroll. */
+    .fund-pick-btn { min-height: 0; height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--color-boundary-border-mildest); background: transparent; color: var(--color-text-secondary); font-weight: 600; }
+    .fund-pick-btn.is-on { background: var(--color-fill-brand); color: var(--color-text-on-brand); border-color: var(--color-fill-brand); }
+    /* Header sticks on vertical scroll. # and Fund Name stick on horizontal scroll. Fund Name width is --name-width. */
     .matrix-scroll { max-height: calc(100vh - 11rem); overflow: auto; }
     .matrix-scroll table { border-collapse: separate; border-spacing: 0; }
     .matrix-scroll th, .matrix-scroll td { border-bottom: 1px solid var(--color-boundary-divider); }
@@ -154,16 +156,17 @@
     .matrix-scroll thead th.tone-short, .matrix-scroll thead th.tone-1y { background: var(--color-fill-semantic-success-mildest); color: var(--color-text-semantic-success); }
     .matrix-scroll thead th.tone-long, .matrix-scroll thead th.tone-5y { background: var(--color-fill-semantic-warning-mildest); color: var(--color-fill-semantic-warning-bold); }
     .freeze-move { position: sticky; left: 0; min-width: 2.75rem; width: 2.75rem; }
-    .freeze-code { position: sticky; left: 2.75rem; min-width: 4.25rem; width: 4.25rem; }
-    .freeze-name { position: sticky; left: 7rem; min-width: 10.5rem; width: 10.5rem; box-shadow: 2px 0 0 var(--color-boundary-border-mildest); }
+    .freeze-lead { position: sticky; left: 0; z-index: 6; }
+    .freeze-name { position: sticky; left: 2.75rem; width: var(--name-width); min-width: var(--name-width); max-width: var(--name-width); box-shadow: 2px 0 0 var(--color-boundary-border-mildest); }
+    .col-resizer { position: absolute; top: 0; right: 0; width: 8px; height: 100%; cursor: col-resize; z-index: 7; touch-action: none; }
+    .col-resizer::after { content: ""; position: absolute; top: 4px; bottom: 4px; right: 2px; width: 2px; border-radius: 2px; background: var(--color-boundary-border-mild); }
     .matrix-scroll thead .freeze-move,
-    .matrix-scroll thead .freeze-code,
     .matrix-scroll thead .freeze-name { z-index: 5; }
+    .matrix-scroll thead th.freeze-name { box-shadow: inset 0 -1px 0 var(--color-boundary-divider), 2px 0 0 var(--color-boundary-border-mildest); }
     .matrix-scroll tbody td { background: var(--color-fill-surface); }
     .matrix-scroll tbody tr:nth-child(even) td { background: var(--zebra); }
     .matrix-scroll tbody tr:hover td { background: var(--row-hover); }
     .matrix-scroll tbody .freeze-move,
-    .matrix-scroll tbody .freeze-code,
     .matrix-scroll tbody .freeze-name { z-index: 2; }
     .theme-switch { display: flex; gap: 2px; padding: 2px; border-radius: 99px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); box-shadow: var(--shadow-sm); }
     .theme-switch button { min-height: 0; height: 22px; padding: 0 8px; border: 0; border-radius: 99px; background: transparent; color: var(--color-text-placeholder); font-size: 11px; line-height: 16px; }
@@ -186,8 +189,9 @@
       .matrix-scroll { max-height: 70vh; }
       .matrix-scroll thead tr:first-child { display: none; }
       .matrix-scroll thead tr:nth-child(2) th { top: 0; }
-      .freeze-move, .freeze-code { left: auto; width: auto; min-width: 0; box-shadow: none; }
+      .freeze-move { left: auto; width: auto; min-width: 0; box-shadow: none; }
       .freeze-name { left: 0; width: 42vw; min-width: 9.5rem; max-width: 12rem; }
+      .col-resizer { display: none; }
       .page-header-row { align-items: stretch; }
       .summary-row { grid-template-columns: 1fr; gap: 2px; }
       .theme-switch { left: max(12px, env(safe-area-inset-left)); bottom: max(6px, env(safe-area-inset-bottom)); }
@@ -197,6 +201,12 @@
     (function () {
       var mode = 'system';
       try { mode = localStorage.getItem('mf-matrix-theme') || 'system'; } catch (e) {}
+      try {
+        var savedNameWidth = parseFloat(localStorage.getItem('mf-matrix-name-width'));
+        if (savedNameWidth >= 140 && savedNameWidth <= 520) {
+          document.documentElement.style.setProperty('--name-width', Math.round(savedNameWidth) + 'px');
+        }
+      } catch (e) {}
       var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       document.documentElement.classList.toggle('dark', dark);
       document.documentElement.setAttribute('data-theme', mode);
@@ -305,7 +315,11 @@
 
     <div id="panelMatrix" class="space-y-4">
     <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 text-xs">
-      <div class="flex flex-col sm:flex-row items-center gap-2">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+        <div class="relative w-full sm:w-72" id="wrap-fundSearch">
+          <input type="search" id="fundSearch" placeholder="All funds" onfocus="openFundSearch()" oninput="renderFundSearch()" aria-label="Search funds" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none">
+          <div id="fundSearchPanel" class="hidden filter-panel overflow-y-auto absolute z-40 mt-1 w-full sm:w-80 bg-white border border-slate-200 rounded-lg shadow-lg p-2"></div>
+        </div>
         <button id="toggleTop2Btn" onclick="toggleTop2Filter()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-amber-500 border-amber-600 text-white shadow-sm transition-all" title="Top 2 schemes in each category by the active 1Y series">
           <span>Top 2 / Cat (1Y)</span>
           <span id="top2Badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-700 text-white">Active</span>
@@ -379,7 +393,6 @@
     ];
 
     var FIXED_COLS = [
-      { key: 'code', label: 'Code' },
       { key: 'name', label: 'Fund Name' },
       { key: 'amc', label: 'AMC' },
       { key: 'category', label: 'Category' },
@@ -481,13 +494,39 @@
         .replace(/"/g, '&quot;');
     }
 
+    function startNameResize(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      var point = event.touches ? event.touches[0].clientX : event.clientX;
+      var start = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--name-width')) || 200;
+      document.body.style.userSelect = 'none';
+      function move(e) {
+        var x = e.touches ? e.touches[0].clientX : e.clientX;
+        var next = Math.max(140, Math.min(520, Math.round(start + (x - point))));
+        document.documentElement.style.setProperty('--name-width', next + 'px');
+        if (e.cancelable) e.preventDefault();
+      }
+      function up() {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+        document.removeEventListener('touchmove', move);
+        document.removeEventListener('touchend', up);
+        document.body.style.userSelect = '';
+        try { localStorage.setItem('mf-matrix-name-width', String(parseFloat(document.documentElement.style.getPropertyValue('--name-width')) || start)); } catch (err) {}
+      }
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+      document.addEventListener('touchmove', move, { passive: false });
+      document.addEventListener('touchend', up);
+    }
+
     function renderHeader() {
       var shown = visibleTenures();
       var shortCount = shown.filter(function(t) { return t.group === 'short'; }).length;
       var longCount = shown.length - shortCount;
-      var customCount = FIXED_COLS.length - 2;
+      var customCount = FIXED_COLS.length - 1;
       var group = '<tr>';
-      group += '<th colspan="3" class="freeze-move py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Scheme</th>';
+      group += '<th colspan="2" class="freeze-lead py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Scheme</th>';
       group += '<th colspan="' + customCount + '" class="py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Custom range</th>';
       group += '<th colspan="' + shortCount + '" class="tone-short py-2 px-2 text-center text-emerald-800">Short Term</th>';
       group += '<th colspan="' + longCount + '" class="tone-long py-2 px-2 text-center text-amber-900">Long Term</th>';
@@ -497,9 +536,11 @@
       cols += '<th class="freeze-move py-2 px-0 text-center">#</th>';
       FIXED_COLS.forEach(function(col) {
         var align = col.numeric ? 'text-right' : 'text-left';
-        var freeze = col.key === 'code' ? 'freeze-code ' : (col.key === 'name' ? 'freeze-name ' : '');
+        var freeze = col.key === 'name' ? 'freeze-name ' : '';
         cols += '<th onclick="handleSort(\'' + col.key + '\')" class="' + freeze + 'py-3 px-2 cursor-pointer hover:bg-slate-200/70 ' + align + '">';
-        cols += '<div class="inline-flex items-center space-x-1 ' + (col.numeric ? 'justify-end' : '') + '"><span>' + col.label + '</span><span id="sortIcon-' + col.key + '" class="text-slate-400">⇅</span></div></th>';
+        cols += '<div class="inline-flex items-center space-x-1 ' + (col.numeric ? 'justify-end' : '') + '"><span>' + col.label + '</span><span id="sortIcon-' + col.key + '" class="text-slate-400">⇅</span></div>';
+        if (col.key === 'name') cols += '<span class="col-resizer" title="Drag to resize" onmousedown="startNameResize(event)" ontouchstart="startNameResize(event)" onclick="event.stopPropagation(); event.preventDefault();"></span>';
+        cols += '</th>';
       });
       shown.forEach(function(tenure) {
         var tone = tenure.key === '1Y' ? 'tone-1y text-emerald-800' : (tenure.key === '5Y' ? 'tone-5y text-amber-900' : '');
@@ -575,6 +616,7 @@
         filterAll[kind] = every || filterOptions[kind].length === 0;
         renderFilter(kind);
       });
+      renderFundSearch();
     }
 
     function toggleFilterPanel(kind) {
@@ -591,6 +633,8 @@
       ['category', 'amc', 'scheme'].forEach(function(kind) {
         document.getElementById('panel-' + kind).classList.add('hidden');
       });
+      var fundPanel = document.getElementById('fundSearchPanel');
+      if (fundPanel) fundPanel.classList.add('hidden');
       openPanel = null;
     }
 
@@ -625,6 +669,7 @@
       filterAll[kind] = checked;
       filterOptions[kind].forEach(function(item) { filterSelected[kind][item.value] = checked; });
       renderFilter(kind);
+      if (kind === 'scheme') renderFundSearch();
       applyFilters();
     }
 
@@ -632,7 +677,70 @@
       filterSelected[kind][value] = checked;
       filterAll[kind] = filterOptions[kind].every(function(item) { return filterSelected[kind][item.value]; });
       renderFilter(kind);
+      if (kind === 'scheme') renderFundSearch();
       applyFilters();
+    }
+
+    function openFundSearch() {
+      var panel = document.getElementById('fundSearchPanel');
+      if (!panel || !panel.classList.contains('hidden')) {
+        renderFundSearch();
+        return;
+      }
+      closeFilterPanels();
+      panel.classList.remove('hidden');
+      openPanel = 'fundSearch';
+      renderFundSearch();
+    }
+
+    function fundSearchPlaceholder() {
+      if (filterAll.scheme) return 'All funds';
+      var chosen = (filterOptions.scheme || []).filter(function(item) { return filterSelected.scheme[item.value]; });
+      if (!chosen.length) return 'No funds';
+      if (chosen.length === 1) return chosen[0].label.replace(/ \([^)]*\)$/, '');
+      return chosen.length + ' funds';
+    }
+
+    function renderFundSearch() {
+      var input = document.getElementById('fundSearch');
+      var panel = document.getElementById('fundSearchPanel');
+      if (!input || !panel) return;
+      if (!(input.value || '').trim()) input.placeholder = fundSearchPlaceholder();
+      if (panel.classList.contains('hidden')) return;
+      var query = (input.value || '').trim().toLowerCase();
+      var allOn = !!filterAll.scheme;
+      var noneOn = !allOn && (filterOptions.scheme || []).every(function(item) { return !filterSelected.scheme[item.value]; });
+      var html = '<div class="flex items-center gap-1 pb-1 mb-1 border-b border-slate-100">';
+      html += '<button type="button" class="fund-pick-btn' + (allOn ? ' is-on' : '') + '" onclick="setFilterAll(\'scheme\', true)">All</button>';
+      html += '<button type="button" class="fund-pick-btn' + (noneOn ? ' is-on' : '') + '" onclick="setFilterAll(\'scheme\', false)">None</button>';
+      html += '</div>';
+      var groups = {};
+      (filterOptions.scheme || []).forEach(function(item) {
+        var fund = null;
+        for (var i = 0; i < allFunds.length; i++) {
+          if (allFunds[i].code === item.value) { fund = allFunds[i]; break; }
+        }
+        var name = fund ? fund.name : item.label;
+        var category = fund ? (fund.category || 'Other') : 'Other';
+        var amc = fund ? (fund.amc || '') : '';
+        var hay = (name + ' ' + category + ' ' + amc + ' ' + item.value).toLowerCase();
+        if (query && hay.indexOf(query) === -1) return;
+        if (!groups[category]) groups[category] = [];
+        groups[category].push({ value: item.value, name: name });
+      });
+      var keys = Object.keys(groups).sort();
+      if (!keys.length) {
+        html += '<p class="px-1 py-2 text-slate-400">No funds match.</p>';
+      }
+      keys.forEach(function(category) {
+        html += '<div class="mt-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">' + esc(category) + '</div>';
+        groups[category].forEach(function(item) {
+          html += '<label class="pick-row' + (filterSelected.scheme[item.value] ? ' is-on' : '') + '">';
+          html += '<input type="checkbox" ' + (filterSelected.scheme[item.value] ? 'checked' : '') + ' onchange="setFilterItem(\'scheme\', \'' + esc(item.value) + '\', this.checked)">';
+          html += '<span>' + esc(item.name) + '</span></label>';
+        });
+      });
+      panel.innerHTML = html;
     }
 
     // Re-renders only. Both series are already on each fund. Also re-ranks Top 2 by the active 1Y value.
@@ -707,7 +815,7 @@
           passesFilter('amc', fund.amc) &&
           passesFilter('scheme', fund.code);
       });
-      if (top2FilterActive) {
+      if (top2FilterActive && filterAll.scheme) {
         var topCodes = getTop2Codes(filtered);
         filtered = filtered.filter(function(fund) { return topCodes[fund.code]; });
       }
@@ -793,7 +901,6 @@
         html += '<button type="button" class="move-btn move-down" title="Move down" onclick="moveRow(' + idx + ', \'down\', event)" ' + (idx === funds.length - 1 ? 'disabled' : '') + '>▼</button>';
         html += '</div></div></td>';
 
-        html += '<td class="freeze-code py-2.5 px-2 font-mono"><span class="code-pill">' + esc(fund.code) + '</span></td>';
         html += '<td class="freeze-name py-2.5 px-2 font-medium text-slate-900"><div class="truncate font-semibold text-slate-800" title="' + esc(fund.name) + '">' + esc(fund.name) + '</div><div class="text-[10px] text-slate-400 truncate">Inception ' + esc(fund.minNavDate || '-') + '</div></td>';
         html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.amc || 'N/A') + '">' + esc(fund.amc || 'N/A') + '</span></td>';
         html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.category) + '">' + esc(fund.category) + '</span></td>';
