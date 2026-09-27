@@ -27,7 +27,8 @@
       --color-boundary-border-mild: #c9d3db;
       --color-boundary-divider: #c9d3db;
       --shadow-sm: 0 1px 2px rgba(18, 51, 76, 0.06), 0 1px 3px rgba(18, 51, 76, 0.08);
-      --row-hover: #f6f7f8;
+      --row-hover: #f3f6f8;
+      --zebra: #fbfcfd;
     }
     html.dark {
       --color-text-brand: #4c91ff;
@@ -48,6 +49,8 @@
       --color-boundary-divider: #303c46;
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
       --row-hover: #272727;
+      --zebra: #141414;
+      color-scheme: dark;
     }
     body {
       font-family: Inter, sans-serif;
@@ -96,7 +99,34 @@
       line-height: 16px;
       letter-spacing: 0.01em;
     }
-    .heatmap-cell { border: 0 !important; transition: transform 0.15s ease-in-out; }
+    .heatmap-cell { display: inline-block; padding: 2px 5px; border-radius: 6px; border: 0 !important; text-align: center; }
+    .heatmap-cell:hover { box-shadow: 0 0 0 1px rgba(18, 51, 76, 0.16); }
+    html.dark .heatmap-cell:hover { box-shadow: 0 0 0 1px rgba(201, 211, 219, 0.35); }
+    .num-display { font-family: "IBM Plex Sans", Inter, sans-serif !important; font-variant-numeric: tabular-nums lining-nums; letter-spacing: -0.03em; }
+    .field-label { display: block; margin-bottom: 4px; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--color-text-secondary); }
+    .brand-mark { width: 28px; height: 28px; margin-top: 1px; border-radius: 8px; background: var(--color-fill-brand); box-shadow: inset 0 -7px 0 rgba(0, 0, 0, 0.14); flex-shrink: 0; }
+    .live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--color-fill-brand) 12%, var(--color-fill-surface)); color: var(--color-text-brand); font-size: 12px; font-weight: 600; }
+    .live-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-semantic-success); }
+    .kpi-card { position: relative; overflow: hidden; }
+    .kpi-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--color-fill-brand); }
+    .kpi-card.kpi-good::before { background: var(--color-text-semantic-success); }
+    input:focus, select:focus { outline: none; border-color: var(--color-fill-brand) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-fill-brand) 22%, transparent) !important; }
+    input[type="checkbox"] { accent-color: var(--color-fill-brand); width: 14px; height: 14px; flex-shrink: 0; }
+    .seg { display: inline-flex; align-items: center; padding: 2px; border-radius: 8px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); }
+    .seg button { min-height: 0; height: 28px; border: 0; border-radius: 6px; padding: 0 10px; background: transparent; color: var(--color-text-secondary); font-weight: 600; }
+    .seg button.is-on { background: var(--color-fill-brand); color: var(--color-text-on-brand); }
+    .meta-pill, .code-pill { display: inline-block; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; padding: 1px 8px; border-radius: 99px; background: var(--color-fill-container); color: var(--color-text-secondary); font-weight: 500; }
+    .code-pill { max-width: none; border-radius: 6px; font-weight: 500; }
+    .summary-row { display: grid; grid-template-columns: 7.25rem 1fr; gap: 4px 12px; padding: 8px 0; border-top: 1px solid var(--color-boundary-border-mildest); }
+    .summary-row:first-child { border-top: 0; padding-top: 0; }
+    .summary-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
+    .pick-row { display: flex; align-items: flex-start; gap: 8px; padding: 4px 6px; border-radius: 6px; }
+    .pick-row.is-on { background: color-mix(in srgb, var(--color-fill-brand) 10%, transparent); }
+    .pick-row:hover { background: var(--row-hover); }
+    .load-mark { width: 22px; height: 22px; margin: 0 auto 8px; border-radius: 50%; border: 2px solid var(--color-boundary-border-mild); border-top-color: var(--color-fill-brand); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .matrix-scroll::-webkit-scrollbar, .filter-panel::-webkit-scrollbar, #comparePicker::-webkit-scrollbar { width: 8px; height: 8px; }
+    .matrix-scroll::-webkit-scrollbar-thumb, .filter-panel::-webkit-scrollbar-thumb, #comparePicker::-webkit-scrollbar-thumb { background: var(--color-boundary-border-mild); border-radius: 99px; }
     .compare-card { border: 1px solid var(--color-boundary-border-mildest); border-radius: 12px; background: var(--color-fill-surface); box-shadow: var(--shadow-sm); overflow: hidden; }
     .compare-card-title { padding: 8px 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-secondary); background: var(--color-fill-container); border-bottom: 1px solid var(--color-boundary-border-mildest); }
     .compare-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; line-height: 16px; }
@@ -105,20 +135,20 @@
     .compare-table th.num-right { text-align: right; }
     .compare-table th.num-center { text-align: center; }
     .compare-table tbody tr:last-child td { border-bottom: 0; }
-    .compare-table tbody tr:hover td.cmp-text { background: var(--row-hover); }
+    .compare-table tbody tr:nth-child(even) td { background: var(--zebra); }
+    .compare-table tbody tr:hover td { background: var(--row-hover); }
     .cmp-rank { width: 1.6rem; text-align: center; color: var(--color-text-placeholder); font-variant-numeric: tabular-nums; }
     .cmp-name { max-width: 11rem; font-weight: 600; color: var(--color-text-primary); }
     .cmp-name div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cmp-cat { display: inline-block; max-width: 6.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 6px; border-radius: 99px; background: var(--color-fill-base); color: var(--color-text-secondary); }
+    .cmp-cat { display: inline-block; max-width: 6.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 6px; border-radius: 99px; background: var(--color-fill-container); color: var(--color-text-secondary); }
     .compare-best td.cmp-rank { box-shadow: inset 2px 0 0 var(--color-fill-brand); color: var(--color-text-brand); font-weight: 600; }
-    .cmp-tag { display: inline-block; margin-top: 2px; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--color-text-brand); }
-    .heatmap-cell:hover { transform: scale(1.08); z-index: 10; }
+    .cmp-tag { display: inline-block; margin: 3px 4px 0 0; padding: 0 6px; border-radius: 99px; background: color-mix(in srgb, var(--color-fill-brand) 12%, var(--color-fill-surface)); font-size: 12px; font-weight: 600; line-height: 16px; color: var(--color-text-brand); }
     .filter-panel { max-height: 240px; }
     /* Header sticks on vertical scroll. #, Code, and Fund Name stick on horizontal scroll. */
     .matrix-scroll { max-height: calc(100vh - 11rem); overflow: auto; }
     .matrix-scroll table { border-collapse: separate; border-spacing: 0; }
     .matrix-scroll th, .matrix-scroll td { border-bottom: 1px solid var(--color-boundary-divider); }
-    .matrix-scroll thead th { position: sticky; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 12px; font-weight: 600; }
+    .matrix-scroll thead th { position: sticky; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 12px; font-weight: 600; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
     .matrix-scroll thead tr:first-child th { top: 0; }
     .matrix-scroll thead tr:nth-child(2) th { top: 2.05rem; }
     .matrix-scroll thead th.tone-short, .matrix-scroll thead th.tone-1y { background: var(--color-fill-semantic-success-mildest); color: var(--color-text-semantic-success); }
@@ -129,16 +159,15 @@
     .matrix-scroll thead .freeze-move,
     .matrix-scroll thead .freeze-code,
     .matrix-scroll thead .freeze-name { z-index: 5; }
+    .matrix-scroll tbody td { background: var(--color-fill-surface); }
+    .matrix-scroll tbody tr:nth-child(even) td { background: var(--zebra); }
+    .matrix-scroll tbody tr:hover td { background: var(--row-hover); }
     .matrix-scroll tbody .freeze-move,
     .matrix-scroll tbody .freeze-code,
-    .matrix-scroll tbody .freeze-name { z-index: 2; background: var(--color-fill-surface); }
-    .matrix-scroll tbody tr:hover .freeze-move,
-    .matrix-scroll tbody tr:hover .freeze-code,
-    .matrix-scroll tbody tr:hover .freeze-name,
-    tbody tr:hover { background: var(--row-hover); }
-    .theme-switch { font-size: 12px; line-height: 16px; color: var(--color-text-placeholder); }
-    .theme-switch button.is-active { color: var(--color-text-brand, #003fd2); font-weight: 600; }
-    html.dark .theme-switch button.is-active { color: #4c91ff; }
+    .matrix-scroll tbody .freeze-name { z-index: 2; }
+    .theme-switch { display: flex; gap: 2px; padding: 2px; border-radius: 99px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); box-shadow: var(--shadow-sm); }
+    .theme-switch button { min-height: 0; height: 22px; padding: 0 8px; border: 0; border-radius: 99px; background: transparent; color: var(--color-text-placeholder); font-size: 11px; line-height: 16px; }
+    .theme-switch button.is-active { background: var(--color-fill-brand); color: var(--color-text-on-brand); font-weight: 600; }
     .compare-winner { background: var(--color-fill-semantic-success-mildest); }
     html, body { max-width: 100%; overflow-x: hidden; }
     main, header, #panelMatrix, #panelCompare { min-width: 0; max-width: 100%; }
@@ -160,6 +189,7 @@
       .freeze-move, .freeze-code { left: auto; width: auto; min-width: 0; box-shadow: none; }
       .freeze-name { left: 0; width: 42vw; min-width: 9.5rem; max-width: 12rem; }
       .page-header-row { align-items: stretch; }
+      .summary-row { grid-template-columns: 1fr; gap: 2px; }
       .theme-switch { left: max(12px, env(safe-area-inset-left)); bottom: max(6px, env(safe-area-inset-bottom)); }
     }
   </style>
@@ -177,16 +207,15 @@
 
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="page-header-row max-w-[1600px] mx-auto px-3 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div class="min-w-0">
-        <div class="flex flex-wrap items-center gap-2">
-          <h1 class="text-xl font-bold text-slate-900 tracking-tight">Mutual Fund Valuation & Return Matrix</h1>
-          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            Live Matrix (5D – 12Y)
-          </span>
+      <div class="flex items-start gap-3 min-w-0">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-xl font-bold text-slate-900 tracking-tight">Mutual Fund Matrix</h1>
+            <span class="live-pill">5D – 12Y</span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">Tenure returns look back from Sale Date. Custom Range uses From Date to To Date.</p>
         </div>
-        <p class="text-xs text-slate-500 font-medium">
-          Tenure XIRR and trailing CAGR look back from Sale Date. Custom Range uses From Date to To Date.
-        </p>
       </div>
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
         <select id="viewSelect" onchange="setTab(this.value)" aria-label="Choose view" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full sm:w-44">
@@ -204,24 +233,24 @@
   <main class="max-w-[1600px] mx-auto px-3 sm:px-6 py-4 sm:py-5 flex-1 w-full space-y-4">
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="kpi-card bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Tracked Schemes</span>
-        <p id="kpiTotalFunds" class="text-2xl font-bold text-slate-900 mt-1">-</p>
-        <span class="text-[11px] text-slate-400">Total schemes in database</span>
+        <p id="kpiTotalFunds" class="num-display text-2xl font-bold text-slate-900 mt-1">-</p>
+        <span class="text-[11px] text-slate-400">Schemes in this book</span>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="kpi-card kpi-good bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Average Absolute Return</span>
-        <p id="kpiAvgReturn" class="text-2xl font-bold text-emerald-600 mt-1">-</p>
-        <span class="text-[11px] text-slate-400">Custom range, From Date to To Date</span>
+        <p id="kpiAvgReturn" class="num-display text-2xl font-bold text-emerald-600 mt-1">-</p>
+        <span class="text-[11px] text-slate-400">Custom range, From to To</span>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="kpi-card bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Top Outperformer</span>
         <p id="kpiBestFund" class="text-sm font-bold text-slate-900 truncate mt-1">-</p>
-        <span id="kpiBestReturn" class="text-xs font-semibold text-emerald-600">-</span>
+        <span id="kpiBestReturn" class="num-display text-xs font-semibold text-emerald-600">-</span>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="kpi-card bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Monthly SIP</span>
-        <p id="kpiSipAmount" class="text-2xl font-bold text-slate-900 mt-1">₹1,000</p>
+        <p id="kpiSipAmount" class="num-display text-2xl font-bold text-slate-900 mt-1">₹1,000</p>
         <span id="kpiSipDesc" class="text-[11px] text-slate-400">Debited every 5th of month</span>
       </div>
     </div>
@@ -229,11 +258,11 @@
     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 text-xs">
         <div>
-          <label class="font-bold text-slate-600 block mb-1">Monthly SIP (₹)</label>
+          <label class="field-label">Monthly SIP (₹)</label>
           <input type="number" id="inputSipAmount" value="1000" step="500" min="100" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
-          <label class="font-bold text-slate-600 block mb-1">SIP Day of Month</label>
+          <label class="field-label">SIP Day of Month</label>
           <select id="inputSipDay" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
             <option value="1">1st of month</option>
             <option value="2">2nd of month</option>
@@ -245,29 +274,29 @@
           </select>
         </div>
         <div>
-          <label class="font-bold text-slate-600 block mb-1">From Date</label>
+          <label class="field-label">From Date</label>
           <input type="date" id="inputFromDate" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
-          <label class="font-bold text-slate-600 block mb-1">To Date</label>
+          <label class="field-label">To Date</label>
           <input type="date" id="inputToDate" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
-          <label class="font-bold text-slate-600 block mb-1">Sale Date</label>
+          <label class="field-label">Sale Date</label>
           <input type="date" id="inputSaleDate" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div class="relative" id="wrap-category">
-          <label class="font-bold text-slate-600 block mb-1">Category Filter</label>
+          <label class="field-label">Category Filter</label>
           <button type="button" id="btn-category" onclick="toggleFilterPanel('category')" class="w-full text-left bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold truncate">All Categories</button>
           <div id="panel-category" class="hidden filter-panel overflow-y-auto absolute z-40 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg p-2"></div>
         </div>
         <div class="relative" id="wrap-amc">
-          <label class="font-bold text-slate-600 block mb-1">AMC Filter</label>
+          <label class="field-label">AMC Filter</label>
           <button type="button" id="btn-amc" onclick="toggleFilterPanel('amc')" class="w-full text-left bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold truncate">All AMCs</button>
           <div id="panel-amc" class="hidden filter-panel overflow-y-auto absolute z-40 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg p-2"></div>
         </div>
         <div class="relative" id="wrap-scheme">
-          <label class="font-bold text-slate-600 block mb-1">Scheme Filter</label>
+          <label class="field-label">Scheme Filter</label>
           <button type="button" id="btn-scheme" onclick="toggleFilterPanel('scheme')" class="w-full text-left bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold truncate">All Schemes</button>
           <div id="panel-scheme" class="hidden filter-panel overflow-y-auto absolute z-40 mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-lg p-2"></div>
         </div>
@@ -281,9 +310,9 @@
           <span>Top 2 / Cat (1Y)</span>
           <span id="top2Badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-700 text-white">Active</span>
         </button>
-        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white">
-          <button id="metricXirrBtn" onclick="setMetricMode('xirr')" class="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 text-white transition-colors">SIP XIRR</button>
-          <button id="metricCagrBtn" onclick="setMetricMode('cagr')" class="px-2.5 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors">Trailing CAGR</button>
+        <div class="seg">
+          <button id="metricXirrBtn" onclick="setMetricMode('xirr')" class="is-on">SIP XIRR</button>
+          <button id="metricCagrBtn" onclick="setMetricMode('cagr')">Trailing CAGR</button>
         </div>
       </div>
       <div id="heatLegend" class="flex items-center flex-wrap gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-[10px] self-start lg:self-center"></div>
@@ -295,7 +324,7 @@
           <thead id="matrixTableHead" class="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px] tracking-wider select-none"></thead>
           <tbody id="matrixTableBody" class="divide-y divide-slate-100 font-normal">
             <tr>
-              <td id="loadingCell" class="py-12 text-center text-slate-400 font-medium">Loading valuation matrix...</td>
+              <td id="loadingCell" class="py-16 text-center text-slate-400 font-medium"><div class="load-mark"></div>Loading valuation matrix</td>
             </tr>
           </tbody>
         </table>
@@ -313,6 +342,7 @@
           <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
             <input type="checkbox" id="compareWithin" onchange="renderComparator()">
             Compare within category
+            <span id="compareCount" class="font-medium text-slate-400">None selected</span>
           </label>
           <input type="text" id="compareSearch" oninput="renderComparePicker()" placeholder="Search funds to add..." class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
@@ -326,6 +356,7 @@
 
   <script>
     // Keep TENURES in the same order as TENURE_CONFIG in code.gs, including 7Y.
+    // SIP XIRR hides 5D and 15D. Those windows do not hold a monthly SIP. Trailing CAGR still shows them.
     // Tenure cells switch between tenureXirr and tenureCagr. They look back from Sale Date.
     // customRangeXirr, sipCorpus, netProfit, and absoluteReturn stay on From Date to To Date
     // and do not follow the SIP XIRR / Trailing CAGR switch.
@@ -402,8 +433,13 @@
       }
     });
 
+    function visibleTenures() {
+      if (activeMetric !== 'xirr') return TENURES;
+      return TENURES.filter(function(tenure) { return tenure.key !== '5D' && tenure.key !== '15D'; });
+    }
+
     function columnCount() {
-      return 1 + FIXED_COLS.length + TENURES.length;
+      return 1 + FIXED_COLS.length + visibleTenures().length;
     }
 
     function isoDate(dateObj) {
@@ -446,8 +482,9 @@
     }
 
     function renderHeader() {
-      var shortCount = TENURES.filter(function(t) { return t.group === 'short'; }).length;
-      var longCount = TENURES.length - shortCount;
+      var shown = visibleTenures();
+      var shortCount = shown.filter(function(t) { return t.group === 'short'; }).length;
+      var longCount = shown.length - shortCount;
       var customCount = FIXED_COLS.length - 2;
       var group = '<tr>';
       group += '<th colspan="3" class="freeze-move py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Scheme</th>';
@@ -464,7 +501,7 @@
         cols += '<th onclick="handleSort(\'' + col.key + '\')" class="' + freeze + 'py-3 px-2 cursor-pointer hover:bg-slate-200/70 ' + align + '">';
         cols += '<div class="inline-flex items-center space-x-1 ' + (col.numeric ? 'justify-end' : '') + '"><span>' + col.label + '</span><span id="sortIcon-' + col.key + '" class="text-slate-400">⇅</span></div></th>';
       });
-      TENURES.forEach(function(tenure) {
+      shown.forEach(function(tenure) {
         var tone = tenure.key === '1Y' ? 'tone-1y text-emerald-800' : (tenure.key === '5Y' ? 'tone-5y text-amber-900' : '');
         cols += '<th onclick="handleSort(\'' + tenure.key + '\')" class="py-2 px-1 text-center min-w-[46px] cursor-pointer hover:bg-slate-200/70 ' + tone + '">';
         cols += '<div class="inline-flex items-center justify-center space-x-0.5"><span>' + tenure.key + '</span><span id="sortIcon-' + tenure.key + '" class="text-[10px] text-slate-400">⇅</span></div></th>';
@@ -475,15 +512,14 @@
     }
 
     function renderLegend() {
-      var label = activeMetric === 'xirr' ? 'SIP XIRR heat' : 'Trailing CAGR heat';
-      document.getElementById('heatLegend').innerHTML =
-        '<span class="font-bold text-slate-500 mr-1">' + label + ':</span>' +
-        '<span class="px-1.5 py-0.5 rounded font-bold text-white bg-rose-600">&lt; -15%</span>' +
-        '<span class="px-1.5 py-0.5 rounded font-bold text-rose-900 bg-rose-100">-5%</span>' +
-        '<span class="px-1.5 py-0.5 rounded font-medium text-slate-500 bg-slate-100">0%</span>' +
-        '<span class="px-1.5 py-0.5 rounded font-bold text-emerald-800 bg-emerald-100">+5%</span>' +
-        '<span class="px-1.5 py-0.5 rounded font-bold text-white bg-emerald-500">+15%</span>' +
-        '<span class="px-1.5 py-0.5 rounded font-bold text-white bg-emerald-700">&gt; +25%</span>';
+      var label = activeMetric === 'xirr' ? 'SIP XIRR, annualized' : 'Trailing CAGR';
+      var samples = [['&lt; −15%', -0.2], ['−5%', -0.05], ['0%', 0], ['+5%', 0.05], ['+15%', 0.16], ['&gt; +25%', 0.3]];
+      var html = '<span class="font-semibold text-slate-500 mr-1">' + label + '</span>';
+      samples.forEach(function(sample) {
+        var style = getHeatmapStyle(sample[1], 'standard');
+        html += '<span class="heatmap-cell" style="background-color:' + style.bg + ';color:' + style.text + '">' + sample[0] + '</span>';
+      });
+      document.getElementById('heatLegend').innerHTML = html;
     }
 
     function loadMatrixData() {
@@ -604,13 +640,13 @@
       activeMetric = mode;
       var xBtn = document.getElementById('metricXirrBtn');
       var cBtn = document.getElementById('metricCagrBtn');
-      if (mode === 'xirr') {
-        xBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 text-white transition-colors';
-        cBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors';
-      } else {
-        cBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 text-white transition-colors';
-        xBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors';
+      xBtn.classList.toggle('is-on', mode === 'xirr');
+      cBtn.classList.toggle('is-on', mode !== 'xirr');
+      if (mode === 'xirr' && (currentSortField === '5D' || currentSortField === '15D')) {
+        currentSortField = '1Y';
+        currentSortAsc = false;
       }
+      renderHeader();
       renderLegend();
       applyFilters();
       renderComparator();
@@ -757,10 +793,10 @@
         html += '<button type="button" class="move-btn move-down" title="Move down" onclick="moveRow(' + idx + ', \'down\', event)" ' + (idx === funds.length - 1 ? 'disabled' : '') + '>▼</button>';
         html += '</div></div></td>';
 
-        html += '<td class="freeze-code py-2.5 px-2 font-mono text-[11px] font-semibold text-slate-700"><span class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">' + esc(fund.code) + '</span></td>';
-        html += '<td class="freeze-name py-2.5 px-2 font-medium text-slate-900"><div class="truncate font-semibold text-slate-800" title="' + esc(fund.name) + '">' + esc(fund.name) + '</div><div class="text-[10px] text-slate-400 truncate">Inception: ' + esc(fund.minNavDate || '-') + '</div></td>';
-        html += '<td class="py-2.5 px-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-semibold border border-slate-200">' + esc(fund.amc || 'N/A') + '</span></td>';
-        html += '<td class="py-2.5 px-3"><span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">' + esc(fund.category) + '</span></td>';
+        html += '<td class="freeze-code py-2.5 px-2 font-mono"><span class="code-pill">' + esc(fund.code) + '</span></td>';
+        html += '<td class="freeze-name py-2.5 px-2 font-medium text-slate-900"><div class="truncate font-semibold text-slate-800" title="' + esc(fund.name) + '">' + esc(fund.name) + '</div><div class="text-[10px] text-slate-400 truncate">Inception ' + esc(fund.minNavDate || '-') + '</div></td>';
+        html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.amc || 'N/A') + '">' + esc(fund.amc || 'N/A') + '</span></td>';
+        html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.category) + '">' + esc(fund.category) + '</span></td>';
         html += moneyCell(fund.navStart, false);
         html += moneyCell(fund.navEnd, true);
         html += '<td class="py-2.5 px-2 text-right font-mono text-emerald-700 font-bold">' + formatUnits(fund.units) + '</td>';
@@ -771,7 +807,7 @@
         html += moneyCell(fund.saleNav, true);
         html += heatRateCell(fund.customRangeXirr, 'standard');
 
-        TENURES.forEach(function(tenure) {
+        visibleTenures().forEach(function(tenure) {
           var series = activeSeries(fund);
           var value = series ? series[tenure.key] : null;
           html += heatRateCell(value, heatScale(tenure));
@@ -872,12 +908,18 @@
       Object.keys(groups).sort().forEach(function(category) {
         html += '<div class="mt-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">' + esc(category) + '</div>';
         groups[category].forEach(function(fund) {
-          html += '<label class="flex items-start gap-2 px-1 py-1 hover:bg-slate-50 rounded">';
-          html += '<input type="checkbox" ' + (compareSelected[fund.code] ? 'checked' : '') + ' onchange="setCompareFund(\'' + esc(fund.code) + '\', this.checked)">';
+          var on = !!compareSelected[fund.code];
+          html += '<label class="pick-row' + (on ? ' is-on' : '') + '">';
+          html += '<input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="setCompareFund(\'' + esc(fund.code) + '\', this.checked)">';
           html += '<span>' + esc(fund.name) + ' <span class="text-slate-400">' + esc(fund.code) + '</span></span></label>';
         });
       });
       box.innerHTML = html || '<p class="text-slate-400 px-1 py-2">No funds loaded yet.</p>';
+      var countEl = document.getElementById('compareCount');
+      if (countEl) {
+        var n = Object.keys(compareSelected).length;
+        countEl.textContent = n ? n + ' selected' : 'None selected';
+      }
     }
 
     function setCompareFund(code, checked) {
@@ -910,10 +952,10 @@
       var within = document.getElementById('compareWithin').checked;
       var bookBest = pickMaxBenefit(allFunds);
       if (selected.length < 2) {
-        summary.innerHTML = '<p>Select at least two funds. Max benefit uses Custom Range XIRR from ' +
+        summary.innerHTML = summaryLine('Start', 'Select at least two funds. Max benefit uses Custom Range XIRR from ' +
           esc(formatLongDate(document.getElementById('inputFromDate').value)) + ' to ' +
-          esc(formatLongDate(document.getElementById('inputToDate').value)) + '.</p>' +
-          overallLine(bookBest);
+          esc(formatLongDate(document.getElementById('inputToDate').value)) + '.') +
+          summaryLine('Overall', overallLine(bookBest));
         results.innerHTML = '';
         return;
       }
@@ -927,15 +969,14 @@
           categoryLeaders[category] = pickMaxBenefit(fundsInCategory(category));
         });
       }
-      var html = '<p class="text-sm font-semibold text-slate-800 mb-2">Summary</p>';
-      html += '<p>' + benefitSentence('Best of your selection', selectedBest, selected.length) + '</p>';
+      var html = summaryLine('Selection', benefitSentence('Best of your selection', selectedBest, selected.length));
       if (within) {
         Object.keys(categoryLeaders).sort().forEach(function(category) {
           var pool = fundsInCategory(category);
-          html += '<p class="mt-1">' + benefitSentence('Leads ' + category, categoryLeaders[category], pool.length) + '</p>';
+          html += summaryLine('Category', benefitSentence('Leads ' + category, categoryLeaders[category], pool.length));
         });
       }
-      html += overallLine(bookBest);
+      html += summaryLine('Overall', overallLine(bookBest));
       summary.innerHTML = html;
 
       var blocks = within ? groupByCategory(selected) : { 'Selected funds': selected };
@@ -1036,6 +1077,10 @@
       return '<span class="heatmap-cell inline-block align-middle px-1.5 py-0.5 rounded border" style="background-color:' + style.bg + ';color:' + style.text + ';border-color:' + style.border + '">' + formatPct(value) + '</span>';
     }
 
+    function summaryLine(label, html) {
+      return '<div class="summary-row"><div class="summary-kicker">' + esc(label) + '</div><div>' + html + '</div></div>';
+    }
+
     function benefitSentence(label, fund, count) {
       if (!fund) return esc(label) + ': no fund in this set has a Custom Range XIRR yet.';
       return esc(label) + ' (' + count + ' fund' + (count === 1 ? '' : 's') + '): <span class="font-semibold text-slate-800">' + esc(fund.name) + '</span> leads with ' +
@@ -1043,14 +1088,15 @@
     }
 
     function overallLine(fund) {
-      if (!fund) return '<p class="mt-2">Overall max benefit is not available until NAV history covers the custom range.</p>';
-      return '<p class="mt-2">Overall, across every tracked scheme, <span class="font-semibold text-slate-800">' + esc(fund.name) + '</span> (' + esc(fund.category) + ') has the highest benefit at ' +
-        rateChip(fund.customRangeXirr, 'standard') + ' XIRR and net profit ' + formatInr(fund.netProfit) + '.</p>';
+      if (!fund) return 'Overall max benefit is not available until NAV history covers the custom range.';
+      return 'Across every tracked scheme, <span class="font-semibold text-slate-800">' + esc(fund.name) + '</span> (' + esc(fund.category) + ') has the highest benefit at ' +
+        rateChip(fund.customRangeXirr, 'standard') + ' XIRR and net profit ' + formatInr(fund.netProfit) + '.';
     }
 
     function getHeatmapStyle(ratio, scale) {
       if (ratio === null || ratio === undefined || isNaN(ratio)) {
-        return { bg: '#f8fafc', text: '#94a3b8', border: '#e2e8f0' };
+        var dark = document.documentElement.classList.contains('dark');
+        return dark ? { bg: '#272727', text: '#6f8396', border: 'transparent' } : { bg: '#f6f7f8', text: '#8e9dac', border: 'transparent' };
       }
       var bands = scale === 'wide'
         ? [1.5, 0.8, 0.4, 0.15, 0.05]
@@ -1084,12 +1130,10 @@
       }
     }
   </script>
-  <div id="themeSwitch" class="theme-switch fixed bottom-1.5 left-3 z-40 text-[10px] text-slate-400">
-    <button type="button" data-theme="light" onclick="applyTheme('light')" class="hover:text-slate-700">Light</button>
-    <span class="px-1">/</span>
-    <button type="button" data-theme="dark" onclick="applyTheme('dark')" class="hover:text-slate-700">Dark</button>
-    <span class="px-1">/</span>
-    <button type="button" data-theme="system" onclick="applyTheme('system')" class="hover:text-slate-700">System</button>
+  <div id="themeSwitch" class="theme-switch fixed bottom-1.5 left-3 z-40">
+    <button type="button" data-theme="light" onclick="applyTheme('light')">Light</button>
+    <button type="button" data-theme="dark" onclick="applyTheme('dark')">Dark</button>
+    <button type="button" data-theme="system" onclick="applyTheme('system')">System</button>
   </div>
 </body>
 </html>

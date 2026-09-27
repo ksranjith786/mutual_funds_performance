@@ -10,14 +10,14 @@ One HtmlService page. Tailwind CDN, Inter, Dew 2.0 type scale (12 / 14 / 18 / 24
 
 ## Chrome
 - View dropdown in the header, immediately before **Refresh Data**: `matrix` (Return Matrix) or `compare` (Fund Comparator).
-- Theme control fixed bottom left: Light / Dark / System, stored as `mf-matrix-theme`. `html.dark` swaps Dew tokens.
+- Theme control fixed bottom left: Light / Dark / System, stored as `mf-matrix-theme`. `html.dark` swaps Dew tokens. Empty heat cells follow the active theme.
 - Page must fit desktop and phone. `overflow-x: hidden` on the page. Below 768px, KPI cards are 2×2, the matrix scrolls inside `.matrix-scroll`, only Fund Name stays frozen, and the group header row is hidden.
 
 ## Return Matrix
 `allFunds`, `currentDisplayFunds`, `top2FilterActive` (default true), `activeMetric` (`xirr` | `cagr`), sort default `1Y` descending.
 Changing SIP amount, SIP day, or dates calls `getFundMatrixData`. Filters, Top 2, sort, and the metric switch stay in the browser.
 - Category, AMC, and Scheme are checkbox lists with Select All. Select All applies no restriction. The three lists intersect. Top 2 then keeps two schemes per remaining category by the active 1Y series.
-- Tenures, in order: `5D` `15D` `1M` `3M` `6M` `9M` `1Y` `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`. Groups are Short and Long. Keep columns compact.
+- Tenures, in order: `5D` `15D` `1M` `3M` `6M` `9M` `1Y` `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`. Groups are Short and Long. Keep columns compact. SIP XIRR hides `5D` and `15D`. Trailing CAGR still shows them.
 - The SIP XIRR / Trailing CAGR switch re-renders tenure cells only. Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return do not follow it.
 - Every metric column has a sort icon. Nulls sort last.
 - Desktop freeze: `#`, Code, Fund Name. Move up is green, move down is red, 1px apart, and exempt from the 32px button height. Up/down reorders the current view only.

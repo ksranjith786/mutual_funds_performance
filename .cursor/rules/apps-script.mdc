@@ -21,6 +21,6 @@ Custom range: one SIP on `sipDay` each month from From through To, redeemed at t
 
 ## Tenures (`TENURE_CONFIG`)
 Calendar lookbacks from Sale Date, not fixed day counts. Short: `5D` `15D` `1M` `3M` `6M` `9M` `1Y`. Long: `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`. `7Y` is intentional.
-`tenureXirr` is an annualized Newton XIRR on a 365.25-day year. It is `null` when the fund has no NAV on or before the window start, or when the window has no SIP date (typical for 5D and 15D). Do not relabel a shorter history as a full tenure.
+`tenureXirr` is an annualized Newton XIRR on a 365.25-day year, including 1M–9M. That is why those cells read higher than the period's price change. It is `null` when the fund has no NAV on or before the window start, or when the window has no SIP date. `5D` and `15D` are always null for XIRR. Do not relabel a shorter history as a full tenure.
 `tenureCagr` is the point-to-point NAV change. Under 1Y it is absolute. From 1Y it is annualized with 365.25. It can be present when XIRR is null.
 Keep this order identical to the client `TENURES` array.

@@ -11,6 +11,7 @@
  * - Keep TENURE_CONFIG in this order, including 7Y. The same keys and order live in index.html TENURES.
  * - A tenure is null when the scheme has no NAV on or before the window start.
  *   Do not relabel a shorter history as 12Y. SIP XIRR is also null when the window contains no SIP date.
+ * - 5D and 15D have no tenure XIRR. A monthly SIP does not fit those windows. Trailing CAGR still uses them.
  */
 
 function onOpen() {
@@ -65,7 +66,8 @@ function include(filename) {
 }
 
 // Calendar offsets back from Sale Date. annualized applies to trailing CAGR only.
-// SIP XIRR is always an annualized rate. 1Y is grouped with the short columns and is still annualized.
+// SIP XIRR is always an annualized yearly rate, so 1M–9M read higher than the period's price change.
+// 5D and 15D are CAGR only. Do not fill tenureXirr for those keys.
 // 7Y is intentional. Do not put 8Y back.
 var TENURE_CONFIG = [
   { key: '5D', label: '5D', unit: 'day', n: 5, annualized: false, group: 'short' },
@@ -170,7 +172,7 @@ function getFundMatrixData(params) {
         continue;
       }
       var sip = buildSip(series, sipAmount, sipDay, windowStart, saleDate);
-      tenureXirr[tenure.key] = sip.xirr;
+      tenureXirr[tenure.key] = (tenure.key === '5D' || tenure.key === '15D') ? null : sip.xirr;
       tenureCagr[tenure.key] = trailingCagr(series, windowStart, saleDate, tenure.annualized);
     }
 
@@ -290,7 +292,7 @@ function lookupNav(series, dateObj) {
 /**
  * Monthly SIP from startDate through endDate, redeemed at the endDate NAV.
  * Cash flows are negative installments plus one positive corpus.
- * Returns xirr null when no installment falls in the window. That is expected for 5D and 15D.
+ * Returns xirr null when no installment falls in the window.
  */
 function buildSip(series, sipAmount, sipDay, startDate, endDate) {
   var empty = { units: 0, invested: 0, corpus: null, profit: null, absoluteReturn: null, xirr: null };
