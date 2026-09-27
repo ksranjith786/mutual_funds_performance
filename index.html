@@ -11,9 +11,73 @@
     .heatmap-cell { transition: transform 0.15s ease-in-out; }
     .heatmap-cell:hover { transform: scale(1.08); z-index: 10; }
     .filter-panel { max-height: 240px; }
+    /* Header sticks on vertical scroll. #, Code, and Fund Name stick on horizontal scroll. */
+    .matrix-scroll { max-height: calc(100vh - 11rem); overflow: auto; }
+    .matrix-scroll table { border-collapse: separate; border-spacing: 0; }
+    .matrix-scroll th, .matrix-scroll td { border-bottom: 1px solid #f1f5f9; }
+    .matrix-scroll thead th { position: sticky; z-index: 3; background: #f1f5f9; }
+    .matrix-scroll thead tr:first-child th { top: 0; }
+    .matrix-scroll thead tr:nth-child(2) th { top: 2.05rem; }
+    .matrix-scroll thead th.tone-short { background: #ecfdf5; }
+    .matrix-scroll thead th.tone-long { background: #fffbeb; }
+    .matrix-scroll thead th.tone-1y { background: #ecfdf5; }
+    .matrix-scroll thead th.tone-5y { background: #fffbeb; }
+    .freeze-move { position: sticky; left: 0; min-width: 4.25rem; width: 4.25rem; }
+    .freeze-code { position: sticky; left: 4.25rem; min-width: 5.75rem; width: 5.75rem; }
+    .freeze-name { position: sticky; left: 10rem; min-width: 13.5rem; width: 13.5rem; box-shadow: 2px 0 0 #e2e8f0; }
+    .matrix-scroll thead .freeze-move,
+    .matrix-scroll thead .freeze-code,
+    .matrix-scroll thead .freeze-name { z-index: 5; }
+    .matrix-scroll tbody .freeze-move,
+    .matrix-scroll tbody .freeze-code,
+    .matrix-scroll tbody .freeze-name { z-index: 2; background: #fff; }
+    .matrix-scroll tbody tr:hover .freeze-move,
+    .matrix-scroll tbody tr:hover .freeze-code,
+    .matrix-scroll tbody tr:hover .freeze-name { background: #f8fafc; }
+    html.dark body { background: #0b1220; color: #e2e8f0; }
+    html.dark .bg-white { background-color: #1e293b; }
+    html.dark .bg-slate-50 { background-color: #0f172a; }
+    html.dark .bg-slate-100 { background-color: #334155; }
+    html.dark .text-slate-900 { color: #f8fafc; }
+    html.dark .text-slate-800,
+    html.dark .text-slate-700 { color: #e2e8f0; }
+    html.dark .text-slate-600,
+    html.dark .text-slate-500 { color: #94a3b8; }
+    html.dark .text-slate-400 { color: #64748b; }
+    html.dark .border-slate-200,
+    html.dark .border-slate-100 { border-color: #334155; }
+    html.dark input,
+    html.dark select { background-color: #0f172a; color: #e2e8f0; border-color: #334155; color-scheme: dark; }
+    html.dark .matrix-scroll th,
+    html.dark .matrix-scroll td { border-bottom-color: #334155; }
+    html.dark .matrix-scroll thead th { background: #1e293b; color: #cbd5e1; }
+    html.dark .matrix-scroll thead th.tone-short,
+    html.dark .matrix-scroll thead th.tone-1y { background: #064e3b; color: #a7f3d0; }
+    html.dark .matrix-scroll thead th.tone-long,
+    html.dark .matrix-scroll thead th.tone-5y { background: #451a03; color: #fde68a; }
+    html.dark .freeze-name { box-shadow: 2px 0 0 #334155; }
+    html.dark .matrix-scroll tbody .freeze-move,
+    html.dark .matrix-scroll tbody .freeze-code,
+    html.dark .matrix-scroll tbody .freeze-name { background: #1e293b; }
+    html.dark .matrix-scroll tbody tr:hover .freeze-move,
+    html.dark .matrix-scroll tbody tr:hover .freeze-code,
+    html.dark .matrix-scroll tbody tr:hover .freeze-name { background: #334155; }
+    html.dark tbody tr:hover { background-color: #243044; }
+    .theme-switch button.is-active { color: #047857; font-weight: 700; }
+    html.dark .theme-switch button.is-active { color: #6ee7b7; }
+    html.dark .theme-switch button:hover { color: #e2e8f0; }
   </style>
+  <script>
+    (function () {
+      var mode = 'system';
+      try { mode = localStorage.getItem('mf-matrix-theme') || 'system'; } catch (e) {}
+      var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.setAttribute('data-theme', mode);
+    })();
+  </script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-8">
 
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -123,8 +187,8 @@
     </div>
 
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-xs">
+      <div class="matrix-scroll">
+        <table class="w-full text-left text-xs">
           <thead id="matrixTableHead" class="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px] tracking-wider select-none"></thead>
           <tbody id="matrixTableBody" class="divide-y divide-slate-100 font-normal">
             <tr>
@@ -204,6 +268,7 @@
       renderHeader();
       renderLegend();
       document.getElementById('loadingCell').colSpan = columnCount();
+      applyTheme(document.documentElement.getAttribute('data-theme') || 'system');
       loadMatrixData();
     };
 
@@ -261,22 +326,24 @@
     function renderHeader() {
       var shortCount = TENURES.filter(function(t) { return t.group === 'short'; }).length;
       var longCount = TENURES.length - shortCount;
-      var lead = 1 + FIXED_COLS.length;
-      var group = '<tr class="bg-slate-100 border-b border-slate-200">';
-      group += '<th colspan="' + lead + '" class="py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Scheme and custom range</th>';
-      group += '<th colspan="' + shortCount + '" class="py-2 px-2 text-center text-emerald-800 bg-emerald-50">Short Term</th>';
-      group += '<th colspan="' + longCount + '" class="py-2 px-2 text-center text-amber-900 bg-amber-50">Long Term</th>';
+      var customCount = FIXED_COLS.length - 2;
+      var group = '<tr>';
+      group += '<th colspan="3" class="freeze-move py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Scheme</th>';
+      group += '<th colspan="' + customCount + '" class="py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Custom range</th>';
+      group += '<th colspan="' + shortCount + '" class="tone-short py-2 px-2 text-center text-emerald-800">Short Term</th>';
+      group += '<th colspan="' + longCount + '" class="tone-long py-2 px-2 text-center text-amber-900">Long Term</th>';
       group += '</tr>';
 
       var cols = '<tr>';
-      cols += '<th class="py-3 px-2 w-16 text-center sticky left-0 bg-slate-100"># / Move</th>';
+      cols += '<th class="freeze-move py-3 px-2 text-center"># / Move</th>';
       FIXED_COLS.forEach(function(col) {
         var align = col.numeric ? 'text-right' : 'text-left';
-        cols += '<th onclick="handleSort(\'' + col.key + '\')" class="py-3 px-2 cursor-pointer hover:bg-slate-200/70 ' + align + '">';
+        var freeze = col.key === 'code' ? 'freeze-code ' : (col.key === 'name' ? 'freeze-name ' : '');
+        cols += '<th onclick="handleSort(\'' + col.key + '\')" class="' + freeze + 'py-3 px-2 cursor-pointer hover:bg-slate-200/70 ' + align + '">';
         cols += '<div class="inline-flex items-center space-x-1 ' + (col.numeric ? 'justify-end' : '') + '"><span>' + col.label + '</span><span id="sortIcon-' + col.key + '" class="text-slate-400">⇅</span></div></th>';
       });
       TENURES.forEach(function(tenure) {
-        var tone = tenure.key === '1Y' ? 'bg-emerald-50 text-emerald-800' : (tenure.key === '5Y' ? 'bg-amber-50 text-amber-900' : '');
+        var tone = tenure.key === '1Y' ? 'tone-1y text-emerald-800' : (tenure.key === '5Y' ? 'tone-5y text-amber-900' : '');
         cols += '<th onclick="handleSort(\'' + tenure.key + '\')" class="py-3 px-1 text-center min-w-[58px] cursor-pointer hover:bg-slate-200/70 ' + tone + '">';
         cols += '<div class="inline-flex items-center justify-center space-x-0.5"><span>' + tenure.key + '</span><span id="sortIcon-' + tenure.key + '" class="text-[10px] text-slate-400">⇅</span></div></th>';
       });
@@ -559,14 +626,14 @@
       var html = '';
       funds.forEach(function(fund, idx) {
         html += '<tr class="hover:bg-slate-50/80 transition-colors">';
-        html += '<td class="py-2 px-1 text-center text-slate-500 font-semibold text-[11px] sticky left-0 bg-white border-r border-slate-100">';
+        html += '<td class="freeze-move py-2 px-1 text-center text-slate-500 font-semibold text-[11px]">';
         html += '<div class="flex items-center justify-center space-x-1"><span class="w-3 text-slate-400">' + (idx + 1) + '</span><div class="flex flex-col space-y-0.5">';
         html += '<button type="button" title="Move Up" onclick="moveRow(' + idx + ', \'up\', event)" ' + (idx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-emerald-700"') + '>▲</button>';
         html += '<button type="button" title="Move Down" onclick="moveRow(' + idx + ', \'down\', event)" ' + (idx === funds.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-emerald-700"') + '>▼</button>';
         html += '</div></div></td>';
 
-        html += '<td class="py-2.5 px-3 font-mono text-[11px] font-semibold text-slate-700"><span class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">' + esc(fund.code) + '</span></td>';
-        html += '<td class="py-2.5 px-3 font-medium text-slate-900 max-w-[220px]"><div class="truncate font-semibold text-slate-800" title="' + esc(fund.name) + '">' + esc(fund.name) + '</div><div class="text-[10px] text-slate-400 truncate">Inception: ' + esc(fund.minNavDate || '-') + '</div></td>';
+        html += '<td class="freeze-code py-2.5 px-2 font-mono text-[11px] font-semibold text-slate-700"><span class="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">' + esc(fund.code) + '</span></td>';
+        html += '<td class="freeze-name py-2.5 px-2 font-medium text-slate-900"><div class="truncate font-semibold text-slate-800" title="' + esc(fund.name) + '">' + esc(fund.name) + '</div><div class="text-[10px] text-slate-400 truncate">Inception: ' + esc(fund.minNavDate || '-') + '</div></td>';
         html += '<td class="py-2.5 px-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-semibold border border-slate-200">' + esc(fund.amc || 'N/A') + '</span></td>';
         html += '<td class="py-2.5 px-3"><span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">' + esc(fund.category) + '</span></td>';
         html += moneyCell(fund.navStart, false);
@@ -669,6 +736,29 @@
       if (ratio >= lossDeep) return { bg: '#fecdd3', text: '#881337', border: '#fda4af' };
       return { bg: '#e11d48', text: '#ffffff', border: '#be123c' };
     }
+    var themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+    themeMedia.addEventListener('change', function () {
+      if ((document.documentElement.getAttribute('data-theme') || 'system') === 'system') applyTheme('system');
+    });
+
+    function applyTheme(mode) {
+      if (mode !== 'light' && mode !== 'dark' && mode !== 'system') mode = 'system';
+      var dark = mode === 'dark' || (mode === 'system' && themeMedia.matches);
+      document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.setAttribute('data-theme', mode);
+      try { localStorage.setItem('mf-matrix-theme', mode); } catch (e) {}
+      var buttons = document.querySelectorAll('#themeSwitch button');
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.toggle('is-active', buttons[i].getAttribute('data-theme') === mode);
+      }
+    }
   </script>
+  <div id="themeSwitch" class="theme-switch fixed bottom-1.5 left-3 z-40 text-[10px] text-slate-400">
+    <button type="button" data-theme="light" onclick="applyTheme('light')" class="hover:text-slate-700">Light</button>
+    <span class="px-1">/</span>
+    <button type="button" data-theme="dark" onclick="applyTheme('dark')" class="hover:text-slate-700">Dark</button>
+    <span class="px-1">/</span>
+    <button type="button" data-theme="system" onclick="applyTheme('system')" class="hover:text-slate-700">System</button>
+  </div>
 </body>
 </html>

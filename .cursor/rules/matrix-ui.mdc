@@ -6,7 +6,7 @@ alwaysApply: false
 
 # index.html contracts
 
-Single HtmlService page. Tailwind via CDN, Inter font, emerald/slate/amber palette, `en-IN` currency. No build step and no extra framework.
+Single HtmlService page. Tailwind via CDN, Inter font, emerald/slate/amber palette, `en-IN` currency. No build step and no extra framework. Theme control is fixed at the bottom left (`Light` / `Dark` / `System`, stored as `mf-matrix-theme`). `html.dark` restyles the chrome. Heat-map cell colors stay the same.
 
 ## Client state
 `allFunds`, `currentDisplayFunds`, `top2FilterActive` (default **true**), `activeMetric` (`xirr` | `cagr`), sort field default `1Y` descending.
@@ -19,4 +19,5 @@ Data load: `google.script.run.getFundMatrixData`. Filters, Top 2, sort, and the 
 - The SIP XIRR / Trailing CAGR switch re-renders tenure cells from `tenureXirr` or `tenureCagr`. Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return do not follow the switch.
 - Every metric column has a sort icon. Nulls sort last.
 - Heat colors come from `getHeatmapStyle`. Corpus and Net Profit use the absolute-return color. NAV, units, and invested stay plain. Percents use `formatPct` (`+12.3%`).
+- The matrix scrolls inside `.matrix-scroll`. Both header rows stay fixed. Columns through Fund Name (`#`, Code, Fund Name) stay fixed on horizontal scroll.
 - Row up/down reorders the current view only.
