@@ -6,7 +6,7 @@ alwaysApply: false
 
 # index.html contracts
 
-One HtmlService page. Tailwind CDN, Inter, Dew 2.0 type scale (12 / 14 / 18 / 24, weights 400–600), Dew surfaces and brand blue `#276cf0`. `en-IN` currency. No build step. Heat-map fills come from `getHeatmapStyle`. Cells have no border. Corpus and Net Profit use the absolute-return color. NAV, units, and invested stay plain. Percents use `formatPct` (`+12.3%`). Table figures use IBM Plex Sans at weight 500 with tabular lining figures. Labels stay Inter. Do not use a monospace face for amounts or rates.
+One HtmlService page. Tailwind CDN, Inter, Dew 2.0 type scale (12 / 14 / 18 / 24, weights 400–600), Dew surfaces and brand blue `#276cf0`. `en-IN` currency. No build step. Heat-map fills come from `getHeatmapStyle`. Cells have no border. Corpus and Net Profit use the absolute-return color. NAV, units, and invested stay plain. Percents use `formatPct` (`12.3%`, one decimal, no plus on gains). Table amounts are whole rupees. Matrix figures use IBM Plex Sans at weight 500 with tabular lining figures. Labels stay Inter. Do not use a monospace face for amounts or rates.
 
 ## Chrome
 - View dropdown in the header, immediately before **Refresh Data**: `matrix` (Return Matrix) or `compare` (Fund Comparator).
@@ -25,5 +25,6 @@ Changing SIP amount, SIP day, or dates calls `getFundMatrixData`. Filters, Top 2
 
 ## Fund Comparator
 User checks funds. Unchecked, the selected funds are one pool, plus the overall leader. **Compare within category** adds the leader of each selected fund’s full category.
-Max benefit is the highest `customRangeXirr` for the same SIP (From, To, amount, day). Net profit breaks a tie. Sale Date does not pick the winner. The table always shows the best of the selected funds and the overall leader across every tracked scheme. With **Compare within category** checked, it also shows the leader of each selected fund’s full category, even when that fund was not checked.
-Table columns stay compact: rank, fund, category pill, corpus, net profit, absolute, custom XIRR, then `3M` `6M` `1Y` `3Y` `5Y` `10Y` from the active series. Winning row uses a brand mark, not a full-row fill.
+Max benefit is the highest `customRangeXirr` for the same SIP (From, To, amount, day). Net profit breaks a tie. Sale Date does not pick the winner. The table always shows the best of the selected funds and the overall leader across every tracked scheme. With **Compare within category** checked, category cards flow side by side. Each card shows the leader of that category’s full list. That leader’s invested amount, corpus, and net profit are multiplied by how many selected funds are in the category, as if every one of those SIPs went into that one fund. Rates stay unscaled.
+Comparator and matrix amounts are whole rupees. Percentages keep one decimal and do not prefix a plus on gains. Comparator figures use Source Sans 3 at 11px.
+Table columns stay compact: rank, fund, invested, corpus, net profit, absolute, custom XIRR, then `3M` `6M` `1Y` `3Y` `5Y` `10Y` from the active series. There is no category column. The category leader row has a light fill. Other winning marks stay on the rank cell.
