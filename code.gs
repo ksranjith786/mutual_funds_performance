@@ -12,6 +12,10 @@
  * - A tenure is null when the scheme has no NAV on or before the window start.
  *   Do not relabel a shorter history as 12Y. SIP XIRR is also null when the window contains no SIP date.
  * - 5D and 15D have no tenure XIRR. A monthly SIP does not fit those windows. Trailing CAGR still uses them.
+ * - fund.risk is a 3-year window ending on Sale Date, from daily NAV. Cash rate is 6.5%.
+ *   Capture, beta, alpha, information ratio, and R-squared use the other tracked funds in the same category, not Nifty.
+ *   volatility is the annualized standard deviation.
+ *   Manager, tenure, and portfolio weights are not on the NAV sheet. getFundPublishedProfile loads them when the public profile responds.
  */
 
 function onOpen() {
@@ -197,9 +201,12 @@ function getFundMatrixData(params) {
       absoluteReturn: custom.absoluteReturn,
       customRangeXirr: custom.xirr,
       tenureXirr: tenureXirr,
-      tenureCagr: tenureCagr
+      tenureCagr: tenureCagr,
+      risk: buildRiskStats(series, saleDate)
     });
   }
+
+  attachPeerRisk(fundList, navIndex, saleDate);
 
   return {
     funds: fundList,
@@ -207,6 +214,347 @@ function getFundMatrixData(params) {
     amcs: Object.keys(amcSet).sort(),
     tenures: TENURE_CONFIG
   };
+}
+
+// Risk window and the cash rate used inside Sharpe and Sortino. Do not change these silently.
+var RISK_YEARS = 3;
+var RISK_FREE = 0.065;
+
+function buildRiskStats(series, saleDate) {
+  var empty = blankRisk(saleDate);
+  var pts = windowPoints(series, shiftBack(saleDate, 'year', RISK_YEARS), saleDate);
+  if (pts.length < 61) return empty;
+  var rets = returnSeries(pts);
+  if (rets.length < 60) return empty;
+  var values = rets.map(function(item) { return item.r; });
+  var vol = stdev(values);
+  var downside = downsideDev(values, RISK_FREE / 252);
+  var cagr = trailingCagr(series, new Date(pts[0].t), saleDate, true);
+  empty.windowStart = formatDay(new Date(pts[0].t));
+  empty.windowEnd = formatDay(saleDate);
+  empty.observations = rets.length;
+  empty.cagr = cagr;
+  empty.volatility = vol === null ? null : vol * Math.sqrt(252);
+  empty.downsideDeviation = downside === null ? null : downside * Math.sqrt(252);
+  if (cagr !== null && empty.volatility) empty.sharpe = (cagr - RISK_FREE) / empty.volatility;
+  if (cagr !== null && empty.downsideDeviation) empty.sortino = (cagr - RISK_FREE) / empty.downsideDeviation;
+  var path = drawPath(pts);
+  empty.maxDrawdown = path.drawdown;
+  empty.maxDrawup = path.drawup;
+  var months = monthReturns(pts);
+  if (months.length) {
+    var best = months[0];
+    var worst = months[0];
+    var wins = 0;
+    months.forEach(function(item) {
+      if (item.r > best.r) best = item;
+      if (item.r < worst.r) worst = item;
+      if (item.r > 0) wins += 1;
+    });
+    empty.bestMonth = best.r;
+    empty.worstMonth = worst.r;
+    empty.positiveMonthShare = wins / months.length;
+  }
+  return empty;
+}
+
+function blankRisk(saleDate) {
+  return {
+    windowStart: null,
+    windowEnd: saleDate ? formatDay(saleDate) : null,
+    observations: 0,
+    cagr: null,
+    volatility: null,
+    downsideDeviation: null,
+    sharpe: null,
+    sortino: null,
+    maxDrawdown: null,
+    maxDrawup: null,
+    bestMonth: null,
+    worstMonth: null,
+    positiveMonthShare: null,
+    upsideCapture: null,
+    downsideCapture: null,
+    beta: null,
+    alpha: null,
+    informationRatio: null,
+    rSquared: null
+  };
+}
+
+function attachPeerRisk(funds, navIndex, saleDate) {
+  var byCat = {};
+  funds.forEach(function(fund) {
+    var category = fund.category || 'Other';
+    if (!byCat[category]) byCat[category] = [];
+    byCat[category].push(fund.code);
+  });
+  var start = shiftBack(saleDate, 'year', RISK_YEARS);
+  funds.forEach(function(fund) {
+    if (!fund.risk) fund.risk = blankRisk(saleDate);
+    var peers = [];
+    (byCat[fund.category || 'Other'] || []).forEach(function(code) {
+      if (code !== fund.code && navIndex[code]) peers.push(navIndex[code]);
+    });
+    var rel = peerRelative(navIndex[fund.code], peers, start, saleDate);
+    fund.risk.upsideCapture = rel.upsideCapture;
+    fund.risk.downsideCapture = rel.downsideCapture;
+    fund.risk.beta = rel.beta;
+    fund.risk.alpha = rel.alpha;
+    fund.risk.informationRatio = rel.informationRatio;
+    fund.risk.rSquared = rel.rSquared;
+  });
+}
+
+function peerRelative(series, peers, start, end) {
+  var out = { upsideCapture: null, downsideCapture: null, beta: null, alpha: null, informationRatio: null, rSquared: null };
+  if (!series || !peers.length) return out;
+  var mine = returnMap(returnSeries(windowPoints(series, start, end)));
+  var peerMaps = peers.map(function(peer) { return returnMap(returnSeries(windowPoints(peer, start, end))); });
+  var upF = [];
+  var upP = [];
+  var downF = [];
+  var downP = [];
+  var xs = [];
+  var ys = [];
+  Object.keys(mine).forEach(function(key) {
+    var peerVals = [];
+    peerMaps.forEach(function(map) {
+      if (map[key] !== undefined) peerVals.push(map[key]);
+    });
+    if (!peerVals.length) return;
+    var peer = 0;
+    peerVals.forEach(function(value) { peer += value; });
+    peer /= peerVals.length;
+    var fund = mine[key];
+    xs.push(peer);
+    ys.push(fund);
+    if (peer > 0) { upP.push(peer); upF.push(fund); }
+    else if (peer < 0) { downP.push(peer); downF.push(fund); }
+  });
+  if (xs.length < 30) return out;
+  var peerVar = variance(xs);
+  if (peerVar) out.beta = covariance(xs, ys) / peerVar;
+  var meanF = mean(ys) * 252;
+  var meanP = mean(xs) * 252;
+  if (out.beta !== null) out.alpha = (meanF - RISK_FREE) - out.beta * (meanP - RISK_FREE);
+  if (upP.length >= 10 && mean(upP)) out.upsideCapture = mean(upF) / mean(upP);
+  if (downP.length >= 10 && mean(downP)) out.downsideCapture = mean(downF) / mean(downP);
+  var fundVar = variance(ys);
+  if (peerVar && fundVar) out.rSquared = Math.pow(covariance(xs, ys), 2) / (peerVar * fundVar);
+  var excess = [];
+  for (var i = 0; i < ys.length; i++) excess.push(ys[i] - xs[i]);
+  var tracking = stdev(excess);
+  if (tracking) out.informationRatio = (mean(excess) * Math.sqrt(252)) / tracking;
+  return out;
+}
+
+/**
+ * Manager, tenure, and portfolio weights are not in nav_data.
+ * This asks the public mfdata.in profile. Morningstar and Dhan have no keyless API;
+ * the client opens those sites for the selected fund name when this call cannot fill a field.
+ * codes: [{ code, name }], at most 8.
+ */
+function getFundPublishedProfile(codes) {
+  codes = codes || [];
+  if (codes.length > 8) codes = codes.slice(0, 8);
+  var profiles = [];
+  for (var i = 0; i < codes.length; i++) {
+    profiles.push(fetchPublishedProfile(codes[i]));
+  }
+  return {
+    profiles: profiles,
+    source: 'Published fields come from the public scheme profile when it responds. Morningstar and Dhan open in a new tab for the selected fund.'
+  };
+}
+
+function fetchPublishedProfile(item) {
+  var code = String(item.code || item);
+  var name = item.name || code;
+  var profile = {
+    code: code,
+    name: name,
+    links: {
+      morningstar: 'https://www.google.com/search?q=' + encodeURIComponent(name + ' site:morningstar.in'),
+      dhan: 'https://www.google.com/search?q=' + encodeURIComponent(name + ' site:dhan.co/mutual-funds')
+    },
+    manager: null,
+    managerSince: null,
+    expenseRatio: null,
+    aumCr: null,
+    morningstar: null,
+    holdings: [],
+    publishedRatios: null,
+    error: null
+  };
+  try {
+    var response = UrlFetchApp.fetch('https://mfdata.in/api/v1/schemes/' + encodeURIComponent(code), { muteHttpExceptions: true });
+    if (response.getResponseCode() !== 200) {
+      profile.error = 'Published profile is unavailable right now. Use Morningstar or Dhan for manager, tenure, and weights.';
+      return profile;
+    }
+    var body = JSON.parse(response.getContentText());
+    var data = body.data || body;
+    profile.expenseRatio = numberOrNull(data.expense_ratio);
+    profile.aumCr = numberOrNull(data.aum_cr);
+    profile.morningstar = data.morningstar || data.rating || null;
+    profile.publishedRatios = data.ratios || null;
+    if (data.family_id) fillFamilyProfile(profile, data.family_id);
+    if (!profile.manager && !profile.holdings.length && !profile.error) {
+      profile.error = 'This scheme has no manager or portfolio on the public profile. Use Morningstar or Dhan.';
+    }
+  } catch (err) {
+    profile.error = 'Published profile could not be loaded. Use Morningstar or Dhan.';
+  }
+  return profile;
+}
+
+function fillFamilyProfile(profile, familyId) {
+  try {
+    var people = UrlFetchApp.fetch('https://mfdata.in/api/v1/families/' + familyId + '/people', { muteHttpExceptions: true });
+    if (people.getResponseCode() === 200) {
+      var parsed = JSON.parse(people.getContentText());
+      var list = parsed.data || parsed;
+      if (Object.prototype.toString.call(list) === '[object Array]' && list.length) {
+        var person = list[0];
+        profile.manager = person.name || person.manager || null;
+        profile.managerSince = person.start_date || person.since || person.tenure || null;
+      }
+    }
+  } catch (err) {}
+  try {
+    var holdings = UrlFetchApp.fetch('https://mfdata.in/api/v1/families/' + familyId + '/holdings', { muteHttpExceptions: true });
+    if (holdings.getResponseCode() === 200) {
+      var parsedHold = JSON.parse(holdings.getContentText());
+      var data = parsedHold.data || parsedHold;
+      var equity = data.equity || [];
+      equity.sort(function(a, b) { return (b.weight_pct || 0) - (a.weight_pct || 0); });
+      profile.holdings = equity.slice(0, 8).map(function(row) {
+        return { name: row.name, weight: row.weight_pct, sector: row.sector || '' };
+      });
+    }
+  } catch (err) {}
+}
+
+function numberOrNull(value) {
+  var n = Number(value);
+  return isNaN(n) ? null : n;
+}
+
+function windowPoints(series, start, end) {
+  if (!series || !start || !end) return [];
+  var startMs = start.getTime();
+  var endMs = end.getTime();
+  var base = null;
+  var pts = [];
+  for (var i = 0; i < series.dates.length; i++) {
+    var t = series.dates[i];
+    if (t <= startMs) base = { t: t, nav: series.navs[i] };
+    else if (t <= endMs) pts.push({ t: t, nav: series.navs[i] });
+    else break;
+  }
+  if (base) pts.unshift(base);
+  return pts;
+}
+
+function returnSeries(pts) {
+  var out = [];
+  for (var i = 1; i < pts.length; i++) {
+    if (pts[i - 1].nav > 0) out.push({ t: pts[i].t, r: pts[i].nav / pts[i - 1].nav - 1 });
+  }
+  return out;
+}
+
+function returnMap(rets) {
+  var map = {};
+  rets.forEach(function(item) { map[String(item.t)] = item.r; });
+  return map;
+}
+
+function drawPath(pts) {
+  var peak = pts[0].nav;
+  var trough = pts[0].nav;
+  var drawdown = 0;
+  var drawup = 0;
+  for (var i = 1; i < pts.length; i++) {
+    var nav = pts[i].nav;
+    if (nav > peak) peak = nav;
+    if (nav < trough) trough = nav;
+    if (peak > 0) {
+      var dd = nav / peak - 1;
+      if (dd < drawdown) drawdown = dd;
+    }
+    if (trough > 0) {
+      var du = nav / trough - 1;
+      if (du > drawup) drawup = du;
+    }
+  }
+  return { drawdown: drawdown, drawup: drawup };
+}
+
+function monthReturns(pts) {
+  var out = [];
+  var monthKey = null;
+  var monthStart = null;
+  var lastNav = null;
+  for (var i = 0; i < pts.length; i++) {
+    var date = new Date(pts[i].t);
+    var key = date.getFullYear() + '-' + date.getMonth();
+    if (monthKey === null) {
+      monthKey = key;
+      monthStart = pts[i].nav;
+      lastNav = pts[i].nav;
+      continue;
+    }
+    if (key !== monthKey) {
+      if (monthStart > 0) out.push({ r: lastNav / monthStart - 1 });
+      monthKey = key;
+      monthStart = pts[i].nav;
+    }
+    lastNav = pts[i].nav;
+  }
+  if (monthStart > 0 && lastNav !== null) out.push({ r: lastNav / monthStart - 1 });
+  return out;
+}
+
+function mean(values) {
+  if (!values.length) return null;
+  var sum = 0;
+  values.forEach(function(value) { sum += value; });
+  return sum / values.length;
+}
+
+function variance(values) {
+  if (values.length < 2) return null;
+  var avg = mean(values);
+  var sum = 0;
+  values.forEach(function(value) { sum += (value - avg) * (value - avg); });
+  return sum / (values.length - 1);
+}
+
+function covariance(xs, ys) {
+  var avgX = mean(xs);
+  var avgY = mean(ys);
+  var sum = 0;
+  for (var i = 0; i < xs.length; i++) sum += (xs[i] - avgX) * (ys[i] - avgY);
+  return sum / (xs.length - 1);
+}
+
+function stdev(values) {
+  var v = variance(values);
+  return v === null ? null : Math.sqrt(v);
+}
+
+function downsideDev(values, mar) {
+  var sum = 0;
+  var n = 0;
+  values.forEach(function(value) {
+    var gap = value - mar;
+    if (gap < 0) sum += gap * gap;
+    n += 1;
+  });
+  if (n < 2) return null;
+  return Math.sqrt(sum / (n - 1));
 }
 
 /** Groups nav_data into { dates, navs } per scheme_code. Dates are local midnights, sorted ascending. */

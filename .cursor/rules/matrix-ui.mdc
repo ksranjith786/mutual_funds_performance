@@ -9,7 +9,7 @@ alwaysApply: false
 One HtmlService page. Tailwind CDN, Inter, Dew 2.0 type scale (12 / 14 / 18 / 24, weights 400–600), Dew surfaces and brand blue `#276cf0`. `en-IN` currency. No build step. Heat-map fills come from `getHeatmapStyle`. Cells have no border. Corpus and Net Profit use the absolute-return color. NAV, units, and invested stay plain. Percents use `formatPct` (`12.3%`, one decimal, no plus on gains). Table amounts are whole rupees. Matrix figures use IBM Plex Sans at weight 500 with tabular lining figures. Labels stay Inter. Do not use a monospace face for amounts or rates.
 
 ## Chrome
-- View dropdown in the header, immediately before **Refresh Data**: `matrix` (Return Matrix) or `compare` (Fund Comparator).
+- View dropdown in the header, immediately before **Refresh Data**: `matrix` (Return Matrix), `compare` (Fund Comparator), or `risk` (Risk and Rating). Risk cells use the same heat colors. Green is the better end of that ratio, so lower-is-better figures are flipped before coloring.
 - Theme control fixed bottom left: Light / Dark / System, stored as `mf-matrix-theme`. `html.dark` swaps Dew tokens. Empty heat cells follow the active theme.
 - Page must fit desktop and phone. `overflow-x: hidden` on the page. Below 768px, KPI cards are 2×2, the matrix scrolls inside `.matrix-scroll`, only Fund Name stays frozen, and the group header row is hidden.
 
@@ -18,6 +18,7 @@ One HtmlService page. Tailwind CDN, Inter, Dew 2.0 type scale (12 / 14 / 18 / 24
 Changing SIP amount, SIP day, or dates calls `getFundMatrixData`. Filters, Top 2, sort, and the metric switch stay in the browser.
 - Category, AMC, and Scheme are checkbox lists with Select All. Select All applies no restriction. The three lists intersect. Top 2 then keeps two schemes per remaining category by the active 1Y series when the scheme selection is All.
 - The matrix toolbar, immediately before Top 2 / Cat, has a fund search. It multi-selects schemes and includes All and None. It writes the same scheme selection as the Scheme filter. All means no scheme restriction, so Top 2 can still narrow the rows. A checked subset is shown as selected. None selects nothing.
+- Fund checklists share `fundChecklistHtml`. The matrix search, Fund Comparator, and Risk and Rating all group schemes by category.
 - Tenures, in order: `5D` `15D` `1M` `3M` `6M` `9M` `1Y` `2Y` `3Y` `5Y` `7Y` `10Y` `12Y`. Groups are Short and Long. Keep columns compact. SIP XIRR hides `5D` and `15D`. Trailing CAGR still shows them.
 - The SIP XIRR / Trailing CAGR switch re-renders tenure cells only. Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return do not follow it.
 - Every metric column has a sort icon. Nulls sort last.
