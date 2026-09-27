@@ -1,0 +1,23 @@
+---
+description: Return matrix UI behavior and styling in index.html
+globs: index.html
+alwaysApply: false
+---
+
+# index.html contracts
+
+Single HtmlService page. Tailwind via CDN, Inter font, emerald/slate/amber palette, `en-IN` currency. No build step and no extra framework.
+
+## Client state
+`allFunds`, `currentDisplayFunds`, `top2FilterActive` (default **true**), `activeMetric` (`xirr` | `cagr`), sort field default `5Y` descending.
+
+Data load: `google.script.run.getFundMatrixData`. Category, AMC, search, Top 2, and sort stay in the browser. Changing SIP amount, SIP day, or dates calls `loadMatrixData` again.
+
+## Filters and table
+- Top 2: best two schemes per `fund_category` by `tenureReturns['5Y']` (nulls last).
+- Search matches scheme name, code, or AMC.
+- 13 tenure columns match server keys, in order: `5D` `15D` `1M` `3M` `6M` `9M` `1Y` `2Y` `3Y` `5Y` `8Y` `10Y` `12Y`. `1Y` header is emerald; `5Y` is amber.
+- Heat colors come only from `getHeatmapStyle`. Percents use `formatPct` (`+12.3%`).
+- Row up/down reorders the current view only. `tbody` colspan is `26`.
+
+`setMetricMode` restyles the toggle and re-renders. Tenure cells still show `tenureReturns` until a prompt asks for a second series.

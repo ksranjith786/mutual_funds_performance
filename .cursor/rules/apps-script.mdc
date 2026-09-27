@@ -1,0 +1,26 @@
+---
+description: Apps Script calculation contracts for the return matrix
+globs: code.gs
+alwaysApply: false
+---
+
+# code.gs contracts
+
+Match the existing `var` / `function` style. Sheet names are exact: `scheme_codes`, `nav_data`.
+
+## Entry points — do not rename
+`onOpen` menu **Mutual Fund Matrix**; `showSidebar`; `showDialog` (1250×820); `doGet`; `getFundMatrixData(params)`.
+
+## `getFundMatrixData` params
+`sipAmount` (1000), `sipDay` (5), `fromDate` (`2023-01-01`), `toDate`, `saleDate`. Dates are `yyyy-MM-dd` via `parseDate` (year-month-day).
+
+SIP: one installment on `sipDay` each month from `fromDate` through `toDate`. Cash flows are negative installments plus a positive sale value (`units × sale NAV`). XIRR is Newton–Raphson in `calculateXIRR`; `null` falls back to total return.
+
+## Tenures (`TENURE_CONFIG`)
+Point-to-point, not annualized: `5D` `15D` `1M` `3M` `6M` `9M`.
+Annualized CAGR from sale date: `1Y` `2Y` `3Y` `5Y` `8Y` `10Y` `12Y`.
+If the tenure start is before `min_nav_date` and `days > 365`, that cell is `null`.
+
+Each fund object: `code`, `name`, `amc`, `category`, `type`, `minNavDate`, `navStart`, `navEnd`, `saleNav`, `units`, `investedAmount`, `saleValuation`, `totalReturnAmount`, `totalReturn`, `xirr`, `tenureReturns`. Response also returns `categories`, `amcs` (both prefixed with `All`), and `tenures`.
+
+Keep `TENURE_CONFIG` order identical to the client `TENURES` array.

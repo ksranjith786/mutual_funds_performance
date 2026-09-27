@@ -1,0 +1,23 @@
+---
+description: Mutual Fund return matrix — sheets, files, and facts not to re-ask
+alwaysApply: true
+---
+
+# Mutual Fund Return Matrix
+
+Google Apps Script bound to one Google Sheet. Local `code.gs` and `index.html` mirror that project. Do not re-ask sheet names, columns, tenures, or entry points.
+
+## Files
+- `code.gs` — menu, web app, and calculations.
+- `index.html` — UI. Apps Script file name is `Index` (`HtmlService.createTemplateFromFile('Index')`).
+- `scheme_codes.csv` / `nav_data.csv` are the sheet sources. Runtime reads the spreadsheet, not the repo files.
+
+## Sheets
+- `scheme_codes`: `scheme_code`, `scheme_name`, `amc_name`, `fund_category`, `plan`, `option`, `min_nav_date`
+- `nav_data`: `scheme_code`, `scheme_name`, `date`, `nav` (~172k rows). Never load the full CSV into context; sample headers or filter by scheme.
+
+## NAV today
+`getDynamicNAV` synthesizes NAV from a category CAGR and the scheme code. It does not read `nav_data`. Wiring real NAVs is new work.
+
+## Defaults
+SIP ₹1,000 on the 5th, from `2023-01-01` through today; sale date is today. Keep server math in `code.gs` and rendering in `index.html`. Change only what the prompt asks.
