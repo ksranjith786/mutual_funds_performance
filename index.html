@@ -6,7 +6,7 @@
   <title>Mutual Fund Valuation & Return Matrix</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     /* Freshworks Dew 2.0 tokens. Type scale: 12 / 14 / 18 / 24. Weights: 400, 500, 600. */
     :root {
@@ -125,62 +125,49 @@
     .pick-row:hover { background: var(--row-hover); }
     .load-mark { width: 22px; height: 22px; margin: 0 auto 8px; border-radius: 50%; border: 2px solid var(--color-boundary-border-mild); border-top-color: var(--color-fill-brand); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .matrix-scroll::-webkit-scrollbar, .filter-panel::-webkit-scrollbar, #comparePicker::-webkit-scrollbar { width: 8px; height: 8px; }
-    .matrix-scroll::-webkit-scrollbar-thumb, .filter-panel::-webkit-scrollbar-thumb, #comparePicker::-webkit-scrollbar-thumb { background: var(--color-boundary-border-mild); border-radius: 99px; }
-    .compare-flow { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
-    .compare-flow .compare-card { flex: 1 1 34rem; min-width: min(100%, 26rem); }
-    .summary-cats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-    .summary-cat { flex: 1 1 16rem; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-container); }
-    .compare-table .heatmap-cell, .compare-table .cmp-rank, .compare-table .cmp-fig {
-      font-family: "Source Sans 3", Inter, sans-serif !important;
-      font-size: 11px !important;
-      line-height: 14px !important;
-      font-weight: 500 !important;
-      letter-spacing: 0;
-    }
-    .compare-card { border: 1px solid var(--color-boundary-border-mildest); border-radius: 12px; background: var(--color-fill-surface); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .sheet::-webkit-scrollbar, .filter-panel::-webkit-scrollbar, .fund-picker::-webkit-scrollbar { width: 8px; height: 8px; }
+    .sheet::-webkit-scrollbar-thumb, .filter-panel::-webkit-scrollbar-thumb, .fund-picker::-webkit-scrollbar-thumb { background: var(--color-boundary-border-mild); border-radius: 99px; }
+    .compare-flow { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .summary-cats { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+    .summary-cat { flex: none; height: auto; padding: 4px 0; background: transparent; }
+    .compare-card { width: 100%; border: 1px solid var(--color-boundary-border-mildest); border-radius: 12px; background: var(--color-fill-surface); box-shadow: var(--shadow-sm); overflow: hidden; }
     .compare-card-title { padding: 8px 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-secondary); background: var(--color-fill-container); border-bottom: 1px solid var(--color-boundary-border-mildest); }
-    .compare-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; line-height: 16px; }
-    .compare-table th { position: sticky; top: 0; z-index: 1; padding: 8px 6px; text-align: left; vertical-align: bottom; font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; color: var(--color-text-secondary); background: var(--color-fill-surface); border-bottom: 1px solid var(--color-boundary-divider); }
-    .compare-table td { padding: 6px; vertical-align: middle; border-bottom: 1px solid var(--color-boundary-border-mildest); }
-    .compare-table th.num-right { text-align: right; }
-    .compare-table th.num-center { text-align: center; }
-    .compare-table tbody tr:last-child td { border-bottom: 0; }
-    .compare-table tbody tr:nth-child(even) td { background: var(--zebra); }
-    .compare-table tbody tr:hover td { background: var(--row-hover); }
-    .compare-table tbody tr.compare-lead td,
-    .compare-table tbody tr.compare-lead:hover td { background: color-mix(in srgb, var(--color-fill-semantic-success-mildest) 70%, var(--color-fill-surface)); }
-    .cmp-rank { width: 1.6rem; text-align: center; color: var(--color-text-placeholder); font-variant-numeric: tabular-nums; }
-    .cmp-name { max-width: 11rem; font-weight: 600; color: var(--color-text-primary); }
-    .cmp-name div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cmp-cat { display: inline-block; max-width: 6.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 6px; border-radius: 99px; background: var(--color-fill-container); color: var(--color-text-secondary); }
+    .sheet { overflow: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+    .sheet table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; line-height: 16px; }
+    .compare-card .sheet table { table-layout: fixed; }
+    .sheet th, .sheet td { border-bottom: 1px solid var(--color-boundary-divider); }
+    .sheet thead th { position: sticky; top: 0; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; vertical-align: bottom; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
+    .sheet thead tr.sheet-group th { text-transform: none; letter-spacing: normal; }
+    .sheet thead tr:first-child th { top: 0; }
+    .sheet thead tr:nth-child(2) th { top: 2.05rem; }
+    .sheet tbody td { background: var(--color-fill-surface); vertical-align: middle; }
+    .sheet tbody tr:last-child td { border-bottom: 0; }
+    .sheet tbody tr:nth-child(even) td { background: var(--zebra); }
+    .sheet tbody tr:hover td { background: var(--row-hover); }
+    .sheet tbody tr.compare-lead td,
+    .sheet tbody tr.compare-lead:hover td { background: color-mix(in srgb, var(--color-fill-semantic-success-mildest) 70%, var(--color-fill-surface)); }
+    .cmp-rank { text-align: center; color: var(--color-text-placeholder); }
+    .freeze-name .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .compare-best td.cmp-rank { box-shadow: inset 2px 0 0 var(--color-fill-brand); color: var(--color-text-brand); font-weight: 600; }
     .cmp-tag { display: inline-block; margin: 3px 4px 0 0; padding: 0 6px; border-radius: 99px; background: color-mix(in srgb, var(--color-fill-brand) 12%, var(--color-fill-surface)); font-size: 12px; font-weight: 600; line-height: 16px; color: var(--color-text-brand); }
+    .fund-picker { max-height: 12rem; }
     .filter-panel { max-height: 240px; }
     .fund-pick-btn { min-height: 0; height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--color-boundary-border-mildest); background: transparent; color: var(--color-text-secondary); font-weight: 600; }
     .fund-pick-btn.is-on { background: var(--color-fill-brand); color: var(--color-text-on-brand); border-color: var(--color-fill-brand); }
     /* Header sticks on vertical scroll. # and Fund Name stick on horizontal scroll. Fund Name width is --name-width. */
-    .matrix-scroll { max-height: calc(100vh - 11rem); overflow: auto; }
-    .matrix-scroll table { border-collapse: separate; border-spacing: 0; }
-    .matrix-scroll th, .matrix-scroll td { border-bottom: 1px solid var(--color-boundary-divider); }
-    .matrix-scroll thead th { position: sticky; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 12px; font-weight: 600; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
-    .matrix-scroll thead tr:first-child th { top: 0; }
-    .matrix-scroll thead tr:nth-child(2) th { top: 2.05rem; }
-    .matrix-scroll thead th.tone-short, .matrix-scroll thead th.tone-1y { background: var(--color-fill-semantic-success-mildest); color: var(--color-text-semantic-success); }
-    .matrix-scroll thead th.tone-long, .matrix-scroll thead th.tone-5y { background: var(--color-fill-semantic-warning-mildest); color: var(--color-fill-semantic-warning-bold); }
+    .matrix-scroll { max-height: calc(100vh - 11rem); }
+    .sheet thead th.tone-short, .sheet thead th.tone-1y { background: var(--color-fill-semantic-success-mildest); color: var(--color-text-semantic-success); }
+    .sheet thead th.tone-long, .sheet thead th.tone-5y { background: var(--color-fill-semantic-warning-mildest); color: var(--color-fill-semantic-warning-bold); }
     .freeze-move { position: sticky; left: 0; min-width: 2.75rem; width: 2.75rem; }
     .freeze-lead { position: sticky; left: 0; z-index: 6; }
     .freeze-name { position: sticky; left: 2.75rem; width: var(--name-width); min-width: var(--name-width); max-width: var(--name-width); box-shadow: 2px 0 0 var(--color-boundary-border-mildest); }
+    .freeze-name.is-first { left: 0; }
     .col-resizer { position: absolute; top: 0; right: 0; width: 8px; height: 100%; cursor: col-resize; z-index: 7; touch-action: none; }
     .col-resizer::after { content: ""; position: absolute; top: 4px; bottom: 4px; right: 2px; width: 2px; border-radius: 2px; background: var(--color-boundary-border-mild); }
-    .matrix-scroll thead .freeze-move,
-    .matrix-scroll thead .freeze-name { z-index: 5; }
-    .matrix-scroll thead th.freeze-name { box-shadow: inset 0 -1px 0 var(--color-boundary-divider), 2px 0 0 var(--color-boundary-border-mildest); }
-    .matrix-scroll tbody td { background: var(--color-fill-surface); }
-    .matrix-scroll tbody tr:nth-child(even) td { background: var(--zebra); }
-    .matrix-scroll tbody tr:hover td { background: var(--row-hover); }
-    .matrix-scroll tbody .freeze-move,
-    .matrix-scroll tbody .freeze-name { z-index: 2; }
+    .sheet thead .freeze-move, .sheet thead .freeze-name { z-index: 5; }
+    .sheet thead th.freeze-name { box-shadow: inset 0 -1px 0 var(--color-boundary-divider), 2px 0 0 var(--color-boundary-border-mildest); }
+    .sheet tbody .freeze-move, .sheet tbody .freeze-name { z-index: 2; }
+    main { padding-bottom: 2.75rem; }
     .theme-switch { display: flex; gap: 2px; padding: 2px; border-radius: 99px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); box-shadow: var(--shadow-sm); }
     .theme-switch button { min-height: 0; height: 22px; padding: 0 8px; border: 0; border-radius: 99px; background: transparent; color: var(--color-text-placeholder); font-size: 11px; line-height: 16px; }
     .theme-switch button.is-active { background: var(--color-fill-brand); color: var(--color-text-on-brand); font-weight: 600; }
@@ -192,7 +179,6 @@
     .risk-card strong { display: block; font-size: 12px; font-weight: 600; margin-bottom: 2px; }
     .risk-best { color: var(--color-text-semantic-success); }
     .risk-worst { color: #cd2629; }
-    .matrix-scroll { -webkit-overflow-scrolling: touch; }
     .filter-panel { max-width: calc(100vw - 2rem); }
     button { min-height: 32px; }
     .move-pair { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1; }
@@ -205,9 +191,9 @@
       h1, .text-xl { font-size: 16px !important; line-height: 22px !important; }
       .text-2xl { font-size: 20px !important; line-height: 28px !important; }
       .matrix-scroll { max-height: 70vh; }
-      .matrix-scroll thead tr:first-child { display: none; }
+      .matrix-scroll thead tr.sheet-group { display: none; }
       .matrix-scroll thead tr:nth-child(2) th { top: 0; }
-      .freeze-move { left: auto; width: auto; min-width: 0; box-shadow: none; }
+      .freeze-move { left: auto; width: auto; min-width: 0; position: static; box-shadow: none; }
       .freeze-name { left: 0; width: 42vw; min-width: 9.5rem; max-width: 12rem; }
       .col-resizer { display: none; }
       .page-header-row { align-items: stretch; }
@@ -352,9 +338,9 @@
     </div>
 
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-      <div class="matrix-scroll">
+      <div class="matrix-scroll sheet">
         <table class="w-full text-left text-xs">
-          <thead id="matrixTableHead" class="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px] tracking-wider select-none"></thead>
+          <thead id="matrixTableHead" class="select-none"></thead>
           <tbody id="matrixTableBody" class="divide-y divide-slate-100 font-normal">
             <tr>
               <td id="loadingCell" class="py-16 text-center text-slate-400 font-medium"><div class="load-mark"></div>Loading valuation matrix</td>
@@ -377,10 +363,10 @@
             Compare within category
             <span id="compareCount" class="font-medium text-slate-400">None selected</span>
           </label>
-          <input type="text" id="compareSearch" oninput="renderComparePicker()" placeholder="Search funds to add..." class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <input type="search" id="compareSearch" oninput="renderComparePicker()" placeholder="Search funds to add..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
         </div>
-        <p class="text-[11px] text-slate-400">Your selection is ranked by Custom Range XIRR. Check the box to place each category beside the next, and to show the category leader as if every selected SIP in that category went into that one fund.</p>
-        <div id="comparePicker" class="max-h-48 overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
+        <p class="text-[11px] text-slate-400">Your selection is ranked by Custom Range XIRR. Check the box and every category in the selection gets its own table, one after another. The category leader is shown as if every selected SIP in that category went into that one fund.</p>
+        <div id="comparePicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
       </div>
       <div id="compareSummary" class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-xs text-slate-600">Select at least two funds to compare.</div>
       <div id="compareResults" class="space-y-4"></div>
@@ -389,14 +375,14 @@
     <div id="panelRisk" class="hidden space-y-4">
       <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <input type="search" id="riskSearch" oninput="renderRiskPicker()" placeholder="Search funds to include..." class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
+          <input type="search" id="riskSearch" oninput="renderRiskPicker()" placeholder="Search funds to include..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
           <button type="button" id="riskProfileBtn" onclick="loadRiskProfiles()" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white">Load manager and portfolio</button>
         </div>
         <p class="text-[11px] text-slate-400">Figures use daily NAV for 3 years ending on Sale Date. Capture, beta, and alpha compare the fund with the other tracked funds in its category. Manager, tenure, and weights open from the public profile, Morningstar, and Dhan for the funds you check.</p>
-        <div id="riskPicker" class="max-h-40 overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
+        <div id="riskPicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
       </div>
       <div id="riskGuide" class="risk-guide"></div>
-      <div id="riskTable" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto"></div>
+      <div id="riskTable" class="compare-card"></div>
       <div id="riskProfiles" class="space-y-3"></div>
     </div>
   </main>
@@ -560,7 +546,7 @@
       var shortCount = shown.filter(function(t) { return t.group === 'short'; }).length;
       var longCount = shown.length - shortCount;
       var customCount = FIXED_COLS.length - 1;
-      var group = '<tr>';
+      var group = '<tr class="sheet-group">';
       group += '<th colspan="2" class="freeze-lead py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Scheme</th>';
       group += '<th colspan="' + customCount + '" class="py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Custom range</th>';
       group += '<th colspan="' + shortCount + '" class="tone-short py-2 px-2 text-center text-emerald-800">Short Term</th>';
@@ -574,7 +560,7 @@
         var freeze = col.key === 'name' ? 'freeze-name ' : '';
         cols += '<th onclick="handleSort(\'' + col.key + '\')" class="' + freeze + 'py-3 px-2 cursor-pointer hover:bg-slate-200/70 ' + align + '">';
         cols += '<div class="inline-flex items-center space-x-1 ' + (col.numeric ? 'justify-end' : '') + '"><span>' + col.label + '</span><span id="sortIcon-' + col.key + '" class="text-slate-400">⇅</span></div>';
-        if (col.key === 'name') cols += '<span class="col-resizer" title="Drag to resize" onmousedown="startNameResize(event)" ontouchstart="startNameResize(event)" onclick="event.stopPropagation(); event.preventDefault();"></span>';
+        if (col.key === 'name') cols += nameResizer();
         cols += '</th>';
       });
       shown.forEach(function(tenure) {
@@ -593,7 +579,7 @@
       var html = '<span class="font-semibold text-slate-500 mr-1">' + label + '</span>';
       samples.forEach(function(sample) {
         var style = getHeatmapStyle(sample[1], 'standard');
-        html += '<span class="heatmap-cell" style="background-color:' + style.bg + ';color:' + style.text + '">' + sample[0] + '</span>';
+        html += heatChip(sample[0], style);
       });
       document.getElementById('heatLegend').innerHTML = html;
     }
@@ -942,7 +928,7 @@
         html += '<button type="button" class="move-btn move-down" title="Move down" onclick="moveRow(' + idx + ', \'down\', event)" ' + (idx === funds.length - 1 ? 'disabled' : '') + '>▼</button>';
         html += '</div></div></td>';
 
-        html += '<td class="freeze-name py-2.5 px-2 font-medium text-slate-900"><div class="truncate font-semibold text-slate-800" title="' + esc(fund.name) + '">' + esc(fund.name) + '</div><div class="text-[10px] text-slate-400 truncate">Inception ' + esc(fund.minNavDate || '-') + '</div></td>';
+        html += fundNameCell(fund.name, nameNote('Inception ' + esc(fund.minNavDate || '-')), false);
         html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.amc || 'N/A') + '">' + esc(fund.amc || 'N/A') + '</span></td>';
         html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.category) + '">' + esc(fund.category) + '</span></td>';
         html += moneyCell(fund.navStart, false);
@@ -970,19 +956,49 @@
         (top2FilterActive ? ' (Top 2 per category by 1Y ' + seriesName + ')' : '');
     }
 
+    function nameResizer() {
+      return '<span class="col-resizer" title="Drag to resize" onmousedown="startNameResize(event)" ontouchstart="startNameResize(event)" onclick="event.stopPropagation(); event.preventDefault();"></span>';
+    }
+
+    function nameHead(first) {
+      return '<th class="freeze-name py-3 px-2 text-left' + (first ? ' is-first' : '') + '">Fund Name' + nameResizer() + '</th>';
+    }
+
+    function moneyHead(label) {
+      return '<th class="py-3 px-2 text-right">' + label + '</th>';
+    }
+
+    function rateHead(label, tone) {
+      return '<th class="py-2 px-1 text-center min-w-[46px]' + (tone ? ' ' + tone : '') + '">' + label + '</th>';
+    }
+
+    function nameNote(text) {
+      return '<div class="truncate text-[10px] text-slate-400">' + text + '</div>';
+    }
+
+    function fundNameCell(name, detailHtml, first) {
+      return '<td class="freeze-name py-2.5 px-2' + (first ? ' is-first' : '') + '"><div class="truncate font-semibold text-slate-800" title="' + esc(name) + '">' + esc(name) + '</div>' + (detailHtml || '') + '</td>';
+    }
+
+    function heatChip(text, style) {
+      return '<div class="heatmap-cell" style="background-color:' + style.bg + ';color:' + style.text + '">' + text + '</div>';
+    }
+
+    function sheetTable(headHtml, bodyHtml) {
+      return '<div class="sheet"><table><thead><tr>' + headHtml + '</tr></thead><tbody>' + bodyHtml + '</tbody></table></div>';
+    }
+
     function moneyCell(value, strong) {
       var cls = strong ? 'text-slate-900 font-semibold' : 'text-slate-600 font-medium';
       return '<td class="py-2.5 px-2 text-right font-mono ' + cls + '">' + formatInrWhole(value) + '</td>';
     }
 
     function heatMoneyCell(value, rate) {
-      var style = getHeatmapStyle(rate, 'standard');
-      return '<td class="py-1 px-1 text-right"><div style="background-color:' + style.bg + '; color:' + style.text + '; border-color:' + style.border + '" class="heatmap-cell py-1 px-1 rounded text-[11px] font-bold border">' + formatInrWhole(value) + '</div></td>';
+      return '<td class="py-1 px-1 text-right">' + heatChip(formatInrWhole(value), getHeatmapStyle(rate, 'standard')) + '</td>';
     }
 
     function heatRateCell(value, scale) {
-      var style = getHeatmapStyle(value, scale);
-      return '<td class="py-1 px-1 text-center"><div style="background-color:' + style.bg + '; color:' + style.text + '; border-color:' + style.border + '" class="heatmap-cell py-1 px-1 rounded text-[11px] font-bold border">' + formatPct(value) + '</div></td>';
+      return '<td class="py-1 px-1 text-center">' + heatChip(formatPct(value), getHeatmapStyle(value, scale)) + '</td>';
     }
 
     // Sub-year SIP XIRR is annualized and needs a wider scale. Sub-year CAGR is an absolute change.
@@ -1122,34 +1138,32 @@
         box.innerHTML = '<p class="p-4 text-xs text-slate-400">Check one or more funds. The table uses the Sale Date already set above.</p>';
         return;
       }
-      var html = '<table class="compare-table"><thead><tr>';
-      html += '<th>Fund</th><th class="num-center">Std dev</th><th class="num-center">Downside</th><th class="num-center">Sharpe</th><th class="num-center">Sortino</th>';
-      html += '<th class="num-center">Info ratio</th><th class="num-center">R-squared</th>';
-      html += '<th class="num-center">Max DD</th><th class="num-center">Max DU</th><th class="num-center">Upside</th><th class="num-center">Downside cap.</th>';
-      html += '<th class="num-center">Beta</th><th class="num-center">Alpha</th><th class="num-center">Best month</th><th class="num-center">Worst month</th>';
-      html += '</tr></thead><tbody>';
+      var head = nameHead(true);
+      head += rateHead('Std dev') + rateHead('Downside') + rateHead('Sharpe') + rateHead('Sortino');
+      head += rateHead('Info ratio') + rateHead('R-squared');
+      head += rateHead('Max DD') + rateHead('Max DU') + rateHead('Upside') + rateHead('Downside cap.');
+      head += rateHead('Beta') + rateHead('Alpha') + rateHead('Best month') + rateHead('Worst month');
+      var body = '';
       funds.forEach(function(fund) {
         var risk = fund.risk || {};
-        html += '<tr><td class="cmp-text cmp-name"><div title="' + esc(fund.name) + '">' + esc(fund.name) + '</div>';
-        html += '<div class="text-slate-400">' + esc(fund.category || '') + (risk.windowStart ? ' · ' + esc(risk.windowStart) + ' to ' + esc(risk.windowEnd) : '') + '</div></td>';
-        html += riskHeat(risk.volatility, 'lower');
-        html += riskHeat(risk.downsideDeviation, 'lower');
-        html += riskHeat(risk.sharpe, 'sharpe');
-        html += riskHeat(risk.sortino, 'sharpe');
-        html += riskHeat(risk.informationRatio, 'sharpe');
-        html += riskHeat(risk.rSquared, 'fit');
-        html += riskHeat(risk.maxDrawdown, 'drawdown');
-        html += riskHeat(risk.maxDrawup, 'drawup');
-        html += riskHeat(risk.upsideCapture, 'up');
-        html += riskHeat(risk.downsideCapture, 'downcap');
-        html += riskHeat(risk.beta, 'beta');
-        html += riskHeat(risk.alpha, 'rate');
-        html += riskHeat(risk.bestMonth, 'rate');
-        html += riskHeat(risk.worstMonth, 'worst');
-        html += '</tr>';
+        body += '<tr>' + fundNameCell(fund.name, nameNote(esc(fund.category || '') + (risk.windowStart ? ' · ' + esc(risk.windowStart) + ' to ' + esc(risk.windowEnd) : '')), true);
+        body += riskHeat(risk.volatility, 'lower');
+        body += riskHeat(risk.downsideDeviation, 'lower');
+        body += riskHeat(risk.sharpe, 'sharpe');
+        body += riskHeat(risk.sortino, 'sharpe');
+        body += riskHeat(risk.informationRatio, 'sharpe');
+        body += riskHeat(risk.rSquared, 'fit');
+        body += riskHeat(risk.maxDrawdown, 'drawdown');
+        body += riskHeat(risk.maxDrawup, 'drawup');
+        body += riskHeat(risk.upsideCapture, 'up');
+        body += riskHeat(risk.downsideCapture, 'downcap');
+        body += riskHeat(risk.beta, 'beta');
+        body += riskHeat(risk.alpha, 'rate');
+        body += riskHeat(risk.bestMonth, 'rate');
+        body += riskHeat(risk.worstMonth, 'worst');
+        body += '</tr>';
       });
-      html += '</tbody></table>';
-      box.innerHTML = html;
+      box.innerHTML = sheetTable(head, body);
     }
 
     function riskHeat(value, mode) {
@@ -1158,7 +1172,7 @@
         ? (value === null || value === undefined || isNaN(value) ? '-' : Number(value).toFixed(2))
         : formatPct(value);
       var style = getHeatmapStyle(riskScore(value, mode), 'standard');
-      return '<td class="py-1 px-1 text-center"><div class="heatmap-cell cmp-fig" style="background-color:' + style.bg + ';color:' + style.text + '">' + text + '</div></td>';
+      return '<td class="py-1 px-1 text-center">' + heatChip(text, style) + '</td>';
     }
 
     // Green still means the better end of that ratio. Lower-is-better figures are flipped before coloring.
@@ -1303,22 +1317,22 @@
       html += summaryLine('Overall', overallLine(bookBest));
       summary.innerHTML = html;
 
-      var blocks = within ? groupByCategory(selected) : { 'Selected funds': selected };
-      var tableHtml = '';
       var flowHtml = '';
-      Object.keys(blocks).sort().forEach(function(title) {
-        var picked = blocks[title].slice();
-        var rows = picked.slice();
-        if (within && categoryLeaders[title]) addFund(rows, categoryLeaders[title]);
-        if (!within) addFund(rows, bookBest);
-        rows.sort(compareByXirr);
-        var categoryBest = within ? categoryLeaders[title] : null;
-        var card = renderCompareCard(title, rows, selectedBest, bookBest, categoryBest, within ? picked.length : 1);
-        if (within) flowHtml += card;
-        else tableHtml += card;
-      });
-      if (within) tableHtml = '<div class="compare-flow">' + flowHtml + '</div>' + renderCompareCard('Overall', [bookBest].filter(Boolean), selectedBest, bookBest, null, 1);
-      results.innerHTML = tableHtml;
+      var selectionRows = selected.slice();
+      addFund(selectionRows, bookBest);
+      selectionRows.sort(compareByXirr);
+      flowHtml += renderCompareCard('Your selection', selectionRows, selectedBest, bookBest, null, 1);
+      if (within) {
+        var blocks = groupByCategory(selected);
+        Object.keys(blocks).sort().forEach(function(title) {
+          var picked = blocks[title].slice();
+          var rows = picked.slice();
+          if (categoryLeaders[title]) addFund(rows, categoryLeaders[title]);
+          rows.sort(compareByXirr);
+          flowHtml += renderCompareCard(title, rows, selectedBest, bookBest, categoryLeaders[title], picked.length);
+        });
+      }
+      results.innerHTML = '<div class="compare-flow">' + flowHtml + '</div>';
     }
 
     function fundsInCategory(category) {
@@ -1353,15 +1367,12 @@
     }
 
     function renderCompareCard(title, rows, selectedBest, bookBest, categoryBest, sipMultiple) {
-      var tableHtml = '<div class="compare-card">';
-      tableHtml += '<div class="compare-card-title">' + esc(title) + '</div>';
-      tableHtml += '<div class="overflow-x-auto"><table class="compare-table"><thead><tr>';
-      tableHtml += '<th class="cmp-rank">#</th><th>Fund</th>';
-      tableHtml += '<th class="num-right">Invested</th><th class="num-right">Corpus</th><th class="num-right">Net Profit</th>';
-      tableHtml += '<th class="num-center">Absolute</th><th class="num-center">Custom XIRR</th>';
-      tableHtml += '<th class="num-center">3M</th><th class="num-center">6M</th><th class="num-center">1Y</th>';
-      tableHtml += '<th class="num-center">3Y</th><th class="num-center">5Y</th><th class="num-center">10Y</th>';
-      tableHtml += '</tr></thead><tbody>';
+      var head = '<th class="freeze-move py-2 px-0 text-center">#</th>' + nameHead(false);
+      head += moneyHead('Invested') + moneyHead('Corpus') + moneyHead('Net Profit');
+      head += rateHead('Absolute') + rateHead('Custom XIRR');
+      head += rateHead('3M') + rateHead('6M') + rateHead('1Y', 'tone-1y');
+      head += rateHead('3Y') + rateHead('5Y', 'tone-5y') + rateHead('10Y');
+      var body = '';
       rows.forEach(function(fund, index) {
         if (!fund) return;
         var leads = !!(categoryBest && fund.code === categoryBest.code);
@@ -1369,26 +1380,25 @@
         var tags = compareTags(fund, selectedBest, bookBest, categoryBest);
         if (times > 1) tags.push(times + ' SIPs combined');
         var series = activeSeries(fund) || {};
-        tableHtml += '<tr class="' + (tags.length ? 'compare-best' : '') + (leads ? ' compare-lead' : '') + '">';
-        tableHtml += '<td class="cmp-text cmp-rank">' + (index + 1) + '</td>';
-        tableHtml += '<td class="cmp-text cmp-name"><div title="' + esc(fund.name) + '">' + esc(fund.name) + '</div>';
-        tags.forEach(function(tag) { tableHtml += '<span class="cmp-tag">' + esc(tag) + '</span>'; });
-        tableHtml += '</td>';
-        tableHtml += comparePlainMoney(scaleMoney(fund.investedAmount, times));
-        tableHtml += compareMoneyCell(scaleMoney(fund.sipCorpus, times), fund.absoluteReturn);
-        tableHtml += compareMoneyCell(scaleMoney(fund.netProfit, times), fund.absoluteReturn);
-        tableHtml += compareRateCell(fund.absoluteReturn, 'standard');
-        tableHtml += compareRateCell(fund.customRangeXirr, 'standard');
-        tableHtml += compareRateCell(series['3M'], heatScale(tenureByKey('3M')));
-        tableHtml += compareRateCell(series['6M'], heatScale(tenureByKey('6M')));
-        tableHtml += compareRateCell(series['1Y'], heatScale(tenureByKey('1Y')));
-        tableHtml += compareRateCell(series['3Y'], heatScale(tenureByKey('3Y')));
-        tableHtml += compareRateCell(series['5Y'], heatScale(tenureByKey('5Y')));
-        tableHtml += compareRateCell(series['10Y'], heatScale(tenureByKey('10Y')));
-        tableHtml += '</tr>';
+        var tagHtml = '';
+        tags.forEach(function(tag) { tagHtml += '<span class="cmp-tag">' + esc(tag) + '</span>'; });
+        body += '<tr class="' + (tags.length ? 'compare-best' : '') + (leads ? ' compare-lead' : '') + '">';
+        body += '<td class="freeze-move cmp-rank py-1 px-0 text-center text-slate-500 font-semibold text-[11px]">' + (index + 1) + '</td>';
+        body += fundNameCell(fund.name, tagHtml, false);
+        body += moneyCell(scaleMoney(fund.investedAmount, times), false);
+        body += heatMoneyCell(scaleMoney(fund.sipCorpus, times), fund.absoluteReturn);
+        body += heatMoneyCell(scaleMoney(fund.netProfit, times), fund.absoluteReturn);
+        body += heatRateCell(fund.absoluteReturn, 'standard');
+        body += heatRateCell(fund.customRangeXirr, 'standard');
+        body += heatRateCell(series['3M'], heatScale(tenureByKey('3M')));
+        body += heatRateCell(series['6M'], heatScale(tenureByKey('6M')));
+        body += heatRateCell(series['1Y'], heatScale(tenureByKey('1Y')));
+        body += heatRateCell(series['3Y'], heatScale(tenureByKey('3Y')));
+        body += heatRateCell(series['5Y'], heatScale(tenureByKey('5Y')));
+        body += heatRateCell(series['10Y'], heatScale(tenureByKey('10Y')));
+        body += '</tr>';
       });
-      tableHtml += '</tbody></table></div></div>';
-      return tableHtml;
+      return '<div class="compare-card"><div class="compare-card-title">' + esc(title) + '</div>' + sheetTable(head, body) + '</div>';
     }
 
     function groupByCategory(funds) {
@@ -1408,23 +1418,9 @@
       return { key: key, annualized: true };
     }
 
-    function comparePlainMoney(value) {
-      return '<td class="py-1 px-1 text-right"><span class="cmp-fig">' + formatInrWhole(value) + '</span></td>';
-    }
-
-    function compareMoneyCell(value, rate) {
-      var style = getHeatmapStyle(rate, 'standard');
-      return '<td class="py-1 px-1 text-right"><div style="background-color:' + style.bg + '; color:' + style.text + '; border-color:' + style.border + '" class="heatmap-cell cmp-fig">' + formatInrWhole(value) + '</div></td>';
-    }
-
-    function compareRateCell(value, scale) {
-      var style = getHeatmapStyle(value, scale);
-      return '<td class="py-1 px-1 text-center"><div style="background-color:' + style.bg + '; color:' + style.text + '; border-color:' + style.border + '" class="heatmap-cell cmp-fig">' + formatPct(value) + '</div></td>';
-    }
-
     function rateChip(value, scale) {
       var style = getHeatmapStyle(value, scale || 'standard');
-      return '<span class="heatmap-cell inline-block align-middle px-1.5 py-0.5 rounded border" style="background-color:' + style.bg + ';color:' + style.text + ';border-color:' + style.border + '">' + formatPct(value) + '</span>';
+      return heatChip(formatPct(value), style);
     }
 
     function summaryLine(label, html) {
