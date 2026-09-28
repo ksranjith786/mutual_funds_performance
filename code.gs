@@ -32,19 +32,26 @@ function onOpen() {
     .addToUi();
 }
 
+function matrixPage() {
+  return HtmlService.createHtmlOutputFromFile('Index');
+}
+
 function showSidebar() {
-  var html = HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('Mutual Fund Valuation & Return Matrix');
-  SpreadsheetApp.getUi().showSidebar(html);
+  SpreadsheetApp.getUi().showSidebar(
+    matrixPage().setTitle('Mutual Fund Valuation & Return Matrix')
+  );
 }
 
 function showDialog() {
-  var html = HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setWidth(1250)
-    .setHeight(820);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Mutual Fund Valuation & Multi-Tenure Matrix');
+  var ui = SpreadsheetApp.getUi();
+  try {
+    ui.showModalDialog(
+      matrixPage().setWidth(1250).setHeight(820),
+      'Mutual Fund Valuation & Multi-Tenure Matrix'
+    );
+  } catch (err) {
+    ui.alert('Could not open the dialog', String(err && err.message ? err.message : err), ui.ButtonSet.OK);
+  }
 }
 
 function showWebAppUrl() {
@@ -62,8 +69,7 @@ function showWebAppUrl() {
 }
 
 function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
+  return matrixPage()
     .setTitle('Mutual Fund Valuation & Return Matrix')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

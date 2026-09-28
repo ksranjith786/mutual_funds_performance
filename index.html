@@ -91,7 +91,7 @@
     input, select { background: var(--color-fill-container); color: var(--color-text-primary); border-color: var(--color-boundary-border-mild); }
     html.dark input, html.dark select { color-scheme: dark; }
     /* Table figures only. Labels stay Inter. IBM Plex Sans is built for columns of amounts and rates. */
-    .heatmap-cell, .font-mono, .cmp-rank {
+    .heatmap-cell, .font-mono, .cmp-rank, .overlap-pct, .money-table td, .overlap-hold span:last-child {
       font-family: "IBM Plex Sans", Inter, sans-serif !important;
       font-variant-numeric: tabular-nums lining-nums;
       font-feature-settings: "tnum" 1, "lnum" 1;
@@ -138,28 +138,26 @@
     .sheet th, .sheet td { border-bottom: 1px solid var(--color-boundary-divider); }
     .sheet thead th { position: sticky; top: 0; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; vertical-align: bottom; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
     .overlap-board { overflow: auto; width: 100%; }
-    .overlap-mosaic { display: grid; grid-template-columns: repeat(var(--overlap-n), 10.5rem); gap: 8px; width: max-content; }
-    .overlap-slot { position: relative; border-radius: 16px; transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease, filter 160ms ease, background 160ms ease; }
-    .overlap-pair, .overlap-fund, .overlap-void { border-radius: 16px; min-height: 9.5rem; }
-    .overlap-mosaic.is-active .overlap-slot:not(.is-cross) { opacity: 0.38; }
-    .overlap-mosaic.is-active .overlap-slot.is-cross { opacity: 1; z-index: 1; transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45), 0 8px 18px rgba(24, 32, 72, 0.2); }
-    .overlap-mosaic.is-active .overlap-pair.is-cross { filter: brightness(1.08); }
-    .overlap-mosaic.is-active .overlap-slot.is-hot { z-index: 2; transform: translateY(-2px) scale(1.035); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92), 0 14px 28px rgba(36, 28, 84, 0.32); }
-    .overlap-mosaic.is-active .overlap-pair.is-hot { filter: brightness(1.16); }
-    .overlap-mosaic.is-active .overlap-void.is-cross { background: #2c3548; }
-    html:not(.dark) .overlap-mosaic.is-active .overlap-slot.is-cross { box-shadow: 0 0 0 1px rgba(39, 108, 240, 0.45), 0 8px 16px rgba(18, 51, 76, 0.1); }
-    html:not(.dark) .overlap-mosaic.is-active .overlap-slot.is-hot { box-shadow: 0 0 0 2px #276cf0, 0 14px 24px rgba(18, 51, 76, 0.18); }
-    html:not(.dark) .overlap-mosaic.is-active .overlap-void.is-cross { background: #d5deea; }
-    .overlap-pair { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px; text-align: center; color: #fff; background: linear-gradient(180deg, #3c5fe8 0%, #6a3eab 100%); }
-    .overlap-pill { display: inline-flex; align-items: center; border-radius: 99px; padding: 2px 8px; font-size: 11px; font-weight: 600; line-height: 16px; color: #fff; }
+    .overlap-mosaic { display: grid; align-items: start; grid-template-columns: repeat(var(--overlap-n), minmax(0, 1fr)); gap: 6px; width: min(100%, calc(var(--overlap-n) * 7.25rem)); }
+    .overlap-pair, .overlap-fund, .overlap-void { border-radius: 10px; aspect-ratio: 1; min-width: 0; min-height: 0; overflow: hidden; }
+    .overlap-pair { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px; text-align: center; color: #fff; background: linear-gradient(180deg, #3c5fe8 0%, #6a3eab 100%); container-type: inline-size; }
+    .overlap-pill { display: inline-flex; max-width: 100%; align-items: center; justify-content: center; border-radius: 99px; padding: 1px 6px; font-size: 9px; font-weight: 600; line-height: 12px; color: #fff; text-align: center; }
+    @container (max-width: 5.5rem) {
+      .overlap-pill { width: 8px; height: 8px; padding: 0; font-size: 0; line-height: 0; }
+    }
     .overlap-pill.is-low { background: #146c43; }
     .overlap-pill.is-mid { background: #0b3d2c; }
     .overlap-pill.is-high { background: #9f1239; }
-    .overlap-pct { font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
-    .overlap-fund { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: #171a22; color: #e8eef4; border: 1px solid rgba(255, 255, 255, 0.06); }
-    .overlap-tools { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+    .overlap-pct { font-size: clamp(12px, 1.5vw, 20px) !important; line-height: 1.15 !important; font-weight: 600 !important; letter-spacing: -0.03em !important; }
+    .overlap-fund { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 8px; background: #171a22; color: #e8eef4; border: 1px solid rgba(255, 255, 255, 0.06); }
+    .overlap-fund:hover, .overlap-fund:focus-within { z-index: 5; aspect-ratio: auto; height: auto; min-height: 100%; justify-content: flex-start; overflow: visible; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28); }
+    .overlap-more { display: none; }
+    .overlap-fund:hover .overlap-more, .overlap-fund:focus-within .overlap-more { display: flex; flex-direction: column; gap: 4px; }
+    .overlap-name { font-size: 12px; line-height: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .overlap-fund:hover .overlap-name, .overlap-fund:focus-within .overlap-name { white-space: normal; }
+    .overlap-fund:hover .overlap-hold span:first-child, .overlap-fund:focus-within .overlap-hold span:first-child { white-space: normal; }
+    .overlap-tools { display: flex; align-items: center; gap: 4px; }
     .overlap-remove { min-height: 0; width: 16px; height: 14px; padding: 0; border: 0; background: transparent; color: #cd2629; font-size: 14px; line-height: 14px; cursor: pointer; }
-    .overlap-fund strong { font-size: 13px; line-height: 18px; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .overlap-count { font-size: 11px; line-height: 14px; color: #8e9dac; }
     .overlap-hold { display: flex; justify-content: space-between; gap: 8px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; line-height: 16px; }
     .overlap-hold span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -204,7 +202,7 @@
     .theme-switch button.is-active { background: var(--color-fill-brand); color: var(--color-text-on-brand); font-weight: 600; }
     .compare-winner { background: var(--color-fill-semantic-success-mildest); }
     html, body { max-width: 100%; overflow-x: hidden; }
-    main, header, #panelMatrix, #panelCompare, #panelRisk, #panelFinal { min-width: 0; max-width: 100%; }
+    main, header, #panelMatrix, #panelCompare, #panelRisk, #panelOverlap, #panelFinal { min-width: 0; max-width: 100%; }
     .final-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
     .decision-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
     .decision-card { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); box-shadow: var(--shadow-sm); }
@@ -295,12 +293,12 @@
           <div class="flex flex-wrap items-center gap-2">
             <h1 class="text-xl font-bold text-slate-900 tracking-tight">Mutual Fund Matrix</h1>
             <span class="live-pill">5D – 12Y</span>
-        </div>
+          </div>
           <p class="text-xs text-slate-500 font-medium">Tenure returns look back from Sale Date. Custom Range uses From Date to To Date.</p>
-      </div>
+        </div>
       </div>
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
-        <select id="viewSelect" onchange="setTab(this.value)" aria-label="Choose view" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full sm:w-56">
+        <select id="viewSelect" onchange="setTab(this.value)" aria-label="Choose view" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full sm:w-60">
           <option value="matrix">Return Matrix</option>
           <option value="compare">Fund Comparator</option>
           <option value="risk">Risk and Rating</option>
@@ -462,8 +460,8 @@
           <input type="search" id="overlapSearch" oninput="renderOverlapPicker()" placeholder="Search funds to include..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
           <button type="button" id="overlapBtn" onclick="loadOverlap()" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white">Load overlap</button>
         </div>
-        <p id="overlapCount" class="text-[11px] text-slate-400">Select 2 to 20 funds. Move and remove sit on each fund card.</p>
-        <p class="text-[11px] text-slate-400">Each pair card is the share of the two portfolios held in the same stocks. Below 25% is Low, 25% to 50% is Moderate, and above 50% is High. The diagonal card is the fund, with its three largest equity weights. The other triangle stays empty. Cash and debt are left out.</p>
+        <p id="overlapCount" class="text-[11px] text-slate-400">Select 2 to 20 funds. Hover a fund name to see its holdings and to move or remove it.</p>
+        <p class="text-[11px] text-slate-400">Each pair card is the share of the two portfolios held in the same stocks. Below 25% is Low, 25% to 50% is Moderate, and above 50% is High. Hover the fund name for the full name, stock count, and three largest equity weights. The other triangle stays empty. Cash and debt are left out.</p>
         <div id="overlapPicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
       </div>
       <div id="overlapNote" class="text-xs text-slate-500"></div>
@@ -1510,46 +1508,24 @@
       for (var r = 0; r < n; r++) {
         for (var c = 0; c < n; c++) {
           var diag = n - 1 - r;
-          if (c === diag) html += overlapFundCard(shown[r].row, r, n, r, c);
+          if (c === diag) html += overlapFundCard(shown[r].row, r, n);
           else if (c < diag) {
             var other = n - 1 - c;
             var line = (overlapPayload.matrix && overlapPayload.matrix[shown[r].index]) || [];
             var shared = (overlapPayload.common && overlapPayload.common[shown[r].index]) || [];
-            html += overlapPairCard(line[shown[other].index], shared[shown[other].index], shown[r].row, shown[other].row, r, c);
-          } else html += '<div class="overlap-void overlap-slot" data-r="' + r + '" data-c="' + c + '"></div>';
+            html += overlapPairCard(line[shown[other].index], shared[shown[other].index], shown[r].row, shown[other].row);
+          } else html += '<div class="overlap-void"></div>';
         }
       }
       html += '</div></div>';
       box.innerHTML = html;
-      var mosaic = box.querySelector('.overlap-mosaic');
-      mosaic.onmouseover = function(event) {
-        var slot = event.target.closest ? event.target.closest('.overlap-slot') : null;
-        paintOverlapCross(mosaic, slot);
-      };
-      mosaic.onmouseleave = function() { paintOverlapCross(mosaic, null); };
-    }
-
-    function paintOverlapCross(mosaic, slot) {
-      if (mosaic._hot === slot) return;
-      mosaic._hot = slot;
-      var row = slot ? slot.getAttribute('data-r') : '';
-      var col = slot ? slot.getAttribute('data-c') : '';
-      mosaic.classList.toggle('is-active', !!slot);
-      var cells = mosaic.querySelectorAll('.overlap-slot');
-      for (var i = 0; i < cells.length; i++) {
-        var cell = cells[i];
-        var onRow = slot && cell.getAttribute('data-r') === row;
-        var onCol = slot && cell.getAttribute('data-c') === col;
-        cell.classList.toggle('is-cross', !!(onRow || onCol));
-        cell.classList.toggle('is-hot', !!(onRow && onCol));
-      }
     }
 
     function overlapBand(value) {
       if (value === null || value === undefined || isNaN(value)) return null;
-      if (value < 0.25) return { key: 'low', label: 'Low Overlap' };
-      if (value < 0.5) return { key: 'mid', label: 'Moderate Overlap' };
-      return { key: 'high', label: 'High Overlap' };
+      if (value < 0.25) return { key: 'low', label: 'Low' };
+      if (value < 0.5) return { key: 'mid', label: 'Moderate' };
+      return { key: 'high', label: 'High' };
     }
 
     function overlapHoldPct(percentPoints) {
@@ -1557,9 +1533,10 @@
       return isNaN(n) ? '' : n + '%';
     }
 
-    function overlapFundCard(row, index, total, gridRow, gridCol) {
+    function overlapFundCard(row, index, total) {
       var code = esc(row.code);
-      var html = '<div class="overlap-fund overlap-slot" data-r="' + gridRow + '" data-c="' + gridCol + '" title="' + esc(row.name) + '"><strong>' + esc(briefName(row.name)) + '</strong>';
+      var html = '<div class="overlap-fund"><strong class="overlap-name">' + esc(briefName(row.name)) + '</strong><div class="overlap-more">';
+      html += '<div class="overlap-count">' + esc(row.name) + '</div>';
       if (row.error) html += '<div class="overlap-count">' + esc(row.error) + '</div>';
       else {
         html += '<div class="overlap-count">' + (row.equityCount || 0) + ' stocks</div>';
@@ -1571,15 +1548,15 @@
       html += '<button type="button" class="move-btn move-up" title="Move up" onclick="moveOverlapFund(\'' + code + '\', \'up\')"' + (index === 0 ? ' disabled' : '') + '>▲</button>';
       html += '<button type="button" class="move-btn move-down" title="Move down" onclick="moveOverlapFund(\'' + code + '\', \'down\')"' + (index === total - 1 ? ' disabled' : '') + '>▼</button>';
       html += '<button type="button" class="overlap-remove" title="Remove" onclick="removeOverlapFund(\'' + code + '\')">×</button>';
-      html += '</div></div>';
+      html += '</div></div></div>';
       return html;
     }
 
-    function overlapPairCard(value, common, left, right, gridRow, gridCol) {
+    function overlapPairCard(value, common, left, right) {
       var band = overlapBand(value);
-      var title = briefName(left.name) + ' and ' + briefName(right.name);
+      var title = (band ? band.label + ' · ' : '') + briefName(left.name) + ' and ' + briefName(right.name);
       if (common) title += ' · ' + common + ' shared stocks';
-      var open = '<div class="overlap-pair overlap-slot" data-r="' + gridRow + '" data-c="' + gridCol + '" title="' + esc(title) + '">';
+      var open = '<div class="overlap-pair" title="' + esc(title) + '">';
       if (!band) return open + '<div class="overlap-pct">-</div></div>';
       return open + '<span class="overlap-pill is-' + band.key + '">' + band.label + '</span><div class="overlap-pct">' + formatPct(value) + '</div></div>';
     }
