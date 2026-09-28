@@ -175,14 +175,23 @@
     html, body { max-width: 100%; overflow-x: hidden; }
     main, header, #panelMatrix, #panelCompare, #panelRisk, #panelFinal { min-width: 0; max-width: 100%; }
     .final-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
-    .decision-list { display: flex; flex-direction: column; gap: 8px; }
-    .decision-card { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); box-shadow: var(--shadow-sm); }
+    .decision-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .decision-card { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); box-shadow: var(--shadow-sm); }
     .switch-line { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
     .switch-line span { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
     .switch-line strong { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--color-text-secondary); }
-    .money-block { display: grid; gap: 4px; margin-top: 10px; }
-    .money-block div { display: grid; grid-template-columns: 9.5rem 1fr; gap: 8px; font-size: 12px; line-height: 16px; }
-    .money-block span { color: var(--color-text-placeholder); }
+    .money-block { width: 100%; margin-top: 10px; }
+    .money-title { margin: 10px 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
+    .money-table { width: 100%; overflow-x: auto; }
+    .money-table table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .money-table th, .money-table td { padding: 6px 8px; font-size: 12px; line-height: 16px; }
+    .money-table th { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); text-align: right; border-bottom: 1px solid var(--color-boundary-divider); }
+    .money-table td { text-align: right; font-variant-numeric: tabular-nums lining-nums; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-boundary-divider); }
+    .money-table .is-name { width: 40%; text-align: left; font-weight: 600; }
+    .money-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+    .money-stats div { min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-container); }
+    .money-stats span { display: block; font-size: 11px; line-height: 14px; color: var(--color-text-placeholder); }
+    .money-stats strong { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
     .pro-con { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
     .pro-con h3 { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
     .pro-con ul { margin: 0; padding-left: 16px; }
@@ -200,7 +209,7 @@
       .pro-con { flex-direction: column; }
       .pro-con { grid-template-columns: 1fr; }
       .switch-line { grid-template-columns: 1fr; }
-      .money-block div { grid-template-columns: 1fr; gap: 0; }
+      .money-stats { grid-template-columns: 1fr 1fr; }
     }
     .risk-guide { display: flex; flex-wrap: wrap; gap: 8px; }
     .risk-card { flex: 1 1 14rem; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); }
@@ -1913,52 +1922,73 @@
     }
 
     function buildBooks(owned, leader) {
-      var lines = [];
-      owned.forEach(function(fund) {
-        lines.push({
-          label: briefName(fund.name),
-          text: 'Invested ' + formatInrWhole(fund.investedAmount) + ' · worth ' + formatInrWhole(fund.sipCorpus) + ' · profit ' + formatInrWhole(fund.netProfit)
-        });
-      });
+      var book = {
+        holdings: owned.map(function(fund) {
+          return {
+            name: briefName(fund.name),
+            invested: formatInrWhole(fund.investedAmount),
+            worth: formatInrWhole(fund.sipCorpus),
+            profit: formatInrWhole(fund.netProfit)
+          };
+        }),
+        lots: [],
+        stats: []
+      };
       var selling = owned.filter(function(fund) { return !leader || fund.code !== leader.code; });
-      if (!selling.length) return lines;
+      if (!selling.length) return book;
       selling.forEach(function(fund) {
         if (!fund.redeem) return;
-        lines.push({
-          label: 'Lots · ' + briefName(fund.name),
-          text: 'Long-term gain ' + formatInrWhole(fund.redeem.ltcgGain) + ' · short-term gain ' + formatInrWhole(fund.redeem.stcgGain) + ' · exit load ' + formatInrWhole(fund.redeem.exitLoad)
+        book.lots.push({
+          name: briefName(fund.name),
+          ltcg: formatInrWhole(fund.redeem.ltcgGain),
+          stcg: formatInrWhole(fund.redeem.stcgGain),
+          load: formatInrWhole(fund.redeem.exitLoad)
         });
       });
       var money = combinedRedeem(selling);
       if (money) {
-        lines.push({
-          label: 'Tax if sold today',
-          text: formatInrWhole(money.tax) + ' · long-term ' + formatInrWhole(money.ltcgTax) + ' after ₹1.25 lakh · short-term ' + formatInrWhole(money.stcgTax) + ' at 20%'
-        });
-        lines.push({
-          label: 'Left to invest',
-          text: formatInrWhole(money.net) + ' after tax and exit load, from a corpus of ' + formatInrWhole(money.corpus)
-        });
+        book.stats.push({ label: 'Tax if sold today', value: formatInrWhole(money.tax) });
+        book.stats.push({ label: 'Long-term tax', value: formatInrWhole(money.ltcgTax) });
+        book.stats.push({ label: 'Short-term tax', value: formatInrWhole(money.stcgTax) });
+        book.stats.push({ label: 'Exit load', value: formatInrWhole(money.exitLoad) });
+        book.stats.push({ label: 'Corpus', value: formatInrWhole(money.corpus) });
+        book.stats.push({ label: 'Left to invest', value: formatInrWhole(money.net) });
       } else {
-        lines.push({ label: 'Tax if sold today', text: 'Lot gains are not on this load yet. Paste code.gs and refresh.' });
+        book.stats.push({ label: 'Tax if sold today', value: 'Refresh after pasting code.gs' });
       }
       var missed = missedCorpus(selling, leader);
       if (missed !== null && leader) {
-        lines.push({
-          label: 'Same SIP in ' + briefName(leader.name),
-          text: (missed >= 0 ? 'Ahead by ' : 'Behind by ') + formatInrWhole(Math.abs(missed)) + ' before tax'
-        });
+        book.stats.push({ label: 'Same SIP, before tax', value: (missed >= 0 ? 'Ahead ' : 'Behind ') + formatInrWhole(Math.abs(missed)) });
       }
       var ahead = yearAhead(selling, leader, money);
       if (ahead) {
-        lines.push({
-          label: 'One more year',
-          text: 'Hold ' + formatInrWhole(ahead.stay) + ' · switch today ' + formatInrWhole(ahead.switched) + ' · difference ' + formatInrWhole(ahead.gap)
-        });
+        book.stats.push({ label: 'Hold one more year', value: formatInrWhole(ahead.stay) });
+        book.stats.push({ label: 'Switch, then one year', value: formatInrWhole(ahead.switched) });
+        book.stats.push({ label: 'Difference', value: formatInrWhole(ahead.gap) });
       }
       var ready = switchReadyMonth(selling, leader);
-      if (ready) lines.push({ label: 'Lead first cleared', text: monthLabel(ready) });
-      return lines;
+      if (ready) book.stats.push({ label: 'Lead first cleared', value: monthLabel(ready) });
+      return book;
+    }
+
+    function moneyTable(title, headers, rows, read) {
+      if (!rows.length) return '';
+      var html = '<div class="money-table">';
+      if (title) html += '<div class="money-title">' + esc(title) + '</div>';
+      html += '<table><thead><tr>';
+      headers.forEach(function(header, index) {
+        html += '<th' + (index ? '' : ' class="is-name"') + '>' + esc(header) + '</th>';
+      });
+      html += '</tr></thead><tbody>';
+      rows.forEach(function(row) {
+        html += '<tr>';
+        read(row).forEach(function(cell, index) {
+          html += '<td' + (index ? '' : ' class="is-name"') + '>' + esc(cell) + '</td>';
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+      return html;
     }
 
     function taxNote(category) {
@@ -1997,11 +2027,21 @@
         html += '<h2 class="text-sm font-semibold text-slate-900 mt-1">' + esc(decision.title) + '</h2>';
       }
       html += '<p class="text-xs text-slate-600 mt-2">' + esc(decision.sentence) + '</p>';
-      if (decision.books && decision.books.length) {
+      if (decision.books && decision.books.holdings && decision.books.holdings.length) {
         html += '<div class="money-block">';
-        decision.books.forEach(function(row) {
-          html += '<div><span>' + esc(row.label) + '</span><strong>' + esc(row.text) + '</strong></div>';
+        html += moneyTable('', ['Fund', 'Invested', 'Worth', 'Profit'], decision.books.holdings, function(row) {
+          return [row.name, row.invested, row.worth, row.profit];
         });
+        html += moneyTable('Tax lots', ['Fund', 'Long-term gain', 'Short-term gain', 'Exit load'], decision.books.lots, function(row) {
+          return [row.name, row.ltcg, row.stcg, row.load];
+        });
+        if (decision.books.stats.length) {
+          html += '<div class="money-stats">';
+          decision.books.stats.forEach(function(stat) {
+            html += '<div><span>' + esc(stat.label) + '</span><strong>' + esc(stat.value) + '</strong></div>';
+          });
+          html += '</div>';
+        }
         html += '</div>';
       }
       html += '<div class="pro-con">' + listHtml(decision.pros.slice(0, 4), 'is-pro') + listHtml(decision.cons.slice(0, 4), 'is-con') + '</div>';
@@ -2022,7 +2062,7 @@
       var into = null;
       var sentence = 'No decision yet.';
       var note = 'Tax and exit load are not in this book. Custom Range XIRR is context, usually the shorter SIP window.';
-      var books = [];
+      var books = null;
       if (!leader) return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books };
 
       function shouldSwitch(fund) {
