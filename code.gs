@@ -18,7 +18,7 @@
  *   Also rolling 1Y return and hit rate, 95% one-day VaR, Treynor, correlation, and peer tracking error and difference.
  *   Tracking uses category peers, not an index. Expense ratio is not on the NAV sheet.
  *   Manager, tenure, and portfolio weights are not on the NAV sheet. getFundPublishedProfile loads them when the public profile responds.
- *   getFundOverlap loads the latest published equity portfolio for at most 10 schemes and returns pairwise overlap.
+ *   getFundOverlap loads the latest published equity portfolio for at most 20 schemes and returns pairwise overlap.
  *   Overlap is the sum of the smaller weight of each shared stock, divided by 100. Cash and debt are excluded.
  */
 
@@ -508,18 +508,18 @@ function fillFamilyProfile(profile, familyId) {
 }
 
 /**
- * Pairwise portfolio overlap for at most 10 schemes.
+ * Pairwise portfolio overlap for at most 20 schemes.
  * codes: [{ code, name }]. Holdings are the latest published book, not the NAV sheet.
  * A scheme is used only when the published scheme code matches. Weights are not invented.
  */
 function getFundOverlap(codes) {
   codes = codes || [];
-  if (codes.length > 10) {
+  if (codes.length > 20) {
     return {
       funds: [],
       matrix: [],
       common: [],
-      error: 'Select at most 10 funds.',
+      error: 'Select at most 20 funds.',
       source: overlapSourceNote()
     };
   }
@@ -536,6 +536,7 @@ function getFundOverlap(codes) {
       asOf: null,
       equityCount: 0,
       equityWeight: null,
+      topHoldings: [],
       error: null
     });
     books.push(null);
@@ -582,9 +583,7 @@ function getFundOverlap(codes) {
       funds[idx].asOf = book.asOf;
       continue;
     }
-    funds[idx].asOf = book.asOf;
-    funds[idx].equityCount = book.count;
-    funds[idx].equityWeight = book.equityWeight;
+    fillEquityFund(funds[idx], book);
     books[idx] = book.map;
   }
   for (var f = 0; f < fallbackOwner.length; f++) {
@@ -597,9 +596,7 @@ function getFundOverlap(codes) {
       funds[owner].asOf = fallbackBook.asOf;
       continue;
     }
-    funds[owner].asOf = fallbackBook.asOf;
-    funds[owner].equityCount = fallbackBook.count;
-    funds[owner].equityWeight = fallbackBook.equityWeight;
+    fillEquityFund(funds[owner], fallbackBook);
     books[owner] = fallbackBook.map;
   }
   for (var missed = 0; missed < funds.length; missed++) {
@@ -714,6 +711,7 @@ function equityBook(body, code) {
   if (!publishedCodeMatches(body, code)) return null;
   var holdings = body.holdings || [];
   var map = {};
+  var labels = {};
   var count = 0;
   var equityWeight = 0;
   var asOf = null;
@@ -726,6 +724,7 @@ function equityBook(body, code) {
     if (isNaN(weight) || weight <= 0) continue;
     if (!map[key]) {
       map[key] = weight;
+      labels[key] = row.company_name || key;
       count += 1;
     } else {
       map[key] += weight;
@@ -733,7 +732,18 @@ function equityBook(body, code) {
     equityWeight += weight;
     if (!asOf && row.portfolio_date) asOf = portfolioDay(row.portfolio_date);
   }
-  return { map: map, count: count, equityWeight: equityWeight / 100, asOf: asOf };
+  var top = Object.keys(map).map(function(key) {
+    return { name: labels[key], weight: map[key] };
+  });
+  top.sort(function(a, b) { return b.weight - a.weight; });
+  return { map: map, count: count, equityWeight: equityWeight / 100, asOf: asOf, top: top.slice(0, 3) };
+}
+
+function fillEquityFund(fund, book) {
+  fund.asOf = book.asOf;
+  fund.equityCount = book.count;
+  fund.equityWeight = book.equityWeight;
+  fund.topHoldings = book.top || [];
 }
 
 function portfolioDay(iso) {

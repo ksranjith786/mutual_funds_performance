@@ -137,15 +137,37 @@
     .compare-card .sheet table { table-layout: fixed; }
     .sheet th, .sheet td { border-bottom: 1px solid var(--color-boundary-divider); }
     .sheet thead th { position: sticky; top: 0; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; vertical-align: bottom; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
-    .overlap-sheet.sheet table { width: max-content; max-width: 100%; table-layout: fixed; }
-    .overlap-sheet.sheet thead th,
-    .overlap-sheet.sheet tbody th.overlap-label { width: 6.75rem; min-width: 6.75rem; max-width: 6.75rem; white-space: normal; overflow-wrap: anywhere; word-break: break-word; text-transform: none; letter-spacing: normal; line-height: 14px; text-align: center; vertical-align: middle; hyphens: auto; }
-    .overlap-sheet.sheet tbody th.overlap-label,
-    .overlap-sheet.sheet thead th.overlap-label { text-align: left; position: sticky; left: 0; background: var(--color-fill-surface); }
-    .overlap-sheet.sheet thead th.overlap-label { z-index: 6; background: var(--color-fill-container); }
-    .overlap-sheet.sheet tbody th.overlap-label { z-index: 2; font-weight: 600; color: var(--color-text-primary); }
-    .overlap-sheet.sheet td.overlap-cell { width: 6.75rem; min-width: 6.75rem; height: 6.75rem; padding: 4px; text-align: center; }
-    .overlap-sheet.sheet .heatmap-cell { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 5.75rem; border-radius: 8px; }
+    .overlap-board { overflow: auto; width: 100%; }
+    .overlap-mosaic { display: grid; grid-template-columns: repeat(var(--overlap-n), 10.5rem); gap: 8px; width: max-content; }
+    .overlap-slot { position: relative; border-radius: 16px; transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease, filter 160ms ease, background 160ms ease; }
+    .overlap-pair, .overlap-fund, .overlap-void { border-radius: 16px; min-height: 9.5rem; }
+    .overlap-mosaic.is-active .overlap-slot:not(.is-cross) { opacity: 0.38; }
+    .overlap-mosaic.is-active .overlap-slot.is-cross { opacity: 1; z-index: 1; transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45), 0 8px 18px rgba(24, 32, 72, 0.2); }
+    .overlap-mosaic.is-active .overlap-pair.is-cross { filter: brightness(1.08); }
+    .overlap-mosaic.is-active .overlap-slot.is-hot { z-index: 2; transform: translateY(-2px) scale(1.035); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92), 0 14px 28px rgba(36, 28, 84, 0.32); }
+    .overlap-mosaic.is-active .overlap-pair.is-hot { filter: brightness(1.16); }
+    .overlap-mosaic.is-active .overlap-void.is-cross { background: #2c3548; }
+    html:not(.dark) .overlap-mosaic.is-active .overlap-slot.is-cross { box-shadow: 0 0 0 1px rgba(39, 108, 240, 0.45), 0 8px 16px rgba(18, 51, 76, 0.1); }
+    html:not(.dark) .overlap-mosaic.is-active .overlap-slot.is-hot { box-shadow: 0 0 0 2px #276cf0, 0 14px 24px rgba(18, 51, 76, 0.18); }
+    html:not(.dark) .overlap-mosaic.is-active .overlap-void.is-cross { background: #d5deea; }
+    .overlap-pair { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px; text-align: center; color: #fff; background: linear-gradient(180deg, #3c5fe8 0%, #6a3eab 100%); }
+    .overlap-pill { display: inline-flex; align-items: center; border-radius: 99px; padding: 2px 8px; font-size: 11px; font-weight: 600; line-height: 16px; color: #fff; }
+    .overlap-pill.is-low { background: #146c43; }
+    .overlap-pill.is-mid { background: #0b3d2c; }
+    .overlap-pill.is-high { background: #9f1239; }
+    .overlap-pct { font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
+    .overlap-fund { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: #171a22; color: #e8eef4; border: 1px solid rgba(255, 255, 255, 0.06); }
+    .overlap-tools { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+    .overlap-remove { min-height: 0; width: 16px; height: 14px; padding: 0; border: 0; background: transparent; color: #cd2629; font-size: 14px; line-height: 14px; cursor: pointer; }
+    .overlap-fund strong { font-size: 13px; line-height: 18px; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .overlap-count { font-size: 11px; line-height: 14px; color: #8e9dac; }
+    .overlap-hold { display: flex; justify-content: space-between; gap: 8px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; line-height: 16px; }
+    .overlap-hold span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .overlap-hold span:last-child { font-variant-numeric: tabular-nums lining-nums; }
+    .overlap-void { background: #101218; }
+    html:not(.dark) .overlap-fund { background: #f6f7f8; color: #12334c; border-color: #e3e8ee; }
+    html:not(.dark) .overlap-hold { border-top-color: #e3e8ee; }
+    html:not(.dark) .overlap-void { background: #e8edf2; }
     .sheet thead tr.sheet-group th { text-transform: none; letter-spacing: normal; }
     .sheet thead tr:first-child th { top: 0; }
     .sheet thead tr:nth-child(2) th { top: 2.05rem; }
@@ -440,8 +462,8 @@
           <input type="search" id="overlapSearch" oninput="renderOverlapPicker()" placeholder="Search funds to include..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
           <button type="button" id="overlapBtn" onclick="loadOverlap()" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white">Load overlap</button>
         </div>
-        <p id="overlapCount" class="text-[11px] text-slate-400">Select 2 to 10 funds. The matrix uses the same scheme list as the other tabs.</p>
-        <p class="text-[11px] text-slate-400">Each cell is the share of the two portfolios held in the same stocks. It adds the smaller weight of every common equity holding. Cash and debt are left out. Higher overlap is red. The weights are the latest published portfolio, loaded when you press the button.</p>
+        <p id="overlapCount" class="text-[11px] text-slate-400">Select 2 to 20 funds. Move and remove sit on each fund card.</p>
+        <p class="text-[11px] text-slate-400">Each pair card is the share of the two portfolios held in the same stocks. Below 25% is Low, 25% to 50% is Moderate, and above 50% is High. The diagonal card is the fund, with its three largest equity weights. The other triangle stays empty. Cash and debt are left out.</p>
         <div id="overlapPicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
       </div>
       <div id="overlapNote" class="text-xs text-slate-500"></div>
@@ -514,6 +536,7 @@
     // All leaves this map empty and lifts the scheme restriction. None clears it.
     var riskProfiles = {};
     var overlapPayload = null;
+    var overlapOrder = [];
     var heldFunds = {};
 
     window.onload = function() {
@@ -1402,13 +1425,13 @@
       var count = selectedFundList().length;
       var label = document.getElementById('overlapCount');
       if (!label) return;
-      if (!count) label.textContent = 'Select 2 to 10 funds. The matrix uses the same scheme list as the other tabs.';
+      if (!count) label.textContent = 'Select 2 to 20 funds. Move and remove sit on each fund card.';
       else if (count === 1) label.textContent = '1 fund selected. Add at least one more.';
-      else if (count > 10) label.textContent = count + ' funds selected. Overlap loads at most 10. Uncheck funds until 10 or fewer remain.';
+      else if (count > 20) label.textContent = count + ' funds selected. Overlap loads at most 20. Uncheck funds until 20 or fewer remain.';
       else label.textContent = count + ' funds selected.';
       var btn = document.getElementById('overlapBtn');
       if (btn && !btn.classList.contains('pointer-events-none')) {
-        btn.classList.toggle('opacity-50', count < 2 || count > 10);
+        btn.classList.toggle('opacity-50', count < 2 || count > 20);
       }
     }
 
@@ -1419,7 +1442,7 @@
     function loadOverlap() {
       var funds = selectedFundList();
       var btn = document.getElementById('overlapBtn');
-      if (funds.length < 2 || funds.length > 10) return;
+      if (funds.length < 2 || funds.length > 20) return;
       btn.classList.add('opacity-50', 'pointer-events-none');
       google.script.run
         .withSuccessHandler(function(response) {
@@ -1435,58 +1458,130 @@
         .getFundOverlap(funds.map(function(fund) { return { code: fund.code, name: fund.name }; }));
     }
 
+    function overlapShown() {
+      if (!overlapPayload || !overlapPayload.funds) return [];
+      var selected = {};
+      selectedFundList().forEach(function(fund) { selected[String(fund.code)] = true; });
+      var byCode = {};
+      overlapPayload.funds.forEach(function(row, index) {
+        if (selected[String(row.code)]) byCode[String(row.code)] = { row: row, index: index };
+      });
+      var next = overlapOrder.filter(function(code) { return byCode[code]; });
+      Object.keys(byCode).forEach(function(code) {
+        if (next.indexOf(code) === -1) next.push(code);
+      });
+      overlapOrder = next;
+      return next.map(function(code) { return byCode[code]; });
+    }
+
+    function moveOverlapFund(code, direction) {
+      overlapShown();
+      var index = overlapOrder.indexOf(String(code));
+      var target = direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || target < 0 || target >= overlapOrder.length) return;
+      var temp = overlapOrder[index];
+      overlapOrder[index] = overlapOrder[target];
+      overlapOrder[target] = temp;
+      renderOverlapTable();
+    }
+
+    function removeOverlapFund(code) {
+      setFilterItem('scheme', code, false);
+    }
+
     function renderOverlapTable() {
       var box = document.getElementById('overlapTable');
       var note = document.getElementById('overlapNote');
       if (!box || !note) return;
-      var funds = selectedFundList();
-      if (funds.length < 2 || funds.length > 10) {
-        note.textContent = '';
+      var shown = overlapShown();
+      var selectedCount = selectedFundList().length;
+      if (!shown.length) {
+        note.textContent = overlapPayload && overlapPayload.error ? overlapPayload.error : '';
         box.innerHTML = '';
         return;
       }
-      if (!overlapPayload || overlapPayload.key !== overlapSelectionKey(funds)) {
-        note.textContent = overlapPayload ? 'The fund list changed. Load overlap again.' : '';
-        box.innerHTML = '';
-        return;
+      var missing = selectedCount - shown.length;
+      var text = (overlapPayload && overlapPayload.source) || '';
+      if (missing > 0) text += ' ' + missing + (missing === 1 ? ' fund is' : ' funds are') + ' not on this board yet. Load overlap to add them.';
+      if (selectedCount > 20) text += ' Overlap loads at most 20 funds.';
+      note.textContent = text;
+      var n = shown.length;
+      var html = '<div class="overlap-board"><div class="overlap-mosaic" style="--overlap-n:' + n + '">';
+      for (var r = 0; r < n; r++) {
+        for (var c = 0; c < n; c++) {
+          var diag = n - 1 - r;
+          if (c === diag) html += overlapFundCard(shown[r].row, r, n, r, c);
+          else if (c < diag) {
+            var other = n - 1 - c;
+            var line = (overlapPayload.matrix && overlapPayload.matrix[shown[r].index]) || [];
+            var shared = (overlapPayload.common && overlapPayload.common[shown[r].index]) || [];
+            html += overlapPairCard(line[shown[other].index], shared[shown[other].index], shown[r].row, shown[other].row, r, c);
+          } else html += '<div class="overlap-void overlap-slot" data-r="' + r + '" data-c="' + c + '"></div>';
+        }
       }
-      if (overlapPayload.error) {
-        note.textContent = overlapPayload.error;
-        box.innerHTML = '';
-        return;
-      }
-      var rows = overlapPayload.funds || [];
-      note.textContent = overlapPayload.source || '';
-      var head = '<th class="overlap-label">Fund</th>';
-      rows.forEach(function(row) {
-        head += '<th class="overlap-head" title="' + esc(row.name) + '">' + esc(briefName(row.name)) + '</th>';
-      });
-      var body = '';
-      rows.forEach(function(row, r) {
-        var tip = row.name;
-        if (row.error) tip += ' · ' + row.error;
-        else tip += ' · ' + (row.asOf || 'Portfolio date unavailable') + (row.equityCount ? ' · ' + row.equityCount + ' stocks' : '');
-        body += '<tr><th class="overlap-label" title="' + esc(tip) + '">' + esc(briefName(row.name)) + '</th>';
-        var line = (overlapPayload.matrix && overlapPayload.matrix[r]) || [];
-        var shared = (overlapPayload.common && overlapPayload.common[r]) || [];
-        rows.forEach(function(col, c) {
-          body += overlapCell(r === c ? null : line[c], r === c ? 0 : shared[c], r === c);
-        });
-        body += '</tr>';
-      });
-      box.innerHTML = '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"><div class="sheet overlap-sheet matrix-scroll"><table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+      html += '</div></div>';
+      box.innerHTML = html;
+      var mosaic = box.querySelector('.overlap-mosaic');
+      mosaic.onmouseover = function(event) {
+        var slot = event.target.closest ? event.target.closest('.overlap-slot') : null;
+        paintOverlapCross(mosaic, slot);
+      };
+      mosaic.onmouseleave = function() { paintOverlapCross(mosaic, null); };
     }
 
-    function overlapCell(value, common, diagonal) {
-      if (diagonal) {
-        return '<td class="overlap-cell text-slate-300">—</td>';
+    function paintOverlapCross(mosaic, slot) {
+      if (mosaic._hot === slot) return;
+      mosaic._hot = slot;
+      var row = slot ? slot.getAttribute('data-r') : '';
+      var col = slot ? slot.getAttribute('data-c') : '';
+      mosaic.classList.toggle('is-active', !!slot);
+      var cells = mosaic.querySelectorAll('.overlap-slot');
+      for (var i = 0; i < cells.length; i++) {
+        var cell = cells[i];
+        var onRow = slot && cell.getAttribute('data-r') === row;
+        var onCol = slot && cell.getAttribute('data-c') === col;
+        cell.classList.toggle('is-cross', !!(onRow || onCol));
+        cell.classList.toggle('is-hot', !!(onRow && onCol));
       }
-      if (value === null || value === undefined || isNaN(value)) {
-        return '<td class="overlap-cell">' + heatChip('-', getHeatmapStyle(null, 'standard')) + '</td>';
+    }
+
+    function overlapBand(value) {
+      if (value === null || value === undefined || isNaN(value)) return null;
+      if (value < 0.25) return { key: 'low', label: 'Low Overlap' };
+      if (value < 0.5) return { key: 'mid', label: 'Moderate Overlap' };
+      return { key: 'high', label: 'High Overlap' };
+    }
+
+    function overlapHoldPct(percentPoints) {
+      var n = Math.round(Number(percentPoints));
+      return isNaN(n) ? '' : n + '%';
+    }
+
+    function overlapFundCard(row, index, total, gridRow, gridCol) {
+      var code = esc(row.code);
+      var html = '<div class="overlap-fund overlap-slot" data-r="' + gridRow + '" data-c="' + gridCol + '" title="' + esc(row.name) + '"><strong>' + esc(briefName(row.name)) + '</strong>';
+      if (row.error) html += '<div class="overlap-count">' + esc(row.error) + '</div>';
+      else {
+        html += '<div class="overlap-count">' + (row.equityCount || 0) + ' stocks</div>';
+        (row.topHoldings || []).forEach(function(hold) {
+          html += '<div class="overlap-hold"><span>' + esc(hold.name) + '</span><span>' + overlapHoldPct(hold.weight) + '</span></div>';
+        });
       }
-      var title = common ? common + ' shared stocks' : '';
-      // The shared scale paints a higher number green. Overlap falls the other way, so the score drops as the ratio rises.
-      return '<td class="overlap-cell" title="' + esc(title) + '">' + heatChip(formatPct(value), getHeatmapStyle(0.12 - Number(value), 'standard')) + '</td>';
+      html += '<div class="overlap-tools">';
+      html += '<button type="button" class="move-btn move-up" title="Move up" onclick="moveOverlapFund(\'' + code + '\', \'up\')"' + (index === 0 ? ' disabled' : '') + '>▲</button>';
+      html += '<button type="button" class="move-btn move-down" title="Move down" onclick="moveOverlapFund(\'' + code + '\', \'down\')"' + (index === total - 1 ? ' disabled' : '') + '>▼</button>';
+      html += '<button type="button" class="overlap-remove" title="Remove" onclick="removeOverlapFund(\'' + code + '\')">×</button>';
+      html += '</div></div>';
+      return html;
+    }
+
+    function overlapPairCard(value, common, left, right, gridRow, gridCol) {
+      var band = overlapBand(value);
+      var title = briefName(left.name) + ' and ' + briefName(right.name);
+      if (common) title += ' · ' + common + ' shared stocks';
+      var open = '<div class="overlap-pair overlap-slot" data-r="' + gridRow + '" data-c="' + gridCol + '" title="' + esc(title) + '">';
+      if (!band) return open + '<div class="overlap-pct">-</div></div>';
+      return open + '<span class="overlap-pill is-' + band.key + '">' + band.label + '</span><div class="overlap-pct">' + formatPct(value) + '</div></div>';
     }
 
     function renderComparePicker() {
