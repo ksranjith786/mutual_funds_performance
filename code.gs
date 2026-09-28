@@ -18,6 +18,8 @@
  *   Also rolling 1Y return and hit rate, 95% one-day VaR, Treynor, correlation, and peer tracking error and difference.
  *   Tracking uses category peers, not an index. Expense ratio is not on the NAV sheet.
  *   Manager, tenure, and portfolio weights are not on the NAV sheet. getFundPublishedProfile loads them when the public profile responds.
+ *   getFundOverlap loads the latest published equity portfolio for at most 10 schemes and returns pairwise overlap.
+ *   Overlap is the sum of the smaller weight of each shared stock, divided by 100. Cash and debt are excluded.
  */
 
 function onOpen() {
@@ -503,6 +505,256 @@ function fillFamilyProfile(profile, familyId) {
       });
     }
   } catch (err) {}
+}
+
+/**
+ * Pairwise portfolio overlap for at most 10 schemes.
+ * codes: [{ code, name }]. Holdings are the latest published book, not the NAV sheet.
+ * A scheme is used only when the published scheme code matches. Weights are not invented.
+ */
+function getFundOverlap(codes) {
+  codes = codes || [];
+  if (codes.length > 10) {
+    return {
+      funds: [],
+      matrix: [],
+      common: [],
+      error: 'Select at most 10 funds.',
+      source: overlapSourceNote()
+    };
+  }
+  var funds = [];
+  var books = [];
+  var queries = [];
+  var queryOwner = [];
+  for (var i = 0; i < codes.length; i++) {
+    var code = String(codes[i].code || codes[i]);
+    var name = codes[i].name || code;
+    funds.push({
+      code: code,
+      name: name,
+      asOf: null,
+      equityCount: 0,
+      equityWeight: null,
+      error: null
+    });
+    books.push(null);
+    var variants = overlapQueries(name);
+    for (var q = 0; q < variants.length; q++) {
+      queries.push(growwSearchUrl(variants[q]));
+      queryOwner.push(i);
+    }
+  }
+  var searchHits = overlapFetchJson(queries);
+  var grouped = funds.map(function() { return []; });
+  for (var h = 0; h < searchHits.length; h++) grouped[queryOwner[h]].push(searchHits[h]);
+  var detailUrls = [];
+  var detailIndex = [];
+  var pending = [];
+  for (var s = 0; s < funds.length; s++) {
+    var searchId = growwSearchId(grouped[s], funds[s].code);
+    if (searchId) {
+      detailIndex.push(s);
+      detailUrls.push(growwPortfolioUrl(searchId));
+    } else {
+      pending.push(s);
+    }
+  }
+  var fallbackIds = [];
+  var fallbackOwner = [];
+  for (var p = 0; p < pending.length; p++) {
+    var candidates = growwSchemeCandidates(grouped[pending[p]]);
+    for (var cnd = 0; cnd < candidates.length; cnd++) {
+      fallbackIds.push(growwPortfolioUrl(candidates[cnd]));
+      fallbackOwner.push(pending[p]);
+    }
+  }
+  var details = overlapFetchJson(detailUrls.concat(fallbackIds));
+  for (var d = 0; d < detailIndex.length; d++) {
+    var idx = detailIndex[d];
+    var book = equityBook(details[d], funds[idx].code);
+    if (!book) {
+      funds[idx].error = 'The published portfolio did not load.';
+      continue;
+    }
+    if (!book.count) {
+      funds[idx].error = 'This published portfolio has no equity holdings.';
+      funds[idx].asOf = book.asOf;
+      continue;
+    }
+    funds[idx].asOf = book.asOf;
+    funds[idx].equityCount = book.count;
+    funds[idx].equityWeight = book.equityWeight;
+    books[idx] = book.map;
+  }
+  for (var f = 0; f < fallbackOwner.length; f++) {
+    var owner = fallbackOwner[f];
+    if (books[owner] || funds[owner].error) continue;
+    var fallbackBook = equityBook(details[detailIndex.length + f], funds[owner].code);
+    if (!fallbackBook) continue;
+    if (!fallbackBook.count) {
+      funds[owner].error = 'This published portfolio has no equity holdings.';
+      funds[owner].asOf = fallbackBook.asOf;
+      continue;
+    }
+    funds[owner].asOf = fallbackBook.asOf;
+    funds[owner].equityCount = fallbackBook.count;
+    funds[owner].equityWeight = fallbackBook.equityWeight;
+    books[owner] = fallbackBook.map;
+  }
+  for (var missed = 0; missed < funds.length; missed++) {
+    if (!books[missed] && !funds[missed].error) {
+      funds[missed].error = 'No published portfolio matched this scheme code.';
+    }
+  }
+  var n = funds.length;
+  var matrix = [];
+  var common = [];
+  for (var r = 0; r < n; r++) {
+    matrix[r] = [];
+    common[r] = [];
+    for (var c = 0; c < n; c++) {
+      if (r === c || !books[r] || !books[c]) {
+        matrix[r][c] = null;
+        common[r][c] = 0;
+      } else {
+        var pair = pairOverlap(books[r], books[c]);
+        matrix[r][c] = pair.overlap;
+        common[r][c] = pair.common;
+      }
+    }
+  }
+  return { funds: funds, matrix: matrix, common: common, source: overlapSourceNote() };
+}
+
+function overlapSourceNote() {
+  return 'Overlap uses the latest published equity portfolio. It is the sum of the smaller weight of each stock held by both funds.';
+}
+
+function overlapQueries(name) {
+  var queries = [];
+  function add(value) {
+    var text = String(value || '').replace(/\s+/g, ' ').trim();
+    if (text && queries.indexOf(text) === -1) queries.push(text);
+  }
+  add(name);
+  var base = String(name || '').split(/\s+-\s+/)[0].replace(/\s*-\s*/g, ' ');
+  add(base);
+  add(base + ' Direct');
+  return queries;
+}
+
+function growwSearchUrl(name) {
+  return 'https://groww.in/v1/api/search/v3/query/global/st_query?page=0&size=12&web=true&query=' + encodeURIComponent(name);
+}
+
+function growwPortfolioUrl(searchId) {
+  return 'https://groww.in/v1/api/data/mf/web/v4/scheme/search/' + encodeURIComponent(searchId);
+}
+
+function overlapFetchJson(urls) {
+  if (!urls.length) return [];
+  var requests = urls.map(function(url) {
+    return {
+      url: url,
+      muteHttpExceptions: true,
+      headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' }
+    };
+  });
+  var responses = UrlFetchApp.fetchAll(requests);
+  return responses.map(function(response) {
+    if (response.getResponseCode() !== 200) return null;
+    try {
+      return JSON.parse(response.getContentText());
+    } catch (err) {
+      return null;
+    }
+  });
+}
+
+function growwSearchId(bodies, code) {
+  var want = String(code);
+  for (var b = 0; b < bodies.length; b++) {
+    var content = bodies[b] && bodies[b].data && bodies[b].data.content;
+    if (!content) continue;
+    for (var i = 0; i < content.length; i++) {
+      var item = content[i];
+      if (item && item.entity_type === 'Scheme' && String(item.scheme_code) === want && item.search_id) {
+        return item.search_id;
+      }
+    }
+  }
+  return null;
+}
+
+function growwSchemeCandidates(bodies) {
+  var ids = [];
+  for (var b = 0; b < bodies.length; b++) {
+    var content = bodies[b] && bodies[b].data && bodies[b].data.content;
+    if (!content) continue;
+    for (var i = 0; i < content.length; i++) {
+      var item = content[i];
+      if (!item || item.entity_type !== 'Scheme' || !item.search_id) continue;
+      if (ids.indexOf(item.search_id) === -1) ids.push(item.search_id);
+      if (ids.length >= 4) return ids;
+    }
+  }
+  return ids;
+}
+
+function publishedCodeMatches(body, code) {
+  if (!body) return false;
+  var want = String(code);
+  return String(body.scheme_code) === want ||
+    String(body.direct_scheme_code || '') === want ||
+    String(body.regular_scheme_code || '') === want;
+}
+
+function equityBook(body, code) {
+  if (!publishedCodeMatches(body, code)) return null;
+  var holdings = body.holdings || [];
+  var map = {};
+  var count = 0;
+  var equityWeight = 0;
+  var asOf = null;
+  for (var i = 0; i < holdings.length; i++) {
+    var row = holdings[i];
+    if (String(row.nature_name || '').toUpperCase() !== 'EQUITY') continue;
+    var key = String(row.stock_search_id || row.company_name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+    if (!key) continue;
+    var weight = Number(row.corpus_per);
+    if (isNaN(weight) || weight <= 0) continue;
+    if (!map[key]) {
+      map[key] = weight;
+      count += 1;
+    } else {
+      map[key] += weight;
+    }
+    equityWeight += weight;
+    if (!asOf && row.portfolio_date) asOf = portfolioDay(row.portfolio_date);
+  }
+  return { map: map, count: count, equityWeight: equityWeight / 100, asOf: asOf };
+}
+
+function portfolioDay(iso) {
+  try {
+    return Utilities.formatDate(new Date(iso), 'Asia/Kolkata', 'yyyy-MM-dd');
+  } catch (err) {
+    return String(iso).slice(0, 10);
+  }
+}
+
+function pairOverlap(left, right) {
+  var sum = 0;
+  var shared = 0;
+  var keys = Object.keys(left);
+  for (var i = 0; i < keys.length; i++) {
+    var other = right[keys[i]];
+    if (other === undefined) continue;
+    sum += Math.min(left[keys[i]], other);
+    shared += 1;
+  }
+  return { overlap: sum / 100, common: shared };
 }
 
 function numberOrNull(value) {

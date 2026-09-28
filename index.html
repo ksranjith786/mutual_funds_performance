@@ -264,6 +264,7 @@
           <option value="matrix">Return Matrix</option>
           <option value="compare">Fund Comparator</option>
           <option value="risk">Risk and Rating</option>
+          <option value="overlap">Portfolio Overlap</option>
           <option value="final">Summary</option>
         </select>
       <button id="refreshBtn" onclick="loadMatrixData()" class="inline-flex items-center justify-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors w-full sm:w-auto">
@@ -415,6 +416,20 @@
       <div id="riskProfiles" class="space-y-3"></div>
                 </div>
 
+    <div id="panelOverlap" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <input type="search" id="overlapSearch" oninput="renderOverlapPicker()" placeholder="Search funds to include..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
+          <button type="button" id="overlapBtn" onclick="loadOverlap()" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white">Load overlap</button>
+        </div>
+        <p id="overlapCount" class="text-[11px] text-slate-400">Select 2 to 10 funds. The matrix uses the same scheme list as the other tabs.</p>
+        <p class="text-[11px] text-slate-400">Each cell is the share of the two portfolios held in the same stocks. It adds the smaller weight of every common equity holding. Cash and debt are left out. Lower overlap is greener. The weights are the latest published portfolio, loaded when you press the button.</p>
+        <div id="overlapPicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
+      </div>
+      <div id="overlapNote" class="text-xs text-slate-500"></div>
+      <div id="overlapTable"></div>
+    </div>
+
     <div id="panelFinal" class="hidden space-y-4">
       <div id="finalBody"></div>
                 </div>
@@ -477,9 +492,10 @@
     var filterAll = { category: true, amc: true, scheme: true };
     var openPanel = null;
     var activeTab = 'matrix';
-    // One shortlist for the matrix, comparator, risk, and final tabs.
+    // One shortlist for the matrix, comparator, risk, overlap, and final tabs.
     // All leaves this map empty and lifts the scheme restriction. None clears it.
     var riskProfiles = {};
+    var overlapPayload = null;
     var heldFunds = {};
 
     window.onload = function() {
@@ -779,6 +795,8 @@
         renderComparator();
       } else if (activeTab === 'risk') {
         renderRisk();
+      } else if (activeTab === 'overlap') {
+        renderOverlap();
       } else if (activeTab === 'final') {
         renderFinal();
       }
@@ -817,7 +835,7 @@
       return hay.indexOf(query) !== -1;
     }
 
-    // One category checklist for the matrix search, Fund Comparator, Risk and Rating, and Summary.
+    // One category checklist for the matrix search, Fund Comparator, Risk and Rating, Portfolio Overlap, and Summary.
     // options.funds limits the rows. options.selected is a map of scheme code to true.
     function fundChecklistHtml(options) {
       var query = (options.query || '').trim().toLowerCase();
@@ -1136,12 +1154,13 @@
     }
 
     function setTab(tab) {
-      activeTab = tab === 'compare' ? 'compare' : (tab === 'risk' ? 'risk' : (tab === 'final' ? 'final' : 'matrix'));
+      activeTab = tab === 'compare' ? 'compare' : (tab === 'risk' ? 'risk' : (tab === 'overlap' ? 'overlap' : (tab === 'final' ? 'final' : 'matrix')));
       var view = document.getElementById('viewSelect');
       if (view && view.value !== activeTab) view.value = activeTab;
       document.getElementById('panelMatrix').classList.toggle('hidden', activeTab !== 'matrix');
       document.getElementById('panelCompare').classList.toggle('hidden', activeTab !== 'compare');
       document.getElementById('panelRisk').classList.toggle('hidden', activeTab !== 'risk');
+      document.getElementById('panelOverlap').classList.toggle('hidden', activeTab !== 'overlap');
       document.getElementById('panelFinal').classList.toggle('hidden', activeTab !== 'final');
       renderActiveTab();
     }
@@ -1346,6 +1365,110 @@
         html += '</div>';
       });
       box.innerHTML = html;
+    }
+
+    function renderOverlap() {
+      renderOverlapPicker();
+      renderOverlapTable();
+    }
+
+    function renderOverlapPicker() {
+      var box = document.getElementById('overlapPicker');
+      if (!box) return;
+      box.innerHTML = fundChecklistHtml({
+        query: document.getElementById('overlapSearch').value,
+        selected: schemeSelectionMap(),
+        toolbar: fundPickToolbar(),
+        onchange: function(fund) { return 'setFilterItem(\'scheme\', \'' + esc(fund.code) + '\', this.checked)'; }
+      });
+      var count = selectedFundList().length;
+      var label = document.getElementById('overlapCount');
+      if (!label) return;
+      if (!count) label.textContent = 'Select 2 to 10 funds. The matrix uses the same scheme list as the other tabs.';
+      else if (count === 1) label.textContent = '1 fund selected. Add at least one more.';
+      else if (count > 10) label.textContent = count + ' funds selected. Overlap loads at most 10. Uncheck funds until 10 or fewer remain.';
+      else label.textContent = count + ' funds selected.';
+      var btn = document.getElementById('overlapBtn');
+      if (btn && !btn.classList.contains('pointer-events-none')) {
+        btn.classList.toggle('opacity-50', count < 2 || count > 10);
+      }
+    }
+
+    function overlapSelectionKey(funds) {
+      return funds.map(function(fund) { return fund.code; }).join('|');
+    }
+
+    function loadOverlap() {
+      var funds = selectedFundList();
+      var btn = document.getElementById('overlapBtn');
+      if (funds.length < 2 || funds.length > 10) return;
+      btn.classList.add('opacity-50', 'pointer-events-none');
+      google.script.run
+        .withSuccessHandler(function(response) {
+          btn.classList.remove('opacity-50', 'pointer-events-none');
+          overlapPayload = response || null;
+          if (overlapPayload) overlapPayload.key = overlapSelectionKey(funds);
+          renderOverlapTable();
+        })
+        .withFailureHandler(function(err) {
+          btn.classList.remove('opacity-50', 'pointer-events-none');
+          alert('Could not load portfolio overlap: ' + err.message);
+        })
+        .getFundOverlap(funds.map(function(fund) { return { code: fund.code, name: fund.name }; }));
+    }
+
+    function renderOverlapTable() {
+      var box = document.getElementById('overlapTable');
+      var note = document.getElementById('overlapNote');
+      if (!box || !note) return;
+      var funds = selectedFundList();
+      if (funds.length < 2 || funds.length > 10) {
+        note.textContent = '';
+        box.innerHTML = '';
+        return;
+      }
+      if (!overlapPayload || overlapPayload.key !== overlapSelectionKey(funds)) {
+        note.textContent = overlapPayload ? 'The fund list changed. Load overlap again.' : '';
+        box.innerHTML = '';
+        return;
+      }
+      if (overlapPayload.error) {
+        note.textContent = overlapPayload.error;
+        box.innerHTML = '';
+        return;
+      }
+      var rows = overlapPayload.funds || [];
+      note.textContent = overlapPayload.source || '';
+      var head = nameHead(true);
+      rows.forEach(function(row) {
+        head += '<th class="py-2 px-1 text-center" title="' + esc(row.name) + '">' + esc(briefName(row.name)) + '</th>';
+      });
+      var body = '';
+      rows.forEach(function(row, r) {
+        var detail = row.error
+          ? esc(row.error)
+          : esc((row.asOf || 'Portfolio date unavailable') + (row.equityCount ? ' · ' + row.equityCount + ' stocks' : ''));
+        body += '<tr>' + fundNameCell(row.name, nameNote(detail), true);
+        var line = (overlapPayload.matrix && overlapPayload.matrix[r]) || [];
+        var shared = (overlapPayload.common && overlapPayload.common[r]) || [];
+        rows.forEach(function(col, c) {
+          if (r === c) {
+            body += '<td class="py-1 px-1 text-center text-slate-300">—</td>';
+            return;
+          }
+          body += overlapCell(line[c], shared[c]);
+        });
+        body += '</tr>';
+      });
+      box.innerHTML = '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"><div class="sheet matrix-scroll"><table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+    }
+
+    function overlapCell(value, common) {
+      if (value === null || value === undefined || isNaN(value)) {
+        return '<td class="py-1 px-1 text-center">' + heatChip('-', getHeatmapStyle(null, 'standard')) + '</td>';
+      }
+      var title = common ? common + ' shared stocks' : '';
+      return '<td class="py-1 px-1 text-center" title="' + esc(title) + '">' + heatChip(formatPct(value), getHeatmapStyle(0.35 - value, 'standard')) + '</td>';
     }
 
     function renderComparePicker() {
