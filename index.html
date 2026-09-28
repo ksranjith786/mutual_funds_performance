@@ -174,14 +174,16 @@
     .compare-winner { background: var(--color-fill-semantic-success-mildest); }
     html, body { max-width: 100%; overflow-x: hidden; }
     main, header, #panelMatrix, #panelCompare, #panelRisk, #panelFinal { min-width: 0; max-width: 100%; }
-    .final-hero { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 16px 18px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); box-shadow: var(--shadow-sm); }
     .final-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
-    .final-score { font-family: "IBM Plex Sans", Inter, sans-serif; font-variant-numeric: tabular-nums lining-nums; font-size: 40px; line-height: 44px; font-weight: 600; color: var(--color-text-primary); }
-    .final-rank { display: flex; gap: 8px; overflow-x: auto; }
-    .final-pill { flex: 1 1 11rem; min-width: 11rem; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); }
-    .final-pill.is-pick { border-color: var(--color-fill-brand); box-shadow: inset 3px 0 0 var(--color-fill-brand); }
-    .final-bar { height: 4px; margin-top: 8px; border-radius: 99px; background: var(--color-fill-base); }
-    .final-bar span { display: block; height: 100%; border-radius: 99px; background: var(--color-fill-brand); }
+    .decision-list { display: flex; flex-direction: column; gap: 8px; }
+    .decision-card { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); box-shadow: var(--shadow-sm); }
+    .decision-hold { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+    .pro-con { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+    .pro-con h3 { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
+    .pro-con ul { margin: 0; padding-left: 16px; }
+    .pro-con li { font-size: 12px; line-height: 16px; color: var(--color-text-secondary); margin-top: 2px; }
+    .pro-con .is-pro { color: var(--color-text-semantic-success); }
+    .pro-con .is-con { color: #cd2629; }
     .final-metric { position: sticky; left: 0; z-index: 2; min-width: 11rem; }
     .sheet thead th.final-metric { z-index: 6; }
     .sheet tbody tr.final-group td { background: var(--color-fill-container); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-secondary); }
@@ -190,7 +192,8 @@
     .sheet tbody tr:nth-child(even) td.final-col,
     .sheet tbody tr:hover td.final-col { background: color-mix(in srgb, var(--color-fill-brand) 10%, var(--color-fill-surface)); }
     @media (max-width: 767px) {
-      .final-hero { flex-direction: column; }
+      .pro-con { flex-direction: column; }
+      .pro-con { grid-template-columns: 1fr; }
     }
     .risk-guide { display: flex; flex-wrap: wrap; gap: 8px; }
     .risk-card { flex: 1 1 14rem; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); }
@@ -254,7 +257,7 @@
           <option value="matrix">Return Matrix</option>
           <option value="compare">Fund Comparator</option>
           <option value="risk">Risk and Rating</option>
-          <option value="final">Final</option>
+          <option value="final">Summary</option>
         </select>
       <button id="refreshBtn" onclick="loadMatrixData()" class="inline-flex items-center justify-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors w-full sm:w-auto">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -469,6 +472,7 @@
     // One shortlist for the matrix, comparator, risk, and final tabs.
     // All leaves this map empty and lifts the scheme restriction. None clears it.
     var riskProfiles = {};
+    var heldFunds = {};
 
     window.onload = function() {
       var today = new Date();
@@ -710,7 +714,10 @@
 
     function setFilterAll(kind, checked) {
       filterAll[kind] = !!checked;
-      if (kind === 'scheme') filterSelected.scheme = {};
+      if (kind === 'scheme') {
+        filterSelected.scheme = {};
+        heldFunds = {};
+      }
       else filterOptions[kind].forEach(function(item) { filterSelected[kind][item.value] = !!checked; });
       renderFilter(kind);
       if (kind === 'scheme') renderFundSearch();
@@ -720,7 +727,10 @@
 
     function setFilterItem(kind, value, checked) {
       if (checked) filterSelected[kind][value] = true;
-      else delete filterSelected[kind][value];
+      else {
+        delete filterSelected[kind][value];
+        if (kind === 'scheme') delete heldFunds[value];
+      }
       filterAll[kind] = kind === 'scheme' ? false : filterOptions[kind].every(function(item) { return filterSelected[kind][item.value]; });
       renderFilter(kind);
       if (kind === 'scheme') renderFundSearch();
@@ -1165,26 +1175,6 @@
       return selectedFundList();
     }
 
-    var RATIO_RANK = [
-      { label: 'Sharpe', weight: 18, better: 'high', get: function(fund) { return fund.risk && fund.risk.sharpe; } },
-      { label: 'Sortino', weight: 14, better: 'high', get: function(fund) { return fund.risk && fund.risk.sortino; } },
-      { label: 'Treynor', weight: 10, better: 'high', get: function(fund) { return fund.risk && fund.risk.treynor; } },
-      { label: 'Information ratio', weight: 14, better: 'high', get: function(fund) { return fund.risk && fund.risk.informationRatio; } },
-      { label: 'Alpha', weight: 12, better: 'high', get: function(fund) { return fund.risk && fund.risk.alpha; } },
-      { label: 'Max drawdown', weight: 10, better: 'high', get: function(fund) { return fund.risk && fund.risk.maxDrawdown; } },
-      { label: 'Downside capture', weight: 8, better: 'low', get: function(fund) { return fund.risk && fund.risk.downsideCapture; } },
-      { label: 'Std deviation', weight: 8, better: 'low', get: function(fund) { return fund.risk && fund.risk.volatility; } },
-      { label: 'VaR', weight: 6, better: 'high', get: function(fund) { return fund.risk && fund.risk.var95; } }
-    ];
-
-    function categoryRatioLeader(category) {
-      var book = allFunds.filter(function(fund) { return (fund.category || 'Other') === category; });
-      if (!book.length) return null;
-      if (book.length === 1) return book[0];
-      var ranked = scoreShortlist(book, RATIO_RANK).ranked;
-      return ranked.length ? ranked[0].fund : book[0];
-    }
-
     function riskRows(selected) {
       var rows = selected.slice();
       var seen = {};
@@ -1193,7 +1183,7 @@
       var shownCats = {};
       selected.forEach(function(fund) { shownCats[fund.category || 'Other'] = true; });
       Object.keys(shownCats).forEach(function(category) {
-        var leader = categoryRatioLeader(category);
+        var leader = decisionLeader(category);
         if (!leader) return;
         marks[leader.code] = seen[leader.code] ? 'Leads category' : 'Leads category · not selected';
         if (!seen[leader.code]) {
@@ -1560,49 +1550,13 @@
       if ((document.documentElement.getAttribute('data-theme') || 'system') === 'system') applyTheme('system');
     });
 
-    var DECISION_METRICS = [
-      { group: 'Return', label: 'SIP XIRR', weight: 18, better: 'high', kind: 'pct', get: function(fund) { return fund.customRangeXirr; } },
-      { group: 'Return', label: '3Y CAGR', weight: 8, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.cagr; } },
-      { group: 'Return', label: 'Rolling 1Y', weight: 8, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.rollingReturn; } },
-      { group: 'Return', label: 'Alpha', weight: 6, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.alpha; } },
-      { group: 'Risk-adjusted', label: 'Sharpe', weight: 10, better: 'high', kind: 'num', get: function(fund) { return fund.risk && fund.risk.sharpe; } },
-      { group: 'Risk-adjusted', label: 'Sortino', weight: 8, better: 'high', kind: 'num', get: function(fund) { return fund.risk && fund.risk.sortino; } },
-      { group: 'Risk-adjusted', label: 'Treynor', weight: 5, better: 'high', kind: 'num', get: function(fund) { return fund.risk && fund.risk.treynor; } },
-      { group: 'Risk-adjusted', label: 'Information ratio', weight: 5, better: 'high', kind: 'num', get: function(fund) { return fund.risk && fund.risk.informationRatio; } },
-      { group: 'Volatility', label: 'Std deviation', weight: 6, better: 'low', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.volatility; } },
-      { group: 'Downside', label: 'Max drawdown', weight: 8, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.maxDrawdown; } },
-      { group: 'Downside', label: 'Downside deviation', weight: 4, better: 'low', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.downsideDeviation; } },
-      { group: 'Downside', label: 'Downside capture', weight: 6, better: 'low', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.downsideCapture; } },
-      { group: 'Downside', label: '95% one-day VaR', weight: 4, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.var95; } },
-      { group: 'Benchmark', label: 'Upside capture', weight: 4, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.upsideCapture; } }
-    ];
-
-    var CONTEXT_METRICS = [
-      { group: 'Context', label: 'Rolling hit rate', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.rollingHit; } },
-      { group: 'Context', label: 'Beta', kind: 'num', get: function(fund) { return fund.risk && fund.risk.beta; } },
-      { group: 'Context', label: 'Correlation', kind: 'num', get: function(fund) { return fund.risk && fund.risk.correlation; } },
-      { group: 'Context', label: 'R-squared', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.rSquared; } },
-      { group: 'Context', label: 'Tracking error', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.trackingError; } },
-      { group: 'Context', label: 'Tracking difference', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.trackingDifference; } }
-    ];
-
-    function metricNumber(fund, spec) {
-      var value = spec.get(fund);
-      if (value === null || value === undefined || isNaN(value)) return null;
+    function finiteNumber(value) {
+      if (value === null || value === undefined || value === '' || isNaN(value)) return null;
       return Number(value);
     }
 
-    function metricText(value, kind) {
-      if (value === null || value === undefined || isNaN(value)) return '-';
-      if (kind === 'num') return Number(value).toFixed(2);
-      if (kind === 'expense') return (value > 0.2 ? Number(value).toFixed(2) : (value * 100).toFixed(2)) + '%';
-      return formatPct(value);
-    }
-
-    function expenseRatio(fund) {
-      var profile = riskProfiles[fund.code];
-      if (!profile || profile.expenseRatio === null || profile.expenseRatio === undefined || isNaN(Number(profile.expenseRatio))) return null;
-      return Number(profile.expenseRatio);
+    function metricNumber(fund, spec) {
+      return finiteNumber(spec.get(fund));
     }
 
     function scoreShortlist(funds, specs) {
@@ -1622,11 +1576,11 @@
         var score = 0;
         active.forEach(function(item) {
           var value = metricNumber(fund, item.spec);
-          var unit = value === null ? 0.5 : 1;
+          var unit = 0;
           if (value !== null && item.max !== item.min) {
             unit = (value - item.min) / (item.max - item.min);
             if (item.spec.better === 'low') unit = 1 - unit;
-          }
+          } else if (value !== null) unit = 1;
           score += weight ? (item.spec.weight / weight) * unit : 0;
         });
         return { fund: fund, score: score };
@@ -1641,32 +1595,182 @@
       return { ranked: ranked, active: active };
     }
 
-    function orientedUnit(value, item) {
-      if (value === null || item.max === item.min) return value === null ? null : 1;
-      var unit = (value - item.min) / (item.max - item.min);
-      return item.spec.better === 'low' ? 1 - unit : unit;
+    function setHeld(code, on) {
+      if (on) heldFunds[code] = true;
+      else delete heldFunds[code];
+      if (activeTab === 'final') renderFinal();
     }
 
-    function decisionReason(winner, funds, specs) {
-      var leads = [];
-      var gives = [];
-      specs.forEach(function(spec) {
-        var best = null;
-        var worst = null;
-        funds.forEach(function(fund) {
-          var value = metricNumber(fund, spec);
-          if (value === null) return;
-          var better = spec.better === 'low' ? value < (best ? best.value : Infinity) : value > (best ? best.value : -Infinity);
-          if (!best || better) best = { fund: fund, value: value };
-          var worse = spec.better === 'low' ? value > (worst ? worst.value : -Infinity) : value < (worst ? worst.value : Infinity);
-          if (!worst || worse) worst = { fund: fund, value: value };
-        });
-        if (best && best.fund.code === winner.code) leads.push(spec.label);
-        if (worst && worst.fund.code === winner.code) gives.push(spec.label);
+    function tenureCagr(fund, key) {
+      if (!fund || !fund.tenureCagr) return null;
+      return finiteNumber(fund.tenureCagr[key]);
+    }
+
+    function pointText(gap) {
+      var points = Math.abs(gap * 100).toFixed(1);
+      return points + ' point' + (points === '1.0' ? '' : 's');
+    }
+
+    function decisionLeader(category) {
+      var book = fundsInCategory(category);
+      if (!book.length) return null;
+      var withLongWindow = book.filter(function(fund) {
+        return tenureCagr(fund, '3Y') !== null || tenureCagr(fund, '5Y') !== null;
       });
-      var line = 'It leads this shortlist on ' + (leads.slice(0, 3).join(', ') || 'the weighted score');
-      if (gives.length) line += ', and gives ground on ' + gives[0];
-      return line + '.';
+      if (withLongWindow.length) book = withLongWindow;
+      if (book.length === 1) return book[0];
+      var specs = [
+        { weight: 28, better: 'high', get: function(fund) { return tenureCagr(fund, '3Y'); } },
+        { weight: 22, better: 'high', get: function(fund) { return tenureCagr(fund, '5Y'); } },
+        { weight: 16, better: 'high', get: function(fund) { return fund.risk && fund.risk.sharpe; } },
+        { weight: 12, better: 'high', get: function(fund) { return fund.risk && fund.risk.sortino; } },
+        { weight: 14, better: 'high', get: function(fund) { return fund.risk && fund.risk.maxDrawdown; } },
+        { weight: 8, better: 'high', get: function(fund) { return fund.customRangeXirr; } }
+      ];
+      var ranked = scoreShortlist(book, specs).ranked;
+      return ranked.length ? ranked[0].fund : book[0];
+    }
+
+    function returnLead(leader, other) {
+      var g3 = tenureCagr(leader, '3Y');
+      var h3 = tenureCagr(other, '3Y');
+      var g5 = tenureCagr(leader, '5Y');
+      var h5 = tenureCagr(other, '5Y');
+      if (g3 !== null && h3 !== null && g3 - h3 >= 0.02) return { clear: true, label: '3Y CAGR', gap: g3 - h3 };
+      if (g5 !== null && h5 !== null && g5 - h5 >= 0.02) return { clear: true, label: '5Y CAGR', gap: g5 - h5 };
+      if (g3 === null && h3 === null && g5 === null && h5 === null) {
+        var gx = finiteNumber(leader.customRangeXirr);
+        var hx = finiteNumber(other.customRangeXirr);
+        if (gx !== null && hx !== null && gx - hx >= 0.03) return { clear: true, label: 'Custom Range XIRR', gap: gx - hx, short: true };
+      }
+      return { clear: false };
+    }
+
+    function riskValue(fund, key) {
+      if (!fund || !fund.risk) return null;
+      return finiteNumber(fund.risk[key]);
+    }
+
+    function drawdownWorse(leader, other) {
+      var lead = riskValue(leader, 'maxDrawdown');
+      var base = riskValue(other, 'maxDrawdown');
+      if (lead === null || base === null) return false;
+      return lead < base - 0.03;
+    }
+
+    function ratiosNotWorse(leader, other) {
+      var sharpeLead = riskValue(leader, 'sharpe');
+      var sharpeBase = riskValue(other, 'sharpe');
+      var sortinoLead = riskValue(leader, 'sortino');
+      var sortinoBase = riskValue(other, 'sortino');
+      if (sharpeLead !== null && sharpeBase !== null && sharpeLead + 0.05 < sharpeBase) return false;
+      if (sortinoLead !== null && sortinoBase !== null && sortinoLead + 0.1 < sortinoBase) return false;
+      return true;
+    }
+
+    function listHtml(items, klass) {
+      if (!items.length) return '';
+      var html = '<ul>';
+      items.forEach(function(item) { html += '<li>' + esc(item) + '</li>'; });
+      return '<div><h3 class="' + klass + '">' + (klass === 'is-pro' ? 'Pros' : 'Cons') + '</h3>' + html + '</ul></div>';
+    }
+
+    function decisionCard(decision) {
+      var html = '<article class="decision-card">';
+      html += '<div class="final-kicker">' + esc(decision.category) + ' · ' + esc(decision.action) + '</div>';
+      html += '<h2 class="text-sm font-semibold text-slate-900 mt-1">' + esc(decision.title) + '</h2>';
+      html += '<p class="text-xs text-slate-600 mt-2">' + esc(decision.sentence) + '</p>';
+      html += '<div class="pro-con">' + listHtml(decision.pros.slice(0, 3), 'is-pro') + listHtml(decision.cons.slice(0, 2), 'is-con') + '</div>';
+      html += '<p class="text-[11px] text-slate-400 mt-2">' + esc(decision.note) + '</p>';
+      html += '</article>';
+      return html;
+    }
+
+    function categoryDecision(category, selected) {
+      var mine = selected.filter(function(fund) { return (fund.category || 'Other') === category; });
+      var held = mine.filter(function(fund) { return heldFunds[fund.code]; });
+      var leader = decisionLeader(category);
+      var pros = [];
+      var cons = [];
+      var action = 'Start';
+      var title = leader ? leader.name : category;
+      var sentence = 'No decision yet.';
+      var note = 'Tax and exit load are not in this book. Custom Range XIRR is context, usually the shorter SIP window.';
+      if (!leader) return { category: category, action: action, title: title, sentence: sentence, pros: pros, cons: cons, note: note };
+
+      function shouldSwitch(fund) {
+        return fund.code !== leader.code && returnLead(leader, fund).clear && !drawdownWorse(leader, fund) && ratiosNotWorse(leader, fund);
+      }
+
+      if (held.length) {
+        var moving = [];
+        var keeping = [];
+        held.forEach(function(fund) {
+          if (shouldSwitch(fund)) moving.push(fund);
+          else keeping.push(fund);
+        });
+        if (moving.length) {
+          var lead = returnLead(leader, moving[0]);
+          var movingNames = moving.map(function(fund) { return fund.name; }).join(', ');
+          action = 'Switch';
+          title = 'Switch ' + movingNames + ' to ' + leader.name;
+          sentence = leader.name + ' leads ' + category + ' on the longer window, by ' + pointText(lead.gap) + ' of ' + lead.label + '.';
+          pros.push(lead.label + ' is ahead by ' + pointText(lead.gap) + '.');
+          if (!drawdownWorse(leader, moving[0])) pros.push('The replacement does not fall more than 3 points deeper.');
+          if (keeping.length) pros.push('Keep ' + keeping[0].name + '. It does not clear the same bar.');
+          cons.push('Leaving ' + movingNames + ' can cost tax and exit load, which this book does not know.');
+          if (lead.short) cons.push('3Y and 5Y CAGR are missing, so this gap is only the shorter SIP window.');
+        } else {
+          var kept = keeping[0] || held[0];
+          action = 'Keep';
+          title = 'Keep ' + kept.name;
+          if (kept.code === leader.code) {
+            sentence = kept.name + ' is the stronger fund in ' + category + ' on the 3-year and 5-year record.';
+            pros.push('You already hold the category leader, so there is nothing to switch.');
+            if (tenureCagr(kept, '3Y') !== null) pros.push('3Y CAGR is ' + formatPct(tenureCagr(kept, '3Y')) + '.');
+            cons.push('This is the record so far, not a promise about the next year.');
+          } else if (drawdownWorse(leader, kept)) {
+            sentence = leader.name + ' has the stronger return record, but it has fallen further, so the switch does not pay.';
+            pros.push('Staying avoids a fund whose max drawdown is more than 3 points worse.');
+            cons.push(leader.name + ' can still look better on return alone.');
+          } else {
+            sentence = leader.name + ' is close, but the 3-year or 5-year lead is under 2 points.';
+            pros.push('A gap that small does not justify leaving ' + kept.name + '.');
+            cons.push(leader.name + ' still leads the category if the gap widens later.');
+          }
+          note = 'Keep applies because you marked this fund as held.';
+        }
+      } else {
+        var candidate = mine[0] || leader;
+        mine.forEach(function(fund) {
+          var c3 = tenureCagr(fund, '3Y');
+          var b3 = tenureCagr(candidate, '3Y');
+          if (c3 !== null && (b3 === null || c3 > b3)) candidate = fund;
+        });
+        var starting = leader;
+        var leadOver = candidate.code === leader.code ? { clear: false } : returnLead(leader, candidate);
+        if (candidate.code !== leader.code && leadOver.clear && !drawdownWorse(leader, candidate) && ratiosNotWorse(leader, candidate)) {
+          starting = leader;
+          sentence = 'You did not mark a holding in ' + category + '. Start ' + leader.name + ' rather than ' + candidate.name + ', which trails by ' + pointText(leadOver.gap) + ' of ' + leadOver.label + '.';
+          pros.push(leadOver.label + ' is ahead by ' + pointText(leadOver.gap) + '.');
+          pros.push('Nothing here is marked held, so this starts a SIP. It does not sell a fund.');
+          cons.push(candidate.name + ' stays on your list, but the longer window favours ' + leader.name + '.');
+        } else if (candidate.code !== leader.code) {
+          starting = candidate;
+          sentence = 'Start ' + candidate.name + '. ' + leader.name + ' leads the category, but not by enough of a 3-year or 5-year gap to discard the fund you checked.';
+          pros.push(candidate.name + ' is already on your list, and the longer-window gap is under 2 points or the drawdown is worse.');
+          cons.push(leader.name + ' remains the category leader if you want the single strongest record.');
+        } else {
+          sentence = 'Start ' + leader.name + '. It is the stronger ' + category + ' fund on 3Y and 5Y CAGR, Sharpe, Sortino, and drawdown.';
+          if (tenureCagr(leader, '3Y') !== null) pros.push('3Y CAGR is ' + formatPct(tenureCagr(leader, '3Y')) + '.');
+          if (leader.risk && leader.risk.maxDrawdown !== null && leader.risk.maxDrawdown !== undefined) pros.push('Max drawdown is ' + formatPct(leader.risk.maxDrawdown) + '.');
+          cons.push('This is a new SIP, not an exit. Nothing in this category was marked as held.');
+        }
+        action = 'Start';
+        title = 'Start ' + starting.name;
+        note = 'No fund in ' + category + ' is marked held, so this is a fresh SIP. It is not a switch and not an exit.';
+      }
+      return { category: category, action: action, title: title, sentence: sentence, pros: pros, cons: cons, note: note };
     }
 
     function renderFinal() {
@@ -1674,73 +1778,25 @@
       if (!box) return;
       var funds = selectedFundList();
       if (!funds.length) {
-        box.innerHTML = '<div class="compare-card p-4 text-xs text-slate-500">Check the funds you are choosing between in Fund Comparator. Final ranks that same shortlist into one pick.</div>';
+        box.innerHTML = '<div class="compare-card p-4 text-xs text-slate-500">Check the funds you are reviewing. On Summary, mark the ones you already hold. The note then says keep, switch, or start.</div>';
         return;
       }
-      var specs = DECISION_METRICS.slice();
-      var expenses = funds.map(expenseRatio);
-      var expenseReady = expenses.every(function(value) { return value !== null; });
-      if (expenseReady) specs.push({ group: 'Cost', label: 'Expense ratio', weight: 6, better: 'low', kind: 'expense', get: expenseRatio });
-      var scored = funds.length > 1 ? scoreShortlist(funds, specs) : null;
-      var ordered = scored ? scored.ranked.map(function(row) { return row.fund; }) : funds.slice();
-      var winner = ordered[0];
-      var html = '';
-      html += '<div class="final-hero">';
-      html += '<div class="min-w-0"><div class="final-kicker">' + (funds.length > 1 ? 'Pick this fund' : 'Your selection') + '</div>';
-      html += '<h2 class="text-xl font-semibold text-slate-900 mt-1">' + esc(winner.name) + '</h2>';
-      html += '<p class="text-xs text-slate-500 mt-1">' + esc(winner.category || '') + (winner.amc ? ' · ' + esc(winner.amc) : '') + '</p>';
-      if (funds.length > 1) html += '<p class="text-sm text-slate-700 mt-3">' + esc(decisionReason(winner, funds, specs)) + '</p>';
-      else html += '<p class="text-sm text-slate-700 mt-3">Only one fund is checked. Add the others in Fund Comparator and this page will rank them.</p>';
-      html += '<p class="text-xs text-slate-500 mt-2">Custom range ' + formatInrWhole(winner.investedAmount) + ' invested, corpus ' + formatInrWhole(winner.sipCorpus) + ', net profit ' + formatInrWhole(winner.netProfit) + ', XIRR ' + formatPct(winner.customRangeXirr) + '.</p>';
-      html += '</div>';
-      if (scored) html += '<div class="text-right shrink-0"><div class="text-[11px] uppercase tracking-wider text-slate-400">Score</div><div class="final-score">' + Math.round(scored.ranked[0].score * 100) + '</div></div>';
-      html += '</div>';
-      if (scored) {
-        html += '<div class="final-rank">';
-        scored.ranked.forEach(function(row, index) {
-          html += '<div class="final-pill' + (index === 0 ? ' is-pick' : '') + '">';
-          html += '<div class="text-[11px] text-slate-400">' + (index + 1) + '</div>';
-          html += '<div class="text-xs font-semibold text-slate-800 truncate" title="' + esc(row.fund.name) + '">' + esc(row.fund.name) + '</div>';
-          html += '<div class="final-bar"><span style="width:' + Math.round(row.score * 100) + '%"></span></div>';
-          html += '<div class="text-[11px] text-slate-500 mt-1">' + Math.round(row.score * 100) + '</div>';
-          html += '</div>';
-        });
-        html += '</div>';
-      }
-      var head = '<th class="final-metric py-3 px-2 text-left">Metric</th>';
-      ordered.forEach(function(fund, index) {
-        head += '<th class="py-2 px-2 text-center' + (index === 0 && funds.length > 1 ? ' final-col' : '') + '" title="' + esc(fund.name) + '">' + esc(fund.name) + '</th>';
+      var html = '<div class="compare-card p-4"><div class="text-xs font-semibold text-slate-800">Funds you hold</div>';
+      html += '<p class="text-[11px] text-slate-400 mt-1">Mark a fund only if you already own it. Leave it unmarked if you are only considering a new SIP.</p>';
+      html += '<div class="decision-hold mt-2">';
+      funds.forEach(function(fund) {
+        var on = !!heldFunds[fund.code];
+        html += '<label class="inline-flex items-center gap-2 text-xs text-slate-700"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="setHeld(\'' + esc(fund.code) + '\', this.checked)"> ' + esc(fund.name) + '</label>';
       });
-      var body = '';
-      var lastGroup = '';
-      var rows = specs.concat(CONTEXT_METRICS);
-      var span = ordered.length + 1;
-      rows.forEach(function(spec) {
-        if (spec.group !== lastGroup) {
-          body += '<tr class="final-group"><td colspan="' + span + '">' + esc(spec.group) + (spec.group === 'Context' ? ' · not scored' : '') + '</td></tr>';
-          lastGroup = spec.group;
-        }
-        var band = null;
-        if (scored && spec.weight) {
-          scored.active.forEach(function(item) { if (item.spec.label === spec.label) band = item; });
-        }
-        body += '<tr><td class="final-metric py-2 px-2 text-xs font-medium text-slate-700">' + esc(spec.label) + '</td>';
-        ordered.forEach(function(fund, index) {
-          var value = metricNumber(fund, spec);
-          var text = metricText(value, spec.kind);
-          var mark = index === 0 && funds.length > 1 ? ' final-col' : '';
-          if (band && value !== null) {
-            var unit = orientedUnit(value, band);
-            var style = getHeatmapStyle(unit === null ? null : (unit - 0.5) * 0.4, 'standard');
-            body += '<td class="py-1 px-1 text-center' + mark + '">' + heatChip(text, style) + '</td>';
-          } else {
-            body += '<td class="py-2 px-2 text-center font-mono text-slate-700' + mark + '">' + text + '</td>';
-          }
-        });
-        body += '</tr>';
+      html += '</div></div>';
+      html += '<div class="decision-list">';
+      var seenCats = {};
+      funds.forEach(function(fund) { seenCats[fund.category || 'Other'] = true; });
+      Object.keys(seenCats).sort().forEach(function(category) {
+        html += decisionCard(categoryDecision(category, funds));
       });
-      html += '<div class="compare-card">' + sheetTable(head, body) + '</div>';
-      html += '<p class="text-[11px] text-slate-400">The score ranks this shortlist only. SIP XIRR carries the most weight, then Sharpe, CAGR, rolling 1Y, and max drawdown. Higher is better except standard deviation, downside deviation, downside capture, and expense ratio. Beta, correlation, R-squared, and tracking describe how the fund moves against the other tracked funds in its category. They are not an index and they are not scored. Expense ratio appears only when Risk and Rating has loaded a published profile for every checked fund. VaR is the 5th percentile of daily NAV changes. Rolling 1Y is the average of monthly one-year windows over about four years.</p>';
+      html += '</div>';
+      html += '<p class="text-[11px] text-slate-400">Each note is one category. Keep or switch applies only to a fund you mark as held. Start means a new SIP. A switch needs at least 2 points of 3Y or 5Y CAGR, and the replacement must not have a max drawdown more than 3 points worse. The shorter Custom Range XIRR is context only. Tax and exit load are not in this book. The full figures stay on Return Matrix, Fund Comparator, and Risk and Rating.</p>';
       box.innerHTML = html;
     }
 
