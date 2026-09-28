@@ -180,6 +180,9 @@
     .switch-line { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
     .switch-line span { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
     .switch-line strong { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--color-text-secondary); }
+    .money-block { display: grid; gap: 4px; margin-top: 10px; }
+    .money-block div { display: grid; grid-template-columns: 9.5rem 1fr; gap: 8px; font-size: 12px; line-height: 16px; }
+    .money-block span { color: var(--color-text-placeholder); }
     .pro-con { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
     .pro-con h3 { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
     .pro-con ul { margin: 0; padding-left: 16px; }
@@ -197,6 +200,7 @@
       .pro-con { flex-direction: column; }
       .pro-con { grid-template-columns: 1fr; }
       .switch-line { grid-template-columns: 1fr; }
+      .money-block div { grid-template-columns: 1fr; gap: 0; }
     }
     .risk-guide { display: flex; flex-wrap: wrap; gap: 8px; }
     .risk-card { flex: 1 1 14rem; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); }
@@ -1785,6 +1789,55 @@
       return { stay: stay, switched: switched, gap: switched - stay };
     }
 
+    function buildBooks(owned, leader) {
+      var lines = [];
+      owned.forEach(function(fund) {
+        lines.push({
+          label: briefName(fund.name),
+          text: 'Invested ' + formatInrWhole(fund.investedAmount) + ' · worth ' + formatInrWhole(fund.sipCorpus) + ' · profit ' + formatInrWhole(fund.netProfit)
+        });
+      });
+      var selling = owned.filter(function(fund) { return !leader || fund.code !== leader.code; });
+      if (!selling.length) return lines;
+      selling.forEach(function(fund) {
+        if (!fund.redeem) return;
+        lines.push({
+          label: 'Lots · ' + briefName(fund.name),
+          text: 'Long-term gain ' + formatInrWhole(fund.redeem.ltcgGain) + ' · short-term gain ' + formatInrWhole(fund.redeem.stcgGain) + ' · exit load ' + formatInrWhole(fund.redeem.exitLoad)
+        });
+      });
+      var money = combinedRedeem(selling);
+      if (money) {
+        lines.push({
+          label: 'Tax if sold today',
+          text: formatInrWhole(money.tax) + ' · long-term ' + formatInrWhole(money.ltcgTax) + ' after ₹1.25 lakh · short-term ' + formatInrWhole(money.stcgTax) + ' at 20%'
+        });
+        lines.push({
+          label: 'Left to invest',
+          text: formatInrWhole(money.net) + ' after tax and exit load, from a corpus of ' + formatInrWhole(money.corpus)
+        });
+      } else {
+        lines.push({ label: 'Tax if sold today', text: 'Lot gains are not on this load yet. Paste code.gs and refresh.' });
+      }
+      var missed = missedCorpus(selling, leader);
+      if (missed !== null && leader) {
+        lines.push({
+          label: 'Same SIP in ' + briefName(leader.name),
+          text: (missed >= 0 ? 'Ahead by ' : 'Behind by ') + formatInrWhole(Math.abs(missed)) + ' before tax'
+        });
+      }
+      var ahead = yearAhead(selling, leader, money);
+      if (ahead) {
+        lines.push({
+          label: 'One more year',
+          text: 'Hold ' + formatInrWhole(ahead.stay) + ' · switch today ' + formatInrWhole(ahead.switched) + ' · difference ' + formatInrWhole(ahead.gap)
+        });
+      }
+      var ready = switchReadyMonth(selling, leader);
+      if (ready) lines.push({ label: 'Lead first cleared', text: monthLabel(ready) });
+      return lines;
+    }
+
     function taxNote(category) {
       var note = 'Amounts use the SIP on screen. Long-term equity tax is 12.5% after one ₹1.25 lakh exemption on this card. Short-term equity tax is 20% on installments under 12 months. Exit load is assumed at 1% of those young installments, because the sheet does not store the scheme load. One more year repeats each fund\'s past 3-year CAGR. That is an illustration, not a forecast and not your full tax return.';
       if (/commodit|international|debt|liquid|overnight/i.test(category || '')) {
@@ -1821,6 +1874,13 @@
         html += '<h2 class="text-sm font-semibold text-slate-900 mt-1">' + esc(decision.title) + '</h2>';
       }
       html += '<p class="text-xs text-slate-600 mt-2">' + esc(decision.sentence) + '</p>';
+      if (decision.books && decision.books.length) {
+        html += '<div class="money-block">';
+        decision.books.forEach(function(row) {
+          html += '<div><span>' + esc(row.label) + '</span><strong>' + esc(row.text) + '</strong></div>';
+        });
+        html += '</div>';
+      }
       html += '<div class="pro-con">' + listHtml(decision.pros.slice(0, 4), 'is-pro') + listHtml(decision.cons.slice(0, 4), 'is-con') + '</div>';
       html += '<p class="text-[11px] text-slate-400 mt-2">' + esc(decision.note) + '</p>';
       html += '</article>';
@@ -1839,13 +1899,15 @@
       var into = null;
       var sentence = 'No decision yet.';
       var note = 'Tax and exit load are not in this book. Custom Range XIRR is context, usually the shorter SIP window.';
-      if (!leader) return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note };
+      var books = [];
+      if (!leader) return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books };
 
       function shouldSwitch(fund) {
         return fund.code !== leader.code && returnLead(leader, fund).clear && !drawdownWorse(leader, fund) && ratiosNotWorse(leader, fund);
       }
 
       if (held.length) {
+        books = buildBooks(held, leader);
         var moving = [];
         var keeping = [];
         held.forEach(function(fund) {
@@ -1863,7 +1925,6 @@
           var money = combinedRedeem(moving);
           var ahead = yearAhead(moving, leader, money);
           var missed = missedCorpus(moving, leader);
-          var ready = switchReadyMonth(moving, leader);
           var leadKey = lead.label === '5Y CAGR' ? '5Y' : (lead.label === '3Y CAGR' ? '3Y' : null);
           var leadRate = leadKey ? tenureCagr(leader, leadKey) : finiteNumber(leader.customRangeXirr);
           var heldRates = leadKey
@@ -1900,19 +1961,7 @@
             if (leadDraw !== null && drawSpan) pros.push('Max drawdown is ' + formatPct(leadDraw) + ' versus ' + drawSpan + ', inside the 3-point limit.');
             if (missed !== null && missed > 0) pros.push('The same SIP is already worth ' + formatInrWhole(missed) + ' more in ' + intoName + ', before tax.');
           }
-          if (money) {
-            cons.push('Tax on this SIP is about ' + formatInrWhole(money.tax) + ': ' + formatInrWhole(money.ltcgTax) + ' on long-term gains of ' + formatInrWhole(money.ltcgGain) + ' after the ₹1.25 lakh exemption, and ' + formatInrWhole(money.stcgTax) + ' on short-term gains of ' + formatInrWhole(money.stcgGain) + '.');
-            cons.push('Exit load is about ' + formatInrWhole(money.exitLoad) + ', assumed at 1% of installments bought in the last 12 months. After tax and load, ' + formatInrWhole(money.net) + ' can move into ' + intoName + '.');
-          } else {
-            cons.push('This SIP window has no priced installments, so tax and exit load cannot be calculated.');
-          }
-          if (ahead && ahead.gap > 0) cons.push('If the past 3-year pace repeats for one more year, holding finishes near ' + formatInrWhole(ahead.stay) + ' and switching today finishes near ' + formatInrWhole(ahead.switched) + '. Switching is ahead by ' + formatInrWhole(ahead.gap) + '.');
-          if (ready) {
-            var latestMonth = pathMonths.length ? pathMonths[pathMonths.length - 1] : '';
-            cons.push(ready === latestMonth
-              ? 'The 2-point lead first clears in ' + monthLabel(ready) + ', the latest month in this window.'
-              : 'The 2-point lead first cleared in ' + monthLabel(ready) + '. That is the earliest month in this window when the switch would have met the same bar.');
-          }
+          if (!money) cons.push('Lot gains are not on this load yet, so the tax lines stay blank until code.gs is refreshed.');
           if (lead.short) cons.push('3Y and 5Y CAGR are missing, so this gap is only the shorter SIP window.');
         } else {
           var kept = keeping[0] || held[0];
@@ -1932,7 +1981,7 @@
             pros.push('A gap this small leaves ' + briefName(kept.name) + ' in place.');
             cons.push(briefName(leader.name) + ' still leads the category if the gap widens later.');
           }
-          note = 'Keep applies because you marked this fund as held.';
+          note = kept.code === leader.code ? 'Keep applies because you marked this fund as held.' : taxNote(category);
         }
       } else {
         var candidate = mine[0] || leader;
@@ -1964,7 +2013,7 @@
         title = 'Start ' + briefName(starting.name);
         note = 'No fund in ' + category + ' is marked held, so this is a fresh SIP. It is not a switch and not an exit.';
       }
-      return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note };
+      return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books };
     }
 
     function renderFinal() {
