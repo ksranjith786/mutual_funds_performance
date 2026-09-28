@@ -177,7 +177,6 @@
     .final-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
     .decision-list { display: flex; flex-direction: column; gap: 8px; }
     .decision-card { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); box-shadow: var(--shadow-sm); }
-    .decision-hold { display: flex; flex-wrap: wrap; gap: 8px 14px; }
     .switch-line { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
     .switch-line span { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
     .switch-line strong { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--color-text-secondary); }
@@ -252,9 +251,9 @@
           <div class="flex flex-wrap items-center gap-2">
             <h1 class="text-xl font-bold text-slate-900 tracking-tight">Mutual Fund Matrix</h1>
             <span class="live-pill">5D – 12Y</span>
-          </div>
-          <p class="text-xs text-slate-500 font-medium">Tenure returns look back from Sale Date. Custom Range uses From Date to To Date.</p>
         </div>
+          <p class="text-xs text-slate-500 font-medium">Tenure returns look back from Sale Date. Custom Range uses From Date to To Date.</p>
+      </div>
       </div>
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
         <select id="viewSelect" onchange="setTab(this.value)" aria-label="Choose view" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full sm:w-56">
@@ -264,15 +263,15 @@
           <option value="final">Summary</option>
         </select>
       <button id="refreshBtn" onclick="loadMatrixData()" class="inline-flex items-center justify-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors w-full sm:w-auto">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        <span>Refresh Data</span>
-      </button>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          <span>Refresh Data</span>
+        </button>
       </div>
     </div>
   </header>
 
   <main class="max-w-[1600px] mx-auto px-3 sm:px-6 py-4 sm:py-5 flex-1 w-full space-y-4">
-
+    
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <div class="kpi-card bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Tracked Schemes</span>
@@ -373,13 +372,13 @@
             </tr>
           </tbody>
         </table>
-      </div>
+                </div>
       <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
         <span id="footerCount">Loading schemes...</span>
         <span id="footerRange">Custom Range XIRR uses From Date to To Date. Tenure columns look back from Sale Date.</span>
-      </div>
-    </div>
-    </div>
+                </div>
+                </div>
+                </div>
 
     <div id="panelCompare" class="hidden space-y-4">
       <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
@@ -390,31 +389,31 @@
             <span id="compareCount" class="font-medium text-slate-400">None selected</span>
           </label>
           <input type="search" id="compareSearch" oninput="renderComparePicker()" placeholder="Search funds to add..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
-        </div>
+                </div>
         <p class="text-[11px] text-slate-400">Your selection is ranked by Custom Range XIRR. Check the box and every category in the selection gets its own table, one after another. The category leader is shown as if every selected SIP in that category went into that one fund.</p>
         <div id="comparePicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
-      </div>
+                </div>
       <div id="compareSummary" class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-xs text-slate-600">Select at least two funds to compare.</div>
       <div id="compareResults" class="space-y-4"></div>
-    </div>
+                </div>
 
     <div id="panelRisk" class="hidden space-y-4">
       <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <input type="search" id="riskSearch" oninput="renderRiskPicker()" placeholder="Search funds to include..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
           <button type="button" id="riskProfileBtn" onclick="loadRiskProfiles()" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white">Load manager and portfolio</button>
-        </div>
+                </div>
         <p class="text-[11px] text-slate-400">Sharpe, Sortino, Treynor, standard deviation, drawdown, and VaR are calculated from daily NAV in this sheet for 3 years ending on Sale Date. Alpha, beta, capture, information ratio, R-squared, correlation, and tracking error use the other tracked funds in the same category, not an index. Expense ratio, manager, and holdings come from the public scheme profile only when that request succeeds. Morningstar and Dhan have no keyless feed.</p>
         <div id="riskPicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
-      </div>
+                </div>
       <div id="riskGuide" class="risk-guide"></div>
       <div id="riskTable" class="compare-card"></div>
       <div id="riskProfiles" class="space-y-3"></div>
-    </div>
+                </div>
 
     <div id="panelFinal" class="hidden space-y-4">
       <div id="finalBody"></div>
-    </div>
+                </div>
   </main>
 
   <script>
@@ -640,7 +639,6 @@
           rebuildFilters(response);
           updateKPIs(allFunds);
           applyFilters();
-          renderActiveTab();
         })
         .withFailureHandler(function(err) {
           btn.classList.remove('opacity-50', 'pointer-events-none');
@@ -728,10 +726,14 @@
       renderFilter(kind);
       if (kind === 'scheme') renderFundSearch();
       applyFilters();
-      if (kind === 'scheme') refreshSharedPick();
     }
 
     function setFilterItem(kind, value, checked) {
+      if (kind === 'scheme' && filterAll.scheme) {
+        filterSelected.scheme = {};
+        (currentDisplayFunds || []).forEach(function(fund) { filterSelected.scheme[fund.code] = true; });
+        filterAll.scheme = false;
+      }
       if (checked) filterSelected[kind][value] = true;
       else {
         delete filterSelected[kind][value];
@@ -741,7 +743,6 @@
       renderFilter(kind);
       if (kind === 'scheme') renderFundSearch();
       applyFilters();
-      if (kind === 'scheme') refreshSharedPick();
     }
 
     function schemeNone() {
@@ -756,8 +757,15 @@
       return html;
     }
 
+    function schemeSelectionMap() {
+      if (!filterAll.scheme) return filterSelected.scheme;
+      var map = {};
+      (currentDisplayFunds || []).forEach(function(fund) { map[fund.code] = true; });
+      return map;
+    }
+
     function selectedFundList() {
-      if (filterAll.scheme) return [];
+      if (filterAll.scheme) return (currentDisplayFunds || []).slice();
       return allFunds.filter(function(fund) { return filterSelected.scheme[fund.code]; });
     }
 
@@ -789,7 +797,10 @@
     }
 
     function fundSearchPlaceholder() {
-      if (filterAll.scheme) return 'All funds';
+      if (filterAll.scheme) {
+        var shown = (currentDisplayFunds || []).length;
+        return shown ? shown + ' funds' : 'All funds';
+      }
       var chosen = (filterOptions.scheme || []).filter(function(item) { return filterSelected.scheme[item.value]; });
       if (!chosen.length) return 'No funds';
       if (chosen.length === 1) return chosen[0].label.replace(/ \([^)]*\)$/, '');
@@ -802,13 +813,14 @@
       return hay.indexOf(query) !== -1;
     }
 
-    // One checklist for the matrix search, Fund Comparator, and Risk and Rating.
-    // Funds are grouped by category. options.selected is a map of scheme code to true.
+    // One category checklist for the matrix search, Fund Comparator, Risk and Rating, and Summary.
+    // options.funds limits the rows. options.selected is a map of scheme code to true.
     function fundChecklistHtml(options) {
       var query = (options.query || '').trim().toLowerCase();
       var html = options.toolbar || '';
-      if (!allFunds.length) return html + '<p class="text-slate-400 px-1 py-2">No funds loaded yet.</p>';
-      var funds = allFunds.filter(function(fund) { return fundMatchesQuery(fund, query); });
+      var source = options.funds || allFunds;
+      if (!source.length) return html + '<p class="text-slate-400 px-1 py-2">No funds loaded yet.</p>';
+      var funds = source.filter(function(fund) { return fundMatchesQuery(fund, query); });
       if (!funds.length) return html + '<p class="text-slate-400 px-1 py-2">No funds match.</p>';
       var groups = groupByCategory(funds);
       Object.keys(groups).sort().forEach(function(category) {
@@ -831,7 +843,7 @@
       if (panel.classList.contains('hidden')) return;
       panel.innerHTML = fundChecklistHtml({
         query: input.value,
-        selected: filterSelected.scheme,
+        selected: schemeSelectionMap(),
         toolbar: fundPickToolbar(),
         onchange: function(fund) { return 'setFilterItem(\'scheme\', \'' + esc(fund.code) + '\', this.checked)'; }
       });
@@ -851,7 +863,6 @@
       renderHeader();
       renderLegend();
       applyFilters();
-      renderActiveTab();
     }
 
     function toggleTop2Filter() {
@@ -916,6 +927,8 @@
       sortFundsList(filtered, currentSortField, currentSortAsc);
       currentDisplayFunds = filtered;
       renderTable(currentDisplayFunds);
+      renderFundSearch();
+      renderActiveTab();
     }
 
     function handleSort(field) {
@@ -938,7 +951,7 @@
         if (header === currentSortField) {
           icon.textContent = currentSortAsc ? '▲' : '▼';
           icon.className = 'text-emerald-700 font-bold';
-        } else {
+          } else {
           icon.textContent = '⇅';
           icon.className = 'text-slate-400';
         }
@@ -1171,7 +1184,7 @@
       if (!box) return;
       box.innerHTML = fundChecklistHtml({
         query: document.getElementById('riskSearch').value,
-        selected: filterSelected.scheme,
+        selected: schemeSelectionMap(),
         toolbar: fundPickToolbar(),
         onchange: function(fund) { return 'setFilterItem(\'scheme\', \'' + esc(fund.code) + '\', this.checked)'; }
       });
@@ -1336,14 +1349,14 @@
       if (!box) return;
       box.innerHTML = fundChecklistHtml({
         query: document.getElementById('compareSearch').value,
-        selected: filterSelected.scheme,
+        selected: schemeSelectionMap(),
         toolbar: fundPickToolbar(),
         onchange: function(fund) { return 'setFilterItem(\'scheme\', \'' + esc(fund.code) + '\', this.checked)'; }
       });
       var countEl = document.getElementById('compareCount');
       if (countEl) {
         var n = selectedFundList().length;
-        countEl.textContent = filterAll.scheme ? 'All funds' : (n ? n + ' selected' : 'None selected');
+        countEl.textContent = n ? n + ' selected' : 'None selected';
       }
     }
 
@@ -1964,10 +1977,11 @@
       }
       var html = '<div class="compare-card p-4"><div class="text-xs font-semibold text-slate-800">Funds you hold</div>';
       html += '<p class="text-[11px] text-slate-400 mt-1">Mark a fund only if you already own it. Leave it unmarked if you are only considering a new SIP.</p>';
-      html += '<div class="decision-hold mt-2">';
-      funds.forEach(function(fund) {
-        var on = !!heldFunds[fund.code];
-        html += '<label class="inline-flex items-center gap-2 text-xs text-slate-700"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="setHeld(\'' + esc(fund.code) + '\', this.checked)"> ' + esc(fund.name) + '</label>';
+      html += '<div class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs mt-2">';
+      html += fundChecklistHtml({
+        funds: funds,
+        selected: heldFunds,
+        onchange: function(fund) { return 'setHeld(\'' + esc(fund.code) + '\', this.checked)'; }
       });
       html += '</div></div>';
       html += '<div class="decision-list">';
