@@ -204,17 +204,25 @@ function getFundMatrixData(params) {
       customRangeXirr: custom.xirr,
       tenureXirr: tenureXirr,
       tenureCagr: tenureCagr,
+      redeem: custom.redeem || null,
+      switchPath: threeYearPath(series, saleDate),
       risk: buildRiskStats(series, saleDate)
     });
   }
 
   attachPeerRisk(fundList, navIndex, saleDate);
 
+  var pathMonths = [];
+  for (var back = 35; back >= 0; back--) {
+    pathMonths.push(formatDay(shiftBack(saleDate, 'month', back)).slice(0, 7));
+  }
+
   return {
     funds: fundList,
     categories: Object.keys(categoriesSet).sort(),
     amcs: Object.keys(amcSet).sort(),
-    tenures: TENURE_CONFIG
+    tenures: TENURE_CONFIG,
+    pathMonths: pathMonths
   };
 }
 
@@ -704,7 +712,7 @@ function lookupNav(series, dateObj) {
  * Returns xirr null when no installment falls in the window.
  */
 function buildSip(series, sipAmount, sipDay, startDate, endDate) {
-  var empty = { units: 0, invested: 0, corpus: null, profit: null, absoluteReturn: null, xirr: null };
+  var empty = { units: 0, invested: 0, corpus: null, profit: null, absoluteReturn: null, xirr: null, redeem: null };
   if (!series || !startDate || !endDate || endDate < startDate) return empty;
 
   var endNav = lookupNav(series, endDate);
@@ -713,13 +721,16 @@ function buildSip(series, sipAmount, sipDay, startDate, endDate) {
   var units = 0;
   var invested = 0;
   var flows = [];
+  var lots = [];
   var cur = firstSipOnOrAfter(startDate, sipDay);
 
   while (cur && cur.getTime() <= endDate.getTime()) {
     var nav = lookupNav(series, cur);
     if (nav !== null && nav > 0) {
-      units += sipAmount / nav;
+      var bought = sipAmount / nav;
+      units += bought;
       invested += sipAmount;
+      lots.push({ t: cur.getTime(), cost: sipAmount, units: bought });
       flows.push({ date: new Date(cur.getTime()), amount: -sipAmount });
     }
     cur = nextSipDate(cur, sipDay);
@@ -729,14 +740,44 @@ function buildSip(series, sipAmount, sipDay, startDate, endDate) {
 
   var corpus = units * endNav;
   flows.push({ date: new Date(endDate.getTime()), amount: corpus });
+  var stcgGain = 0;
+  var ltcgGain = 0;
+  var exitLoad = 0;
+  var yearMs = 365.25 * 86400000;
+  for (var lotIndex = 0; lotIndex < lots.length; lotIndex++) {
+    var lot = lots[lotIndex];
+    var value = lot.units * endNav;
+    var gain = value - lot.cost;
+    if (endDate.getTime() - lot.t >= yearMs) ltcgGain += gain;
+    else {
+      stcgGain += gain;
+      exitLoad += Math.max(0, value) * 0.01;
+    }
+  }
   return {
     units: units,
     invested: invested,
     corpus: corpus,
     profit: corpus - invested,
     absoluteReturn: (corpus - invested) / invested,
-    xirr: calculateXIRR(flows)
+    xirr: calculateXIRR(flows),
+    redeem: {
+      stcgGain: roundRupee(stcgGain),
+      ltcgGain: roundRupee(ltcgGain),
+      exitLoad: roundRupee(exitLoad)
+    }
   };
+}
+
+function threeYearPath(series, saleDate) {
+  var path = [];
+  for (var back = 35; back >= 0; back--) {
+    var end = shiftBack(saleDate, 'month', back);
+    var start = shiftBack(end, 'year', 3);
+    var cagr = trailingCagr(series, start, end, true);
+    path.push(cagr === null ? null : Math.round(cagr * 10000) / 10000);
+  }
+  return path;
 }
 
 /**
