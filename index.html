@@ -173,7 +173,25 @@
     .theme-switch button.is-active { background: var(--color-fill-brand); color: var(--color-text-on-brand); font-weight: 600; }
     .compare-winner { background: var(--color-fill-semantic-success-mildest); }
     html, body { max-width: 100%; overflow-x: hidden; }
-    main, header, #panelMatrix, #panelCompare, #panelRisk { min-width: 0; max-width: 100%; }
+    main, header, #panelMatrix, #panelCompare, #panelRisk, #panelFinal { min-width: 0; max-width: 100%; }
+    .final-hero { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 16px 18px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); box-shadow: var(--shadow-sm); }
+    .final-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
+    .final-score { font-family: "IBM Plex Sans", Inter, sans-serif; font-variant-numeric: tabular-nums lining-nums; font-size: 40px; line-height: 44px; font-weight: 600; color: var(--color-text-primary); }
+    .final-rank { display: flex; gap: 8px; overflow-x: auto; }
+    .final-pill { flex: 1 1 11rem; min-width: 11rem; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); }
+    .final-pill.is-pick { border-color: var(--color-fill-brand); box-shadow: inset 3px 0 0 var(--color-fill-brand); }
+    .final-bar { height: 4px; margin-top: 8px; border-radius: 99px; background: var(--color-fill-base); }
+    .final-bar span { display: block; height: 100%; border-radius: 99px; background: var(--color-fill-brand); }
+    .final-metric { position: sticky; left: 0; z-index: 2; min-width: 11rem; }
+    .sheet thead th.final-metric { z-index: 6; }
+    .sheet tbody tr.final-group td { background: var(--color-fill-container); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-secondary); }
+    .sheet thead th.final-col,
+    .sheet tbody td.final-col,
+    .sheet tbody tr:nth-child(even) td.final-col,
+    .sheet tbody tr:hover td.final-col { background: color-mix(in srgb, var(--color-fill-brand) 10%, var(--color-fill-surface)); }
+    @media (max-width: 767px) {
+      .final-hero { flex-direction: column; }
+    }
     .risk-guide { display: flex; flex-wrap: wrap; gap: 8px; }
     .risk-card { flex: 1 1 14rem; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); }
     .risk-card strong { display: block; font-size: 12px; font-weight: 600; margin-bottom: 2px; }
@@ -232,10 +250,11 @@
         </div>
       </div>
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
-        <select id="viewSelect" onchange="setTab(this.value)" aria-label="Choose view" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full sm:w-48">
+        <select id="viewSelect" onchange="setTab(this.value)" aria-label="Choose view" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full sm:w-56">
           <option value="matrix">Return Matrix</option>
           <option value="compare">Fund Comparator</option>
           <option value="risk">Risk and Rating</option>
+          <option value="final">Final</option>
         </select>
       <button id="refreshBtn" onclick="loadMatrixData()" class="inline-flex items-center justify-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors w-full sm:w-auto">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -378,12 +397,16 @@
           <input type="search" id="riskSearch" oninput="renderRiskPicker()" placeholder="Search funds to include..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
           <button type="button" id="riskProfileBtn" onclick="loadRiskProfiles()" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white">Load manager and portfolio</button>
         </div>
-        <p class="text-[11px] text-slate-400">Figures use daily NAV for 3 years ending on Sale Date. Capture, beta, and alpha compare the fund with the other tracked funds in its category. Manager, tenure, and weights open from the public profile, Morningstar, and Dhan for the funds you check.</p>
+        <p class="text-[11px] text-slate-400">Sharpe, Sortino, Treynor, standard deviation, drawdown, and VaR are calculated from daily NAV in this sheet for 3 years ending on Sale Date. Alpha, beta, capture, information ratio, R-squared, correlation, and tracking error use the other tracked funds in the same category, not an index. Expense ratio, manager, and holdings come from the public scheme profile only when that request succeeds. Morningstar and Dhan have no keyless feed.</p>
         <div id="riskPicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
       </div>
       <div id="riskGuide" class="risk-guide"></div>
       <div id="riskTable" class="compare-card"></div>
       <div id="riskProfiles" class="space-y-3"></div>
+    </div>
+
+    <div id="panelFinal" class="hidden space-y-4">
+      <div id="finalBody"></div>
     </div>
   </main>
 
@@ -443,8 +466,8 @@
     var filterAll = { category: true, amc: true, scheme: true };
     var openPanel = null;
     var activeTab = 'matrix';
-    var compareSelected = {};
-    var riskSelected = {};
+    // One shortlist for the matrix, comparator, risk, and final tabs.
+    // All leaves this map empty and lifts the scheme restriction. None clears it.
     var riskProfiles = {};
 
     window.onload = function() {
@@ -607,9 +630,7 @@
           rebuildFilters(response);
           updateKPIs(allFunds);
           applyFilters();
-          renderComparePicker();
-          renderComparator();
-          renderRisk();
+          renderActiveTab();
         })
         .withFailureHandler(function(err) {
           btn.classList.remove('opacity-50', 'pointer-events-none');
@@ -688,19 +709,55 @@
     }
 
     function setFilterAll(kind, checked) {
-      filterAll[kind] = checked;
-      filterOptions[kind].forEach(function(item) { filterSelected[kind][item.value] = checked; });
+      filterAll[kind] = !!checked;
+      if (kind === 'scheme') filterSelected.scheme = {};
+      else filterOptions[kind].forEach(function(item) { filterSelected[kind][item.value] = !!checked; });
       renderFilter(kind);
       if (kind === 'scheme') renderFundSearch();
       applyFilters();
+      if (kind === 'scheme') refreshSharedPick();
     }
 
     function setFilterItem(kind, value, checked) {
-      filterSelected[kind][value] = checked;
-      filterAll[kind] = filterOptions[kind].every(function(item) { return filterSelected[kind][item.value]; });
+      if (checked) filterSelected[kind][value] = true;
+      else delete filterSelected[kind][value];
+      filterAll[kind] = kind === 'scheme' ? false : filterOptions[kind].every(function(item) { return filterSelected[kind][item.value]; });
       renderFilter(kind);
       if (kind === 'scheme') renderFundSearch();
       applyFilters();
+      if (kind === 'scheme') refreshSharedPick();
+    }
+
+    function schemeNone() {
+      if (filterAll.scheme) return false;
+      return !allFunds.some(function(fund) { return filterSelected.scheme[fund.code]; });
+    }
+
+    function fundPickToolbar() {
+      var html = '<div class="flex items-center gap-1 pb-1 mb-1 border-b border-slate-100">';
+      html += '<button type="button" class="fund-pick-btn' + (filterAll.scheme ? ' is-on' : '') + '" onclick="setFilterAll(\'scheme\', true)">All</button>';
+      html += '<button type="button" class="fund-pick-btn' + (schemeNone() ? ' is-on' : '') + '" onclick="setFilterAll(\'scheme\', false)">None</button></div>';
+      return html;
+    }
+
+    function selectedFundList() {
+      if (filterAll.scheme) return [];
+      return allFunds.filter(function(fund) { return filterSelected.scheme[fund.code]; });
+    }
+
+    function renderActiveTab() {
+      if (activeTab === 'compare') {
+        renderComparePicker();
+        renderComparator();
+      } else if (activeTab === 'risk') {
+        renderRisk();
+      } else if (activeTab === 'final') {
+        renderFinal();
+      }
+    }
+
+    function refreshSharedPick() {
+      renderActiveTab();
     }
 
     function openFundSearch() {
@@ -756,16 +813,10 @@
       if (!input || !panel) return;
       if (!(input.value || '').trim()) input.placeholder = fundSearchPlaceholder();
       if (panel.classList.contains('hidden')) return;
-      var allOn = !!filterAll.scheme;
-      var noneOn = !allOn && (filterOptions.scheme || []).every(function(item) { return !filterSelected.scheme[item.value]; });
-      var toolbar = '<div class="flex items-center gap-1 pb-1 mb-1 border-b border-slate-100">';
-      toolbar += '<button type="button" class="fund-pick-btn' + (allOn ? ' is-on' : '') + '" onclick="setFilterAll(\'scheme\', true)">All</button>';
-      toolbar += '<button type="button" class="fund-pick-btn' + (noneOn ? ' is-on' : '') + '" onclick="setFilterAll(\'scheme\', false)">None</button>';
-      toolbar += '</div>';
       panel.innerHTML = fundChecklistHtml({
         query: input.value,
         selected: filterSelected.scheme,
-        toolbar: toolbar,
+        toolbar: fundPickToolbar(),
         onchange: function(fund) { return 'setFilterItem(\'scheme\', \'' + esc(fund.code) + '\', this.checked)'; }
       });
     }
@@ -784,7 +835,7 @@
       renderHeader();
       renderLegend();
       applyFilters();
-      renderComparator();
+      renderActiveTab();
     }
 
     function toggleTop2Filter() {
@@ -1052,14 +1103,14 @@
     }
 
     function setTab(tab) {
-      activeTab = tab === 'compare' ? 'compare' : (tab === 'risk' ? 'risk' : 'matrix');
+      activeTab = tab === 'compare' ? 'compare' : (tab === 'risk' ? 'risk' : (tab === 'final' ? 'final' : 'matrix'));
       var view = document.getElementById('viewSelect');
       if (view && view.value !== activeTab) view.value = activeTab;
       document.getElementById('panelMatrix').classList.toggle('hidden', activeTab !== 'matrix');
       document.getElementById('panelCompare').classList.toggle('hidden', activeTab !== 'compare');
       document.getElementById('panelRisk').classList.toggle('hidden', activeTab !== 'risk');
-      if (activeTab === 'compare') renderComparator();
-      if (activeTab === 'risk') renderRisk();
+      document.getElementById('panelFinal').classList.toggle('hidden', activeTab !== 'final');
+      renderActiveTab();
     }
 
     var RISK_GUIDE = [
@@ -1067,8 +1118,12 @@
       { name: 'Downside deviation', text: 'The yearly size of the days that fall short of a 6.5% cash pace.', best: 'Lower', worst: 'Higher' },
       { name: 'Sharpe ratio', text: 'Yearly return above 6.5% cash, divided by standard deviation.', best: 'Higher', worst: 'Lower' },
       { name: 'Sortino ratio', text: 'Yearly return above 6.5% cash, divided by downside deviation.', best: 'Higher', worst: 'Lower' },
+      { name: 'Treynor ratio', text: 'Yearly return above 6.5% cash, divided by beta versus category peers.', best: 'Higher', worst: 'Lower' },
       { name: 'Information ratio', text: 'How much extra yearly return the fund earned over category peers, per unit of tracking error.', best: 'Higher', worst: 'Lower' },
-      { name: 'R-squared', text: 'How much of the fund’s daily moves line up with its category peers. 100% means they move together.', best: 'Higher, the peer comparison is more reliable', worst: 'Lower' },
+      { name: 'Tracking error', text: 'How widely the fund’s daily gap versus category peers moves around. This is the denominator of the information ratio.', best: 'Lower', worst: 'Higher' },
+      { name: 'R-squared', text: 'How much of the fund’s daily moves line up with its category peers. 100% means they move together.', best: 'Higher means the peer comparison is more reliable', worst: 'Lower' },
+      { name: 'Correlation', text: 'How closely the fund and its category peers move together. This describes the relationship. It is not a quality score.', best: 'Read with beta and R-squared', worst: 'Do not treat a high or low number as better by itself' },
+      { name: '95% one-day VaR', text: 'The weak daily NAV change at the 5th percentile. About 1 day in 20 was this bad or worse.', best: 'Closer to zero', worst: 'More negative' },
       { name: 'Max drawdown', text: 'Largest fall from a peak to a later trough.', best: 'Closer to zero', worst: 'More negative' },
       { name: 'Max drawup', text: 'Largest rise from a trough to a later peak.', best: 'Higher rebound', worst: 'Smaller rebound' },
       { name: 'Upside capture', text: 'Share of the category peers’ up-days this fund kept.', best: 'Higher', worst: 'Lower' },
@@ -1098,36 +1153,63 @@
     function renderRiskPicker() {
       var box = document.getElementById('riskPicker');
       if (!box) return;
-      var toolbar = '<div class="flex items-center gap-1 pb-1 mb-1 border-b border-slate-100">';
-      toolbar += '<button type="button" class="fund-pick-btn" onclick="setRiskAll(true)">All</button>';
-      toolbar += '<button type="button" class="fund-pick-btn" onclick="setRiskAll(false)">None</button></div>';
       box.innerHTML = fundChecklistHtml({
         query: document.getElementById('riskSearch').value,
-        selected: riskSelected,
-        toolbar: toolbar,
-        onchange: function(fund) { return 'setRiskFund(\'' + esc(fund.code) + '\', this.checked)'; }
+        selected: filterSelected.scheme,
+        toolbar: fundPickToolbar(),
+        onchange: function(fund) { return 'setFilterItem(\'scheme\', \'' + esc(fund.code) + '\', this.checked)'; }
       });
-    }
-
-    function setRiskAll(on) {
-      allFunds.forEach(function(fund) {
-        if (on) riskSelected[fund.code] = true;
-        else delete riskSelected[fund.code];
-      });
-      renderRiskPicker();
-      renderRiskTable();
-      renderRiskProfiles();
-    }
-
-    function setRiskFund(code, checked) {
-      if (checked) riskSelected[code] = true;
-      else delete riskSelected[code];
-      renderRiskTable();
-      renderRiskProfiles();
     }
 
     function selectedRiskFunds() {
-      return allFunds.filter(function(fund) { return riskSelected[fund.code]; });
+      return selectedFundList();
+    }
+
+    var RATIO_RANK = [
+      { label: 'Sharpe', weight: 18, better: 'high', get: function(fund) { return fund.risk && fund.risk.sharpe; } },
+      { label: 'Sortino', weight: 14, better: 'high', get: function(fund) { return fund.risk && fund.risk.sortino; } },
+      { label: 'Treynor', weight: 10, better: 'high', get: function(fund) { return fund.risk && fund.risk.treynor; } },
+      { label: 'Information ratio', weight: 14, better: 'high', get: function(fund) { return fund.risk && fund.risk.informationRatio; } },
+      { label: 'Alpha', weight: 12, better: 'high', get: function(fund) { return fund.risk && fund.risk.alpha; } },
+      { label: 'Max drawdown', weight: 10, better: 'high', get: function(fund) { return fund.risk && fund.risk.maxDrawdown; } },
+      { label: 'Downside capture', weight: 8, better: 'low', get: function(fund) { return fund.risk && fund.risk.downsideCapture; } },
+      { label: 'Std deviation', weight: 8, better: 'low', get: function(fund) { return fund.risk && fund.risk.volatility; } },
+      { label: 'VaR', weight: 6, better: 'high', get: function(fund) { return fund.risk && fund.risk.var95; } }
+    ];
+
+    function categoryRatioLeader(category) {
+      var book = allFunds.filter(function(fund) { return (fund.category || 'Other') === category; });
+      if (!book.length) return null;
+      if (book.length === 1) return book[0];
+      var ranked = scoreShortlist(book, RATIO_RANK).ranked;
+      return ranked.length ? ranked[0].fund : book[0];
+    }
+
+    function riskRows(selected) {
+      var rows = selected.slice();
+      var seen = {};
+      var marks = {};
+      selected.forEach(function(fund) { seen[fund.code] = true; });
+      var shownCats = {};
+      selected.forEach(function(fund) { shownCats[fund.category || 'Other'] = true; });
+      Object.keys(shownCats).forEach(function(category) {
+        var leader = categoryRatioLeader(category);
+        if (!leader) return;
+        marks[leader.code] = seen[leader.code] ? 'Leads category' : 'Leads category · not selected';
+        if (!seen[leader.code]) {
+          rows.push(leader);
+          seen[leader.code] = true;
+        }
+      });
+      rows.sort(function(a, b) {
+        var cat = String(a.category || '').localeCompare(String(b.category || ''));
+        if (cat) return cat;
+        var aLead = marks[a.code] ? 0 : 1;
+        var bLead = marks[b.code] ? 0 : 1;
+        if (aLead !== bLead) return aLead - bLead;
+        return String(a.name).localeCompare(String(b.name));
+      });
+      return { rows: rows, marks: marks };
     }
 
     function renderRiskTable() {
@@ -1139,21 +1221,30 @@
         return;
       }
       var head = nameHead(true);
-      head += rateHead('Std dev') + rateHead('Downside') + rateHead('Sharpe') + rateHead('Sortino');
-      head += rateHead('Info ratio') + rateHead('R-squared');
-      head += rateHead('Max DD') + rateHead('Max DU') + rateHead('Upside') + rateHead('Downside cap.');
+      head += rateHead('Std dev') + rateHead('Downside') + rateHead('Sharpe') + rateHead('Sortino') + rateHead('Treynor');
+      head += rateHead('Info ratio') + rateHead('Tracking error') + rateHead('R-squared') + rateHead('Correlation');
+      head += rateHead('Max DD') + rateHead('VaR 95%') + rateHead('Max DU') + rateHead('Upside') + rateHead('Downside cap.');
       head += rateHead('Beta') + rateHead('Alpha') + rateHead('Best month') + rateHead('Worst month');
+      var glance = riskRows(funds);
+      var marks = glance.marks;
       var body = '';
-      funds.forEach(function(fund) {
+      glance.rows.forEach(function(fund) {
         var risk = fund.risk || {};
-        body += '<tr>' + fundNameCell(fund.name, nameNote(esc(fund.category || '') + (risk.windowStart ? ' · ' + esc(risk.windowStart) + ' to ' + esc(risk.windowEnd) : '')), true);
+        var mark = marks[fund.code];
+        var note = nameNote(esc(fund.category || '') + (risk.windowStart ? ' · ' + esc(risk.windowStart) + ' to ' + esc(risk.windowEnd) : ''));
+        if (mark) note += '<span class="cmp-tag">' + esc(mark) + '</span>';
+        body += '<tr class="' + (mark ? 'compare-lead' : '') + '">' + fundNameCell(fund.name, note, true);
         body += riskHeat(risk.volatility, 'lower');
         body += riskHeat(risk.downsideDeviation, 'lower');
         body += riskHeat(risk.sharpe, 'sharpe');
         body += riskHeat(risk.sortino, 'sharpe');
+        body += riskHeat(risk.treynor, 'rate');
         body += riskHeat(risk.informationRatio, 'sharpe');
+        body += riskHeat(risk.trackingError, 'lower');
         body += riskHeat(risk.rSquared, 'fit');
+        body += riskHeat(risk.correlation, 'plain');
         body += riskHeat(risk.maxDrawdown, 'drawdown');
+        body += riskHeat(risk.var95, 'var');
         body += riskHeat(risk.maxDrawup, 'drawup');
         body += riskHeat(risk.upsideCapture, 'up');
         body += riskHeat(risk.downsideCapture, 'downcap');
@@ -1178,7 +1269,9 @@
     // Green still means the better end of that ratio. Lower-is-better figures are flipped before coloring.
     function riskScore(value, mode) {
       if (value === null || value === undefined || isNaN(value)) return null;
+      if (mode === 'plain') return null;
       if (mode === 'lower') return 0.18 - value;
+      if (mode === 'var') return value + 0.02;
       if (mode === 'sharpe') return value * 0.15;
       if (mode === 'fit') return value - 0.5;
       if (mode === 'drawdown') return value + 0.25;
@@ -1247,20 +1340,15 @@
       if (!box) return;
       box.innerHTML = fundChecklistHtml({
         query: document.getElementById('compareSearch').value,
-        selected: compareSelected,
-        onchange: function(fund) { return 'setCompareFund(\'' + esc(fund.code) + '\', this.checked)'; }
+        selected: filterSelected.scheme,
+        toolbar: fundPickToolbar(),
+        onchange: function(fund) { return 'setFilterItem(\'scheme\', \'' + esc(fund.code) + '\', this.checked)'; }
       });
       var countEl = document.getElementById('compareCount');
       if (countEl) {
-        var n = Object.keys(compareSelected).length;
-        countEl.textContent = n ? n + ' selected' : 'None selected';
+        var n = selectedFundList().length;
+        countEl.textContent = filterAll.scheme ? 'All funds' : (n ? n + ' selected' : 'None selected');
       }
-    }
-
-    function setCompareFund(code, checked) {
-      if (checked) compareSelected[code] = true;
-      else delete compareSelected[code];
-      renderComparator();
     }
 
     // Max benefit is Custom Range XIRR for this SIP. Same amount and dates for every fund.
@@ -1283,7 +1371,7 @@
       var summary = document.getElementById('compareSummary');
       var results = document.getElementById('compareResults');
       if (!summary || !results) return;
-      var selected = allFunds.filter(function(fund) { return compareSelected[fund.code]; });
+      var selected = selectedFundList();
       var within = document.getElementById('compareWithin').checked;
       var bookBest = pickMaxBenefit(allFunds);
       if (selected.length < 2) {
@@ -1471,6 +1559,190 @@
     themeMedia.addEventListener('change', function () {
       if ((document.documentElement.getAttribute('data-theme') || 'system') === 'system') applyTheme('system');
     });
+
+    var DECISION_METRICS = [
+      { group: 'Return', label: 'SIP XIRR', weight: 18, better: 'high', kind: 'pct', get: function(fund) { return fund.customRangeXirr; } },
+      { group: 'Return', label: '3Y CAGR', weight: 8, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.cagr; } },
+      { group: 'Return', label: 'Rolling 1Y', weight: 8, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.rollingReturn; } },
+      { group: 'Return', label: 'Alpha', weight: 6, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.alpha; } },
+      { group: 'Risk-adjusted', label: 'Sharpe', weight: 10, better: 'high', kind: 'num', get: function(fund) { return fund.risk && fund.risk.sharpe; } },
+      { group: 'Risk-adjusted', label: 'Sortino', weight: 8, better: 'high', kind: 'num', get: function(fund) { return fund.risk && fund.risk.sortino; } },
+      { group: 'Risk-adjusted', label: 'Treynor', weight: 5, better: 'high', kind: 'num', get: function(fund) { return fund.risk && fund.risk.treynor; } },
+      { group: 'Risk-adjusted', label: 'Information ratio', weight: 5, better: 'high', kind: 'num', get: function(fund) { return fund.risk && fund.risk.informationRatio; } },
+      { group: 'Volatility', label: 'Std deviation', weight: 6, better: 'low', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.volatility; } },
+      { group: 'Downside', label: 'Max drawdown', weight: 8, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.maxDrawdown; } },
+      { group: 'Downside', label: 'Downside deviation', weight: 4, better: 'low', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.downsideDeviation; } },
+      { group: 'Downside', label: 'Downside capture', weight: 6, better: 'low', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.downsideCapture; } },
+      { group: 'Downside', label: '95% one-day VaR', weight: 4, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.var95; } },
+      { group: 'Benchmark', label: 'Upside capture', weight: 4, better: 'high', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.upsideCapture; } }
+    ];
+
+    var CONTEXT_METRICS = [
+      { group: 'Context', label: 'Rolling hit rate', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.rollingHit; } },
+      { group: 'Context', label: 'Beta', kind: 'num', get: function(fund) { return fund.risk && fund.risk.beta; } },
+      { group: 'Context', label: 'Correlation', kind: 'num', get: function(fund) { return fund.risk && fund.risk.correlation; } },
+      { group: 'Context', label: 'R-squared', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.rSquared; } },
+      { group: 'Context', label: 'Tracking error', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.trackingError; } },
+      { group: 'Context', label: 'Tracking difference', kind: 'pct', get: function(fund) { return fund.risk && fund.risk.trackingDifference; } }
+    ];
+
+    function metricNumber(fund, spec) {
+      var value = spec.get(fund);
+      if (value === null || value === undefined || isNaN(value)) return null;
+      return Number(value);
+    }
+
+    function metricText(value, kind) {
+      if (value === null || value === undefined || isNaN(value)) return '-';
+      if (kind === 'num') return Number(value).toFixed(2);
+      if (kind === 'expense') return (value > 0.2 ? Number(value).toFixed(2) : (value * 100).toFixed(2)) + '%';
+      return formatPct(value);
+    }
+
+    function expenseRatio(fund) {
+      var profile = riskProfiles[fund.code];
+      if (!profile || profile.expenseRatio === null || profile.expenseRatio === undefined || isNaN(Number(profile.expenseRatio))) return null;
+      return Number(profile.expenseRatio);
+    }
+
+    function scoreShortlist(funds, specs) {
+      var active = [];
+      specs.forEach(function(spec) {
+        var vals = [];
+        funds.forEach(function(fund) {
+          var value = metricNumber(fund, spec);
+          if (value !== null) vals.push(value);
+        });
+        if (vals.length < 2) return;
+        active.push({ spec: spec, min: Math.min.apply(null, vals), max: Math.max.apply(null, vals) });
+      });
+      var weight = 0;
+      active.forEach(function(item) { weight += item.spec.weight; });
+      var ranked = funds.map(function(fund) {
+        var score = 0;
+        active.forEach(function(item) {
+          var value = metricNumber(fund, item.spec);
+          var unit = value === null ? 0.5 : 1;
+          if (value !== null && item.max !== item.min) {
+            unit = (value - item.min) / (item.max - item.min);
+            if (item.spec.better === 'low') unit = 1 - unit;
+          }
+          score += weight ? (item.spec.weight / weight) * unit : 0;
+        });
+        return { fund: fund, score: score };
+      });
+      ranked.sort(function(a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        var ax = a.fund.customRangeXirr;
+        var bx = b.fund.customRangeXirr;
+        if (bx !== ax) return (bx || -999) - (ax || -999);
+        return String(a.fund.name).localeCompare(String(b.fund.name));
+      });
+      return { ranked: ranked, active: active };
+    }
+
+    function orientedUnit(value, item) {
+      if (value === null || item.max === item.min) return value === null ? null : 1;
+      var unit = (value - item.min) / (item.max - item.min);
+      return item.spec.better === 'low' ? 1 - unit : unit;
+    }
+
+    function decisionReason(winner, funds, specs) {
+      var leads = [];
+      var gives = [];
+      specs.forEach(function(spec) {
+        var best = null;
+        var worst = null;
+        funds.forEach(function(fund) {
+          var value = metricNumber(fund, spec);
+          if (value === null) return;
+          var better = spec.better === 'low' ? value < (best ? best.value : Infinity) : value > (best ? best.value : -Infinity);
+          if (!best || better) best = { fund: fund, value: value };
+          var worse = spec.better === 'low' ? value > (worst ? worst.value : -Infinity) : value < (worst ? worst.value : Infinity);
+          if (!worst || worse) worst = { fund: fund, value: value };
+        });
+        if (best && best.fund.code === winner.code) leads.push(spec.label);
+        if (worst && worst.fund.code === winner.code) gives.push(spec.label);
+      });
+      var line = 'It leads this shortlist on ' + (leads.slice(0, 3).join(', ') || 'the weighted score');
+      if (gives.length) line += ', and gives ground on ' + gives[0];
+      return line + '.';
+    }
+
+    function renderFinal() {
+      var box = document.getElementById('finalBody');
+      if (!box) return;
+      var funds = selectedFundList();
+      if (!funds.length) {
+        box.innerHTML = '<div class="compare-card p-4 text-xs text-slate-500">Check the funds you are choosing between in Fund Comparator. Final ranks that same shortlist into one pick.</div>';
+        return;
+      }
+      var specs = DECISION_METRICS.slice();
+      var expenses = funds.map(expenseRatio);
+      var expenseReady = expenses.every(function(value) { return value !== null; });
+      if (expenseReady) specs.push({ group: 'Cost', label: 'Expense ratio', weight: 6, better: 'low', kind: 'expense', get: expenseRatio });
+      var scored = funds.length > 1 ? scoreShortlist(funds, specs) : null;
+      var ordered = scored ? scored.ranked.map(function(row) { return row.fund; }) : funds.slice();
+      var winner = ordered[0];
+      var html = '';
+      html += '<div class="final-hero">';
+      html += '<div class="min-w-0"><div class="final-kicker">' + (funds.length > 1 ? 'Pick this fund' : 'Your selection') + '</div>';
+      html += '<h2 class="text-xl font-semibold text-slate-900 mt-1">' + esc(winner.name) + '</h2>';
+      html += '<p class="text-xs text-slate-500 mt-1">' + esc(winner.category || '') + (winner.amc ? ' · ' + esc(winner.amc) : '') + '</p>';
+      if (funds.length > 1) html += '<p class="text-sm text-slate-700 mt-3">' + esc(decisionReason(winner, funds, specs)) + '</p>';
+      else html += '<p class="text-sm text-slate-700 mt-3">Only one fund is checked. Add the others in Fund Comparator and this page will rank them.</p>';
+      html += '<p class="text-xs text-slate-500 mt-2">Custom range ' + formatInrWhole(winner.investedAmount) + ' invested, corpus ' + formatInrWhole(winner.sipCorpus) + ', net profit ' + formatInrWhole(winner.netProfit) + ', XIRR ' + formatPct(winner.customRangeXirr) + '.</p>';
+      html += '</div>';
+      if (scored) html += '<div class="text-right shrink-0"><div class="text-[11px] uppercase tracking-wider text-slate-400">Score</div><div class="final-score">' + Math.round(scored.ranked[0].score * 100) + '</div></div>';
+      html += '</div>';
+      if (scored) {
+        html += '<div class="final-rank">';
+        scored.ranked.forEach(function(row, index) {
+          html += '<div class="final-pill' + (index === 0 ? ' is-pick' : '') + '">';
+          html += '<div class="text-[11px] text-slate-400">' + (index + 1) + '</div>';
+          html += '<div class="text-xs font-semibold text-slate-800 truncate" title="' + esc(row.fund.name) + '">' + esc(row.fund.name) + '</div>';
+          html += '<div class="final-bar"><span style="width:' + Math.round(row.score * 100) + '%"></span></div>';
+          html += '<div class="text-[11px] text-slate-500 mt-1">' + Math.round(row.score * 100) + '</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+      var head = '<th class="final-metric py-3 px-2 text-left">Metric</th>';
+      ordered.forEach(function(fund, index) {
+        head += '<th class="py-2 px-2 text-center' + (index === 0 && funds.length > 1 ? ' final-col' : '') + '" title="' + esc(fund.name) + '">' + esc(fund.name) + '</th>';
+      });
+      var body = '';
+      var lastGroup = '';
+      var rows = specs.concat(CONTEXT_METRICS);
+      var span = ordered.length + 1;
+      rows.forEach(function(spec) {
+        if (spec.group !== lastGroup) {
+          body += '<tr class="final-group"><td colspan="' + span + '">' + esc(spec.group) + (spec.group === 'Context' ? ' · not scored' : '') + '</td></tr>';
+          lastGroup = spec.group;
+        }
+        var band = null;
+        if (scored && spec.weight) {
+          scored.active.forEach(function(item) { if (item.spec.label === spec.label) band = item; });
+        }
+        body += '<tr><td class="final-metric py-2 px-2 text-xs font-medium text-slate-700">' + esc(spec.label) + '</td>';
+        ordered.forEach(function(fund, index) {
+          var value = metricNumber(fund, spec);
+          var text = metricText(value, spec.kind);
+          var mark = index === 0 && funds.length > 1 ? ' final-col' : '';
+          if (band && value !== null) {
+            var unit = orientedUnit(value, band);
+            var style = getHeatmapStyle(unit === null ? null : (unit - 0.5) * 0.4, 'standard');
+            body += '<td class="py-1 px-1 text-center' + mark + '">' + heatChip(text, style) + '</td>';
+          } else {
+            body += '<td class="py-2 px-2 text-center font-mono text-slate-700' + mark + '">' + text + '</td>';
+          }
+        });
+        body += '</tr>';
+      });
+      html += '<div class="compare-card">' + sheetTable(head, body) + '</div>';
+      html += '<p class="text-[11px] text-slate-400">The score ranks this shortlist only. SIP XIRR carries the most weight, then Sharpe, CAGR, rolling 1Y, and max drawdown. Higher is better except standard deviation, downside deviation, downside capture, and expense ratio. Beta, correlation, R-squared, and tracking describe how the fund moves against the other tracked funds in its category. They are not an index and they are not scored. Expense ratio appears only when Risk and Rating has loaded a published profile for every checked fund. VaR is the 5th percentile of daily NAV changes. Rolling 1Y is the average of monthly one-year windows over about four years.</p>';
+      box.innerHTML = html;
+    }
 
     function applyTheme(mode) {
       if (mode !== 'light' && mode !== 'dark' && mode !== 'system') mode = 'system';

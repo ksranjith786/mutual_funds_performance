@@ -15,6 +15,8 @@
  * - fund.risk is a 3-year window ending on Sale Date, from daily NAV. Cash rate is 6.5%.
  *   Capture, beta, alpha, information ratio, and R-squared use the other tracked funds in the same category, not Nifty.
  *   volatility is the annualized standard deviation.
+ *   Also rolling 1Y return and hit rate, 95% one-day VaR, Treynor, correlation, and peer tracking error and difference.
+ *   Tracking uses category peers, not an index. Expense ratio is not on the NAV sheet.
  *   Manager, tenure, and portfolio weights are not on the NAV sheet. getFundPublishedProfile loads them when the public profile responds.
  */
 
@@ -255,6 +257,11 @@ function buildRiskStats(series, saleDate) {
     empty.worstMonth = worst.r;
     empty.positiveMonthShare = wins / months.length;
   }
+  var sorted = values.slice().sort(function(a, b) { return a - b; });
+  empty.var95 = sorted[Math.floor(0.05 * (sorted.length - 1))];
+  var rolling = rollingYearStats(series, saleDate);
+  empty.rollingReturn = rolling.rollingReturn;
+  empty.rollingHit = rolling.rollingHit;
   return empty;
 }
 
@@ -278,8 +285,43 @@ function blankRisk(saleDate) {
     beta: null,
     alpha: null,
     informationRatio: null,
-    rSquared: null
+    rSquared: null,
+    correlation: null,
+    trackingError: null,
+    trackingDifference: null,
+    treynor: null,
+    var95: null,
+    rollingReturn: null,
+    rollingHit: null
   };
+}
+
+function rollingYearStats(series, saleDate) {
+  var out = { rollingReturn: null, rollingHit: null };
+  if (!series || !series.dates.length) return out;
+  var yearMs = 365.25 * 86400000;
+  var endMs = saleDate.getTime();
+  var firstMs = endMs - 4 * yearMs;
+  var windows = [];
+  var backIndex = 0;
+  var lastSample = 0;
+  for (var i = 0; i < series.dates.length; i++) {
+    var t = series.dates[i];
+    if (t > endMs) break;
+    if (t < firstMs) continue;
+    if (lastSample && t - lastSample < 28 * 86400000) continue;
+    var back = t - yearMs;
+    while (backIndex + 1 < i && series.dates[backIndex + 1] <= back) backIndex += 1;
+    if (series.dates[backIndex] > back || !(series.navs[backIndex] > 0) || !(series.navs[i] > 0)) continue;
+    windows.push(series.navs[i] / series.navs[backIndex] - 1);
+    lastSample = t;
+  }
+  if (windows.length < 6) return out;
+  var hits = 0;
+  windows.forEach(function(value) { if (value > 0) hits += 1; });
+  out.rollingReturn = mean(windows);
+  out.rollingHit = hits / windows.length;
+  return out;
 }
 
 function attachPeerRisk(funds, navIndex, saleDate) {
@@ -303,11 +345,21 @@ function attachPeerRisk(funds, navIndex, saleDate) {
     fund.risk.alpha = rel.alpha;
     fund.risk.informationRatio = rel.informationRatio;
     fund.risk.rSquared = rel.rSquared;
+    fund.risk.correlation = rel.correlation;
+    fund.risk.trackingError = rel.trackingError;
+    fund.risk.trackingDifference = rel.trackingDifference;
+    if (rel.beta > 0 && fund.risk.cagr !== null && fund.risk.cagr !== undefined) {
+      fund.risk.treynor = (fund.risk.cagr - RISK_FREE) / rel.beta;
+    }
   });
 }
 
 function peerRelative(series, peers, start, end) {
-  var out = { upsideCapture: null, downsideCapture: null, beta: null, alpha: null, informationRatio: null, rSquared: null };
+  var out = {
+    upsideCapture: null, downsideCapture: null, beta: null, alpha: null,
+    informationRatio: null, rSquared: null, correlation: null,
+    trackingError: null, trackingDifference: null
+  };
   if (!series || !peers.length) return out;
   var mine = returnMap(returnSeries(windowPoints(series, start, end)));
   var peerMaps = peers.map(function(peer) { return returnMap(returnSeries(windowPoints(peer, start, end))); });
@@ -341,11 +393,20 @@ function peerRelative(series, peers, start, end) {
   if (upP.length >= 10 && mean(upP)) out.upsideCapture = mean(upF) / mean(upP);
   if (downP.length >= 10 && mean(downP)) out.downsideCapture = mean(downF) / mean(downP);
   var fundVar = variance(ys);
-  if (peerVar && fundVar) out.rSquared = Math.pow(covariance(xs, ys), 2) / (peerVar * fundVar);
+  var cov = covariance(xs, ys);
+  if (peerVar && fundVar) {
+    out.rSquared = Math.pow(cov, 2) / (peerVar * fundVar);
+    out.correlation = cov / Math.sqrt(peerVar * fundVar);
+  }
   var excess = [];
   for (var i = 0; i < ys.length; i++) excess.push(ys[i] - xs[i]);
   var tracking = stdev(excess);
-  if (tracking) out.informationRatio = (mean(excess) * Math.sqrt(252)) / tracking;
+  var excessMean = mean(excess);
+  if (excessMean !== null) out.trackingDifference = excessMean * 252;
+  if (tracking) {
+    out.trackingError = tracking * Math.sqrt(252);
+    out.informationRatio = (excessMean * Math.sqrt(252)) / tracking;
+  }
   return out;
 }
 

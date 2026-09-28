@@ -21,4 +21,4 @@ Runtime reads the spreadsheet, not the repo CSVs. Never load all of `nav_data` i
 SIP ₹1,000 on the 5th. From Date is today minus 1 year. To Date and Sale Date are today. Top 2 per category by the active 1Y series is on. Category, AMC, and Scheme filters start on Select All.
 
 ## UI facts
-Header dropdown, immediately before Refresh Data, switches Return Matrix, Fund Comparator, and Risk and Rating. Theme control is bottom left: Light / Dark / System. Dew 2.0 tokens. Desktop and phone both render; the page itself does not scroll sideways.
+Header dropdown, immediately before Refresh Data, switches Return Matrix, Fund Comparator, Risk and Rating, and Final. Final ranks the funds checked in Fund Comparator into one pick. Theme control is bottom left: Light / Dark / System. Dew 2.0 tokens. Desktop and phone both render; the page itself does not scroll sideways.

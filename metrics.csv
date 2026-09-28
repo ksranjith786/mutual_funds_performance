@@ -1,0 +1,23 @@
+| Category             | Metric              |       Generally prefer | Simple interpretation                       |
+| -------------------- | ------------------- | ---------------------: | ------------------------------------------- |
+| 🟢 **RETURN**        | CAGR                |              ⬆️ Higher | More annualized wealth creation             |
+|                      | XIRR                |              ⬆️ Higher | Better actual SIP/multiple-cash-flow return |
+|                      | Rolling Return      | ⬆️ Higher + consistent | Better consistency across periods           |
+|                      | Alpha               |   ⬆️ Higher / positive | More excess return vs expected/model        |
+| 🟠 **VOLATILITY**    | Standard Deviation  |              ⬇️ Lower* | Less overall fluctuation                    |
+|                      | Beta                |                Depends | Market sensitivity, not simply "good/bad"   |
+| 🔴 **DOWNSIDE**      | Maximum Drawdown    |       ⬆️ Less negative | Smaller historical peak-to-trough fall      |
+|                      | Downside Deviation  |               ⬇️ Lower | Less harmful volatility                     |
+|                      | Downside Capture    |               ⬇️ Lower | Participates less in market declines        |
+| 🟢 **RISK-ADJUSTED** | Sharpe              |              ⬆️ Higher | More return per unit of total risk          |
+|                      | Sortino             |              ⬆️ Higher | More return per unit of downside risk       |
+|                      | Treynor             |              ⬆️ Higher | More return per unit of market risk         |
+| 🟣 **BENCHMARK**     | Upside Capture      |             ⬆️ Higher* | Captures more market upside                 |
+|                      | Downside Capture    |              ⬇️ Lower* | Captures less market downside               |
+|                      | Correlation         |                Depends | Measures relationship, not quality          |
+|                      | R²                  |                Depends | Measures benchmark relationship             |
+| 🔵 **PASSIVE FUNDS** | Tracking Difference |           Closer to 0* | Follows index more closely                  |
+|                      | Tracking Error      |               ⬇️ Lower | More consistent index tracking              |
+| 💰 **COST**          | Expense Ratio       |              ⬇️ Lower* | Less cost drag                              |
+|                      | Information Ratio   |              ⬆️ Higher | More consistent excess return               |
+| ⚠️ **RISK**          | VaR                 |              ⬇️ Lower* | Lower estimated loss threshold              |
