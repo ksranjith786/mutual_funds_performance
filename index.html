@@ -137,6 +137,15 @@
     .compare-card .sheet table { table-layout: fixed; }
     .sheet th, .sheet td { border-bottom: 1px solid var(--color-boundary-divider); }
     .sheet thead th { position: sticky; top: 0; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; vertical-align: bottom; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
+    .overlap-sheet.sheet table { width: max-content; max-width: 100%; table-layout: fixed; }
+    .overlap-sheet.sheet thead th,
+    .overlap-sheet.sheet tbody th.overlap-label { width: 6.75rem; min-width: 6.75rem; max-width: 6.75rem; white-space: normal; overflow-wrap: anywhere; word-break: break-word; text-transform: none; letter-spacing: normal; line-height: 14px; text-align: center; vertical-align: middle; hyphens: auto; }
+    .overlap-sheet.sheet tbody th.overlap-label,
+    .overlap-sheet.sheet thead th.overlap-label { text-align: left; position: sticky; left: 0; background: var(--color-fill-surface); }
+    .overlap-sheet.sheet thead th.overlap-label { z-index: 6; background: var(--color-fill-container); }
+    .overlap-sheet.sheet tbody th.overlap-label { z-index: 2; font-weight: 600; color: var(--color-text-primary); }
+    .overlap-sheet.sheet td.overlap-cell { width: 6.75rem; min-width: 6.75rem; height: 6.75rem; padding: 4px; text-align: center; }
+    .overlap-sheet.sheet .heatmap-cell { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 5.75rem; border-radius: 8px; }
     .sheet thead tr.sheet-group th { text-transform: none; letter-spacing: normal; }
     .sheet thead tr:first-child th { top: 0; }
     .sheet thead tr:nth-child(2) th { top: 2.05rem; }
@@ -432,7 +441,7 @@
           <button type="button" id="overlapBtn" onclick="loadOverlap()" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white">Load overlap</button>
         </div>
         <p id="overlapCount" class="text-[11px] text-slate-400">Select 2 to 10 funds. The matrix uses the same scheme list as the other tabs.</p>
-        <p class="text-[11px] text-slate-400">Each cell is the share of the two portfolios held in the same stocks. It adds the smaller weight of every common equity holding. Cash and debt are left out. Lower overlap is greener. The weights are the latest published portfolio, loaded when you press the button.</p>
+        <p class="text-[11px] text-slate-400">Each cell is the share of the two portfolios held in the same stocks. It adds the smaller weight of every common equity holding. Cash and debt are left out. Higher overlap is red. The weights are the latest published portfolio, loaded when you press the button.</p>
         <div id="overlapPicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
       </div>
       <div id="overlapNote" class="text-xs text-slate-500"></div>
@@ -1448,36 +1457,36 @@
       }
       var rows = overlapPayload.funds || [];
       note.textContent = overlapPayload.source || '';
-      var head = nameHead(true);
+      var head = '<th class="overlap-label">Fund</th>';
       rows.forEach(function(row) {
-        head += '<th class="py-2 px-1 text-center" title="' + esc(row.name) + '">' + esc(briefName(row.name)) + '</th>';
+        head += '<th class="overlap-head" title="' + esc(row.name) + '">' + esc(briefName(row.name)) + '</th>';
       });
       var body = '';
       rows.forEach(function(row, r) {
-        var detail = row.error
-          ? esc(row.error)
-          : esc((row.asOf || 'Portfolio date unavailable') + (row.equityCount ? ' · ' + row.equityCount + ' stocks' : ''));
-        body += '<tr>' + fundNameCell(row.name, nameNote(detail), true);
+        var tip = row.name;
+        if (row.error) tip += ' · ' + row.error;
+        else tip += ' · ' + (row.asOf || 'Portfolio date unavailable') + (row.equityCount ? ' · ' + row.equityCount + ' stocks' : '');
+        body += '<tr><th class="overlap-label" title="' + esc(tip) + '">' + esc(briefName(row.name)) + '</th>';
         var line = (overlapPayload.matrix && overlapPayload.matrix[r]) || [];
         var shared = (overlapPayload.common && overlapPayload.common[r]) || [];
         rows.forEach(function(col, c) {
-          if (r === c) {
-            body += '<td class="py-1 px-1 text-center text-slate-300">—</td>';
-            return;
-          }
-          body += overlapCell(line[c], shared[c]);
+          body += overlapCell(r === c ? null : line[c], r === c ? 0 : shared[c], r === c);
         });
         body += '</tr>';
       });
-      box.innerHTML = '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"><div class="sheet matrix-scroll"><table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+      box.innerHTML = '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"><div class="sheet overlap-sheet matrix-scroll"><table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
     }
 
-    function overlapCell(value, common) {
+    function overlapCell(value, common, diagonal) {
+      if (diagonal) {
+        return '<td class="overlap-cell text-slate-300">—</td>';
+      }
       if (value === null || value === undefined || isNaN(value)) {
-        return '<td class="py-1 px-1 text-center">' + heatChip('-', getHeatmapStyle(null, 'standard')) + '</td>';
+        return '<td class="overlap-cell">' + heatChip('-', getHeatmapStyle(null, 'standard')) + '</td>';
       }
       var title = common ? common + ' shared stocks' : '';
-      return '<td class="py-1 px-1 text-center" title="' + esc(title) + '">' + heatChip(formatPct(value), getHeatmapStyle(0.35 - value, 'standard')) + '</td>';
+      // The shared scale paints a higher number green. Overlap falls the other way, so the score drops as the ratio rises.
+      return '<td class="overlap-cell" title="' + esc(title) + '">' + heatChip(formatPct(value), getHeatmapStyle(0.12 - Number(value), 'standard')) + '</td>';
     }
 
     function renderComparePicker() {
