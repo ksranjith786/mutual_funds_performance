@@ -112,6 +112,11 @@ function getFundMatrixData(params) {
   if (sipDay > 31) sipDay = 31;
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  try {
+    SHEET_TZ = ss.getSpreadsheetTimeZone();
+  } catch (err) {
+    SHEET_TZ = Session.getScriptTimeZone();
+  }
   var schemeSheet = ss.getSheetByName('scheme_codes');
   if (!schemeSheet) {
     throw new Error('Sheet "scheme_codes" not found in the spreadsheet.');
@@ -165,9 +170,9 @@ function getFundMatrixData(params) {
 
     // Custom range is From Date through To Date. Sale Date is not an input to these figures.
     var custom = buildSip_(series, sipAmount, sipDay, fromDate, toDate);
-    var navStart = lookupNav_(series, fromDate);
-    var navEnd = lookupNav_(series, toDate);
-    var saleNav = lookupNav_(series, saleDate);
+    var navStart = lookupPoint_(series, fromDate);
+    var navEnd = lookupPoint_(series, toDate);
+    var saleNav = lookupPoint_(series, saleDate);
     var tenureXirr = {};
     var tenureCagr = {};
     var tenureAbsolute = {};
@@ -200,13 +205,16 @@ function getFundMatrixData(params) {
       category: scheme.category,
       type: scheme.plan + ' · ' + scheme.option,
       minNavDate: scheme.minNavDate,
-      navStart: roundNav_(navStart),
-      navEnd: roundNav_(navEnd),
-      saleNav: roundNav_(saleNav),
-      units: custom.units !== null ? Number(custom.units.toFixed(4)) : null,
-      investedAmount: custom.invested !== null ? roundRupee_(custom.invested) : null,
-      sipCorpus: custom.corpus !== null ? roundRupee_(custom.corpus) : null,
-      netProfit: custom.profit !== null ? roundRupee_(custom.profit) : null,
+      navStart: navStart ? navStart.nav : null,
+      navStartDate: navStart ? formatDay_(new Date(navStart.date)) : '',
+      navEnd: navEnd ? navEnd.nav : null,
+      navEndDate: navEnd ? formatDay_(new Date(navEnd.date)) : '',
+      saleNav: saleNav ? saleNav.nav : null,
+      saleNavDate: saleNav ? formatDay_(new Date(saleNav.date)) : '',
+      units: custom.units,
+      investedAmount: custom.invested,
+      sipCorpus: custom.corpus,
+      netProfit: custom.profit,
       absoluteReturn: custom.absoluteReturn,
       customRangeXirr: custom.xirr,
       tenureXirr: tenureXirr,
@@ -1060,8 +1068,8 @@ function sortSeries_(series) {
   series.navs = navs;
 }
 
-/** Last published NAV on or before dateObj. Null when the scheme did not exist yet. */
-function lookupNav_(series, dateObj) {
+/** Last published NAV on or before dateObj, with the sheet date of that NAV. */
+function lookupPoint_(series, dateObj) {
   if (!series || !series.dates.length || !dateObj) return null;
   var target = dateObj.getTime();
   var lo = 0;
@@ -1077,7 +1085,13 @@ function lookupNav_(series, dateObj) {
     }
   }
   if (found < 0) return null;
-  return series.navs[found];
+  return { nav: series.navs[found], date: series.dates[found] };
+}
+
+/** Last published NAV on or before dateObj. Null when the scheme did not exist yet. */
+function lookupNav_(series, dateObj) {
+  var point = lookupPoint_(series, dateObj);
+  return point ? point.nav : null;
 }
 
 /**
@@ -1136,9 +1150,9 @@ function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
     absoluteReturn: (corpus - invested) / invested,
     xirr: calculateXIRR_(flows),
     redeem: {
-      stcgGain: roundRupee_(stcgGain),
-      ltcgGain: roundRupee_(ltcgGain),
-      exitLoad: roundRupee_(exitLoad)
+      stcgGain: stcgGain,
+      ltcgGain: ltcgGain,
+      exitLoad: exitLoad
     }
   };
 }
@@ -1149,7 +1163,7 @@ function threeYearPath_(series, saleDate) {
     var end = shiftBack_(saleDate, 'month', back);
     var start = shiftBack_(end, 'year', 3);
     var cagr = trailingCagr_(series, start, end, true);
-    path.push(cagr === null ? null : Math.round(cagr * 10000) / 10000);
+    path.push(cagr);
   }
   return path;
 }
@@ -1242,11 +1256,16 @@ function todayDay_() {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+var SHEET_TZ = '';
+
 function toDay_(value) {
   if (value === null || value === undefined || value === '') return null;
   if (Object.prototype.toString.call(value) === '[object Date]') {
     if (isNaN(value.getTime())) return null;
-    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    var tz = SHEET_TZ || Session.getScriptTimeZone();
+    var iso = Utilities.formatDate(value, tz, 'yyyy-MM-dd');
+    var parts = iso.split('-');
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
   }
   return parseDate_(value);
 }
@@ -1278,14 +1297,4 @@ function formatDay_(dateObj) {
   var month = dateObj.getMonth() + 1;
   var day = dateObj.getDate();
   return dateObj.getFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
-}
-
-function roundNav_(value) {
-  if (value === null || value === undefined || !isFinite(value)) return null;
-  return Number(value.toFixed(4));
-}
-
-function roundRupee_(value) {
-  if (value === null || value === undefined || !isFinite(value)) return null;
-  return Math.round(value * 100) / 100;
 }
