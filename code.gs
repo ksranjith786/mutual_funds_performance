@@ -104,7 +104,7 @@ function getFundMatrixData(params) {
   params = params || {};
   var today = todayDay_();
   var sipAmount = Number(params.sipAmount) || 1000;
-  var sipDay = Number(params.sipDay) || 5;
+  var sipDay = Math.round(Number(params.sipDay) || 5);
   var fromDate = params.fromDate ? toDay_(params.fromDate) : shiftBack_(today, 'year', 1);
   var toDate = params.toDate ? toDay_(params.toDate) : today;
   var saleDate = params.saleDate ? toDay_(params.saleDate) : today;
@@ -1107,18 +1107,18 @@ function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
   var invested = 0;
   var flows = [];
   var lots = [];
-  var cur = firstSipOnOrAfter_(startDate, sipDay);
+  var slot = firstSipSlot_(startDate, sipDay);
 
-  while (cur && cur.getTime() <= endDate.getTime()) {
-    var nav = lookupNav_(series, cur);
-    if (nav !== null && nav > 0) {
-      var bought = sipAmount / nav;
+  while (slot && slot.date.getTime() <= endDate.getTime()) {
+    var boughtOn = firstNavOnOrAfter_(series, slot.date);
+    if (boughtOn && boughtOn.date <= endDate.getTime() && boughtOn.nav > 0) {
+      var bought = sipAmount / boughtOn.nav;
       units += bought;
       invested += sipAmount;
-      lots.push({ t: cur.getTime(), cost: sipAmount, units: bought });
-      flows.push({ date: new Date(cur.getTime()), amount: -sipAmount });
+      lots.push({ t: boughtOn.date, cost: sipAmount, units: bought });
+      flows.push({ date: new Date(boughtOn.date), amount: -sipAmount });
     }
-    cur = nextSipDate_(cur, sipDay);
+    slot = nextSipSlot_(slot, sipDay);
   }
 
   if (invested <= 0 || units <= 0) return empty;
@@ -1183,22 +1183,47 @@ function trailingCagr_(series, startDate, endDate, annualized) {
   return Math.pow(base, 365.25 / days) - 1;
 }
 
-function firstSipOnOrAfter_(startDate, sipDay) {
-  var candidate = sipDateInMonth_(startDate.getFullYear(), startDate.getMonth(), sipDay);
-  if (candidate.getTime() < startDate.getTime()) {
-    candidate = nextSipDate_(candidate, sipDay);
+function firstNavOnOrAfter_(series, dateObj) {
+  if (!series || !series.dates.length || !dateObj) return null;
+  var target = dateObj.getTime();
+  var lo = 0;
+  var hi = series.dates.length - 1;
+  var found = -1;
+  while (lo <= hi) {
+    var mid = (lo + hi) >> 1;
+    if (series.dates[mid] >= target) {
+      found = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
   }
-  return candidate;
+  if (found < 0) return null;
+  return { nav: series.navs[found], date: series.dates[found] };
 }
 
-function nextSipDate_(current, sipDay) {
-  return sipDateInMonth_(current.getFullYear(), current.getMonth() + 1, sipDay);
+function firstSipSlot_(startDate, sipDay) {
+  var slot = { year: startDate.getFullYear(), month: startDate.getMonth() };
+  slot.date = sipDateInMonth_(slot.year, slot.month, sipDay);
+  if (slot.date.getTime() < startDate.getTime()) slot = nextSipSlot_(slot, sipDay);
+  return slot;
+}
+
+function nextSipSlot_(slot, sipDay) {
+  var month = slot.month + 1;
+  var year = slot.year;
+  if (month > 11) {
+    month = 0;
+    year += 1;
+  }
+  return { year: year, month: month, date: sipDateInMonth_(year, month, sipDay) };
 }
 
 function sipDateInMonth_(year, month, sipDay) {
   var first = new Date(year, month, 1);
   var last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-  return new Date(first.getFullYear(), first.getMonth(), Math.min(sipDay, last));
+  if (sipDay <= last) return new Date(first.getFullYear(), first.getMonth(), sipDay);
+  return new Date(first.getFullYear(), first.getMonth() + 1, 1);
 }
 
 function shiftBack_(dateObj, unit, amount) {

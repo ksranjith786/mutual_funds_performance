@@ -401,15 +401,7 @@
         </div>
         <div>
           <label class="field-label">SIP Day of Month</label>
-          <select id="inputSipDay" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
-            <option value="1">1st of month</option>
-            <option value="2">2nd of month</option>
-            <option value="5" selected>5th of month</option>
-            <option value="10">10th of month</option>
-            <option value="15">15th of month</option>
-            <option value="20">20th of month</option>
-            <option value="25">25th of month</option>
-          </select>
+          <input type="number" id="inputSipDay" value="5" min="1" max="31" step="1" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
           <label class="field-label">From Date</label>
@@ -529,7 +521,7 @@
                 </div>
 
     <div class="page-notes text-[11px] leading-4 text-slate-400 space-y-1.5">
-      <p><span class="font-semibold text-slate-500">From Date</span> is the first SIP in Custom Range. <span class="font-semibold text-slate-500">To Date</span> is the last SIP and the redemption day for corpus, profit, invested, units, NAV Start, NAV End, and Custom Range XIRR.</p>
+      <p><span class="font-semibold text-slate-500">From Date</span> is the first SIP in Custom Range. <span class="font-semibold text-slate-500">To Date</span> is the last SIP and the redemption day for corpus, profit, invested, units, NAV Start, NAV End, and Custom Range XIRR. <span class="font-semibold text-slate-500">SIP day</span> can be any day from 1 to 31. If that day is missing in a month, the installment moves to the 1st of the next month. If that day has no published NAV, the units are bought on the next NAV.</p>
       <p><span class="font-semibold text-slate-500">Sale Date</span> is the as-of day for 5D through 15Y, Sale NAV, and Risk. Set it to an older day to read how 1Y, 2Y, and longer looked then. It leaves Custom Range unchanged.</p>
       <p><span class="font-semibold text-slate-500">Custom Range XIRR</span> is the annualized SIP rate from From Date through To Date. <span class="font-semibold text-slate-500">Short Term SIP XIRR</span> (1M–1Y) and <span class="font-semibold text-slate-500">Long Term SIP XIRR</span> (2Y–15Y) use the same annualized SIP math, looking back from Sale Date. 5D and 15D have no SIP XIRR.</p>
       <p><span class="font-semibold text-slate-500">Trailing CAGR</span> under 1Y is the point-to-point NAV change for that window. From 1Y it is annualized. <span class="font-semibold text-slate-500">Absolute Return</span> is that NAV change on every tenure, without annualizing. Those two match how Moneycontrol and Value Research show 1M, 3M, and 6M.</p>
@@ -2618,22 +2610,34 @@
       return isNaN(date.getTime()) ? null : date;
     }
 
+    function clientSipDateInMonth(year, month, sipDay) {
+      var last = new Date(year, month + 1, 0).getDate();
+      if (sipDay <= last) return new Date(year, month, sipDay);
+      return new Date(year, month + 1, 1);
+    }
+
     function clientSipDates(from, to, sipDay) {
       var dates = [];
       if (!from || !to || to < from) return dates;
-      var monthCursor = new Date(from.getFullYear(), from.getMonth(), 1);
-      var last = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0).getDate();
-      var candidate = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), Math.min(sipDay, last));
+      var year = from.getFullYear();
+      var month = from.getMonth();
+      var candidate = clientSipDateInMonth(year, month, sipDay);
       if (candidate < from) {
-        monthCursor = new Date(from.getFullYear(), from.getMonth() + 1, 1);
-        last = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0).getDate();
-        candidate = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), Math.min(sipDay, last));
+        month += 1;
+        if (month > 11) {
+          month = 0;
+          year += 1;
+        }
+        candidate = clientSipDateInMonth(year, month, sipDay);
       }
       while (candidate && candidate.getTime() <= to.getTime()) {
         dates.push(new Date(candidate.getTime()));
-        monthCursor = new Date(candidate.getFullYear(), candidate.getMonth() + 1, 1);
-        last = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0).getDate();
-        candidate = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), Math.min(sipDay, last));
+        month += 1;
+        if (month > 11) {
+          month = 0;
+          year += 1;
+        }
+        candidate = clientSipDateInMonth(year, month, sipDay);
       }
       return dates;
     }
