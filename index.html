@@ -401,6 +401,7 @@
         <div class="seg">
           <button id="metricXirrBtn" onclick="setMetricMode('xirr')" class="is-on">SIP XIRR</button>
           <button id="metricCagrBtn" onclick="setMetricMode('cagr')">Trailing CAGR</button>
+          <button id="metricAbsBtn" onclick="setMetricMode('absolute')">Absolute Return</button>
         </div>
       </div>
       <div id="heatLegend" class="flex items-center flex-wrap gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-[10px] self-start lg:self-center"></div>
@@ -481,8 +482,9 @@
   <script>
     // Keep TENURES in the same order as TENURE_CONFIG in code.gs, including 7Y.
     // SIP XIRR hides 5D and 15D. Those windows do not hold a monthly SIP. Trailing CAGR still shows them.
-    // Tenure cells switch between tenureXirr and tenureCagr. They look back from Sale Date.
-    // customRangeXirr, sipCorpus, netProfit, and absoluteReturn stay on From Date to To Date
+    // Tenure cells switch between tenureXirr, tenureCagr, and tenureAbsolute. They look back from Sale Date.
+    // tenureAbsolute is the point-to-point NAV change and is not annualized.
+    // customRangeXirr, sipCorpus, netProfit, and the Absolute Return column stay on From Date to To Date
     // and do not follow the SIP XIRR / Trailing CAGR switch.
     // Category and AMC start on Select All, which means no restriction. The first load selects the first fund list.
     // Default sort is 1Y descending. Heat colors on corpus and net profit follow absoluteReturn.
@@ -671,7 +673,7 @@
     }
 
     function renderLegend() {
-      var label = activeMetric === 'xirr' ? 'SIP XIRR, annualized' : 'Trailing CAGR';
+      var label = activeMetric === 'xirr' ? 'SIP XIRR, annualized' : (activeMetric === 'absolute' ? 'Absolute return' : 'Trailing CAGR');
       var samples = [['&lt; −15%', -0.2], ['−5%', -0.05], ['0%', 0], ['5%', 0.05], ['15%', 0.16], ['&gt; 25%', 0.3]];
       var html = '<span class="font-semibold text-slate-500 mr-1">' + label + '</span>';
       samples.forEach(function(sample) {
@@ -987,11 +989,11 @@
 
     // Re-renders only. Both series are already on each fund.
     function setMetricMode(mode) {
+      if (mode !== 'xirr' && mode !== 'cagr' && mode !== 'absolute') mode = 'xirr';
       activeMetric = mode;
-      var xBtn = document.getElementById('metricXirrBtn');
-      var cBtn = document.getElementById('metricCagrBtn');
-      xBtn.classList.toggle('is-on', mode === 'xirr');
-      cBtn.classList.toggle('is-on', mode !== 'xirr');
+      document.getElementById('metricXirrBtn').classList.toggle('is-on', mode === 'xirr');
+      document.getElementById('metricCagrBtn').classList.toggle('is-on', mode === 'cagr');
+      document.getElementById('metricAbsBtn').classList.toggle('is-on', mode === 'absolute');
       if (mode === 'xirr' && (currentSortField === '5D' || currentSortField === '15D')) {
         currentSortField = '1Y';
         currentSortAsc = false;
@@ -1003,7 +1005,10 @@
 
     // Tenure display series. Custom-range columns must not read this.
     function activeSeries(fund) {
-      return activeMetric === 'cagr' ? fund.tenureCagr : fund.tenureXirr;
+      if (!fund) return null;
+      if (activeMetric === 'cagr') return fund.tenureCagr;
+      if (activeMetric === 'absolute') return fund.tenureAbsolute;
+      return fund.tenureXirr;
     }
 
     function passesFilter(kind, value) {
@@ -1173,8 +1178,9 @@
       return '<td class="py-1 px-1 text-center">' + heatChip(formatPct(value), getHeatmapStyle(value, scale)) + '</td>';
     }
 
-    // Sub-year SIP XIRR is annualized and needs a wider scale. Sub-year CAGR is an absolute change.
+    // Sub-year SIP XIRR is annualized. Absolute return is the raw NAV change on every tenure.
     function heatScale(tenure) {
+      if (activeMetric === 'absolute') return tenure.annualized ? 'wide' : 'tight';
       if (tenure.annualized) return 'standard';
       return activeMetric === 'xirr' ? 'wide' : 'tight';
     }

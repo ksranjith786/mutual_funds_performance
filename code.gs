@@ -81,7 +81,8 @@ function include(filename) {
 
 // Calendar offsets back from Sale Date. annualized applies to trailing CAGR only.
 // SIP XIRR is always an annualized yearly rate, so 1M–9M read higher than the period's price change.
-// 5D and 15D are CAGR only. Do not fill tenureXirr for those keys.
+// Absolute return is the same point-to-point NAV change with no annualizing, including 1Y and longer.
+// 5D and 15D are CAGR and absolute only. Do not fill tenureXirr for those keys.
 // 7Y is intentional. Do not put 8Y back.
 var TENURE_CONFIG = [
   { key: '5D', label: '5D', unit: 'day', n: 5, annualized: false, group: 'short' },
@@ -174,6 +175,7 @@ function getFundMatrixData(params) {
     var saleNav = lookupNav(series, saleDate);
     var tenureXirr = {};
     var tenureCagr = {};
+    var tenureAbsolute = {};
 
     for (var t = 0; t < TENURE_CONFIG.length; t++) {
       var tenure = TENURE_CONFIG[t];
@@ -183,11 +185,13 @@ function getFundMatrixData(params) {
       if (!covered) {
         tenureXirr[tenure.key] = null;
         tenureCagr[tenure.key] = null;
+        tenureAbsolute[tenure.key] = null;
         continue;
       }
       var sip = buildSip(series, sipAmount, sipDay, windowStart, saleDate);
       tenureXirr[tenure.key] = (tenure.key === '5D' || tenure.key === '15D') ? null : sip.xirr;
       tenureCagr[tenure.key] = trailingCagr(series, windowStart, saleDate, tenure.annualized);
+      tenureAbsolute[tenure.key] = trailingCagr(series, windowStart, saleDate, false);
     }
 
     if (!scheme.minNavDate && series && series.dates.length) {
@@ -212,6 +216,7 @@ function getFundMatrixData(params) {
       customRangeXirr: custom.xirr,
       tenureXirr: tenureXirr,
       tenureCagr: tenureCagr,
+      tenureAbsolute: tenureAbsolute,
       redeem: custom.redeem || null,
       switchPath: threeYearPath(series, saleDate),
       risk: buildRiskStats(series, saleDate)
