@@ -742,19 +742,25 @@
       google.script.run
         .withSuccessHandler(function(response) {
           btn.classList.remove('opacity-50', 'pointer-events-none');
-          allFunds = response.funds || [];
-          pathMonths = response.pathMonths || [];
-          fundLists = response.lists || [];
-          fundListHint = '';
-          rebuildFilters(response);
-          if (!openedOnFirstList) {
-            openedOnFirstList = true;
-            if (fundLists.length) {
-              applyFundList(0);
-              return;
+          try {
+            allFunds = response.funds || [];
+            pathMonths = response.pathMonths || [];
+            fundLists = response.lists || [];
+            fundListHint = '';
+            rebuildFilters(response);
+            if (!openedOnFirstList) {
+              openedOnFirstList = true;
+              if (fundLists.length) {
+                applyFundList(0);
+                return;
+              }
             }
+            applyFilters();
+          } catch (err) {
+            var cell = document.getElementById('loadingCell');
+            if (cell) cell.textContent = 'The data arrived, but the page could not draw it.';
+            alert('Error showing matrix data: ' + (err && err.message ? err.message : err));
           }
-          applyFilters();
         })
         .withFailureHandler(function(err) {
           btn.classList.remove('opacity-50', 'pointer-events-none');

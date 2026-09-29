@@ -112,11 +112,7 @@ function getFundMatrixData(params) {
   if (sipDay > 31) sipDay = 31;
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  try {
-    SHEET_TZ = ss.getSpreadsheetTimeZone();
-  } catch (err) {
-    SHEET_TZ = Session.getScriptTimeZone();
-  }
+  bindSheetZone_(ss);
   var schemeSheet = ss.getSheetByName('scheme_codes');
   if (!schemeSheet) {
     throw new Error('Sheet "scheme_codes" not found in the spreadsheet.');
@@ -1257,15 +1253,27 @@ function todayDay_() {
 }
 
 var SHEET_TZ = '';
+var SHEET_SHIFT_MS = 0;
+
+function bindSheetZone_(ss) {
+  var tz = Session.getScriptTimeZone();
+  try {
+    tz = ss.getSpreadsheetTimeZone() || tz;
+  } catch (err) {}
+  SHEET_TZ = tz;
+  var probe = new Date();
+  var iso = Utilities.formatDate(probe, tz, "yyyy-MM-dd'T'HH:mm:ss");
+  var parts = iso.split(/[-T:]/);
+  var wall = Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), Number(parts[3]), Number(parts[4]), Number(parts[5]));
+  SHEET_SHIFT_MS = wall - probe.getTime();
+}
 
 function toDay_(value) {
   if (value === null || value === undefined || value === '') return null;
   if (Object.prototype.toString.call(value) === '[object Date]') {
     if (isNaN(value.getTime())) return null;
-    var tz = SHEET_TZ || Session.getScriptTimeZone();
-    var iso = Utilities.formatDate(value, tz, 'yyyy-MM-dd');
-    var parts = iso.split('-');
-    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    var shifted = new Date(value.getTime() + SHEET_SHIFT_MS);
+    return new Date(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
   }
   return parseDate_(value);
 }
