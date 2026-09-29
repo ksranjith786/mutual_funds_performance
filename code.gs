@@ -5,7 +5,7 @@
  * Follow these rules when changing this file:
  * - Read sheets scheme_codes, nav_data, and fund_selection when that sheet exists. Never invent a NAV.
  * - Join on scheme_code. scheme_codes supplies the fund name; nav_data supplies date and NAV.
- * - lookupNav uses the last NAV on or before the requested day.
+ * - lookupNav_ uses the last NAV on or before the requested day.
  * - Tenure columns look back from Sale Date only. Do not clip them with From Date or To Date.
  * - Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return use From Date through To Date only.
  * - Keep TENURE_CONFIG in this order, including 7Y. The same keys and order live in index.html TENURES.
@@ -20,33 +20,29 @@
  *   Manager, tenure, and portfolio weights are not on the NAV sheet. getFundPublishedProfile loads them when the public profile responds.
  *   getFundOverlap loads the latest published equity portfolio for at most 20 schemes and returns pairwise overlap.
  *   Overlap is the sum of the smaller weight of each shared stock, divided by 100. Cash and debt are excluded.
+ * - The browser may call only onOpen, showDialog, showWebAppUrl, doGet,
+ *   getFundMatrixData, getFundPublishedProfile, and getFundOverlap. Every other function ends in _
+ *   so the page cannot call it. This script only reads the spreadsheet.
  */
 
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Mutual Fund Matrix')
-    .addItem('📊 Open Return Matrix (Sidebar)', 'showSidebar')
     .addItem('🖥️ Open Return Matrix (Full Dialog)', 'showDialog')
     .addSeparator()
     .addItem('🌐 View Published Web App Link', 'showWebAppUrl')
     .addToUi();
 }
 
-function matrixPage() {
+function matrixPage_() {
   return HtmlService.createHtmlOutputFromFile('Index');
-}
-
-function showSidebar() {
-  SpreadsheetApp.getUi().showSidebar(
-    matrixPage().setTitle('Mutual Fund Valuation & Return Matrix')
-  );
 }
 
 function showDialog() {
   var ui = SpreadsheetApp.getUi();
   try {
     ui.showModalDialog(
-      matrixPage().setWidth(1250).setHeight(820),
+      matrixPage_().setWidth(1250).setHeight(820),
       'Mutual Fund Valuation & Multi-Tenure Matrix'
     );
   } catch (err) {
@@ -69,13 +65,12 @@ function showWebAppUrl() {
 }
 
 function doGet() {
-  return matrixPage()
+  return matrixPage_()
     .setTitle('Mutual Fund Valuation & Return Matrix')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-function include(filename) {
+function include_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
@@ -106,12 +101,12 @@ var TENURE_CONFIG = [
  */
 function getFundMatrixData(params) {
   params = params || {};
-  var today = todayDay();
+  var today = todayDay_();
   var sipAmount = Number(params.sipAmount) || 1000;
   var sipDay = Number(params.sipDay) || 5;
-  var fromDate = params.fromDate ? toDay(params.fromDate) : shiftBack(today, 'year', 1);
-  var toDate = params.toDate ? toDay(params.toDate) : today;
-  var saleDate = params.saleDate ? toDay(params.saleDate) : today;
+  var fromDate = params.fromDate ? toDay_(params.fromDate) : shiftBack_(today, 'year', 1);
+  var toDate = params.toDate ? toDay_(params.toDate) : today;
+  var saleDate = params.saleDate ? toDay_(params.saleDate) : today;
 
   if (sipDay < 1) sipDay = 1;
   if (sipDay > 31) sipDay = 31;
@@ -152,12 +147,12 @@ function getFundMatrixData(params) {
       category: catIdx !== -1 ? String(row[catIdx] || 'Equity').trim() : 'Equity',
       plan: planIdx !== -1 ? String(row[planIdx] || 'Direct').trim() : 'Direct',
       option: optIdx !== -1 ? String(row[optIdx] || 'Growth').trim() : 'Growth',
-      minNavDate: minNavIdx !== -1 && row[minNavIdx] ? formatDay(toDay(row[minNavIdx])) : ''
+      minNavDate: minNavIdx !== -1 && row[minNavIdx] ? formatDay_(toDay_(row[minNavIdx])) : ''
     });
   }
 
   // Index only the scheme codes listed on scheme_codes. Match by code, not by fund name.
-  var navIndex = loadNavIndex(ss, wanted);
+  var navIndex = loadNavIndex_(ss, wanted);
   var categoriesSet = {};
   var amcSet = {};
   var fundList = [];
@@ -169,10 +164,10 @@ function getFundMatrixData(params) {
     if (scheme.amc) amcSet[scheme.amc] = true;
 
     // Custom range is From Date through To Date. Sale Date is not an input to these figures.
-    var custom = buildSip(series, sipAmount, sipDay, fromDate, toDate);
-    var navStart = lookupNav(series, fromDate);
-    var navEnd = lookupNav(series, toDate);
-    var saleNav = lookupNav(series, saleDate);
+    var custom = buildSip_(series, sipAmount, sipDay, fromDate, toDate);
+    var navStart = lookupNav_(series, fromDate);
+    var navEnd = lookupNav_(series, toDate);
+    var saleNav = lookupNav_(series, saleDate);
     var tenureXirr = {};
     var tenureCagr = {};
     var tenureAbsolute = {};
@@ -180,22 +175,22 @@ function getFundMatrixData(params) {
     for (var t = 0; t < TENURE_CONFIG.length; t++) {
       var tenure = TENURE_CONFIG[t];
       // Full window required. A fund that starts inside the window does not get this tenure.
-      var windowStart = shiftBack(saleDate, tenure.unit, tenure.n);
-      var covered = lookupNav(series, windowStart) !== null;
+      var windowStart = shiftBack_(saleDate, tenure.unit, tenure.n);
+      var covered = lookupNav_(series, windowStart) !== null;
       if (!covered) {
         tenureXirr[tenure.key] = null;
         tenureCagr[tenure.key] = null;
         tenureAbsolute[tenure.key] = null;
         continue;
       }
-      var sip = buildSip(series, sipAmount, sipDay, windowStart, saleDate);
+      var sip = buildSip_(series, sipAmount, sipDay, windowStart, saleDate);
       tenureXirr[tenure.key] = (tenure.key === '5D' || tenure.key === '15D') ? null : sip.xirr;
-      tenureCagr[tenure.key] = trailingCagr(series, windowStart, saleDate, tenure.annualized);
-      tenureAbsolute[tenure.key] = trailingCagr(series, windowStart, saleDate, false);
+      tenureCagr[tenure.key] = trailingCagr_(series, windowStart, saleDate, tenure.annualized);
+      tenureAbsolute[tenure.key] = trailingCagr_(series, windowStart, saleDate, false);
     }
 
     if (!scheme.minNavDate && series && series.dates.length) {
-      scheme.minNavDate = formatDay(new Date(series.dates[0]));
+      scheme.minNavDate = formatDay_(new Date(series.dates[0]));
     }
 
     fundList.push({
@@ -205,29 +200,29 @@ function getFundMatrixData(params) {
       category: scheme.category,
       type: scheme.plan + ' · ' + scheme.option,
       minNavDate: scheme.minNavDate,
-      navStart: roundNav(navStart),
-      navEnd: roundNav(navEnd),
-      saleNav: roundNav(saleNav),
+      navStart: roundNav_(navStart),
+      navEnd: roundNav_(navEnd),
+      saleNav: roundNav_(saleNav),
       units: custom.units !== null ? Number(custom.units.toFixed(4)) : null,
-      investedAmount: custom.invested !== null ? roundRupee(custom.invested) : null,
-      sipCorpus: custom.corpus !== null ? roundRupee(custom.corpus) : null,
-      netProfit: custom.profit !== null ? roundRupee(custom.profit) : null,
+      investedAmount: custom.invested !== null ? roundRupee_(custom.invested) : null,
+      sipCorpus: custom.corpus !== null ? roundRupee_(custom.corpus) : null,
+      netProfit: custom.profit !== null ? roundRupee_(custom.profit) : null,
       absoluteReturn: custom.absoluteReturn,
       customRangeXirr: custom.xirr,
       tenureXirr: tenureXirr,
       tenureCagr: tenureCagr,
       tenureAbsolute: tenureAbsolute,
       redeem: custom.redeem || null,
-      switchPath: threeYearPath(series, saleDate),
-      risk: buildRiskStats(series, saleDate)
+      switchPath: threeYearPath_(series, saleDate),
+      risk: buildRiskStats_(series, saleDate)
     });
   }
 
-  attachPeerRisk(fundList, navIndex, saleDate);
+  attachPeerRisk_(fundList, navIndex, saleDate);
 
   var pathMonths = [];
   for (var back = 35; back >= 0; back--) {
-    pathMonths.push(formatDay(shiftBack(saleDate, 'month', back)).slice(0, 7));
+    pathMonths.push(formatDay_(shiftBack_(saleDate, 'month', back)).slice(0, 7));
   }
 
   return {
@@ -236,19 +231,19 @@ function getFundMatrixData(params) {
     amcs: Object.keys(amcSet).sort(),
     tenures: TENURE_CONFIG,
     pathMonths: pathMonths,
-    lists: fundSelectionLists(ss, schemes)
+    lists: fundSelectionLists_(ss, schemes)
   };
 }
 
 // Named sets for the fund search. fund_selection columns: list_name, scheme_code, scheme_name.
 // A partial scheme_name is matched to scheme_codes. The screen then uses that scheme's real name.
-function fundSelectionLists(ss, schemes) {
-  var fromSheet = readFundSelection(ss, schemes);
+function fundSelectionLists_(ss, schemes) {
+  var fromSheet = readFundSelection_(ss, schemes);
   if (fromSheet) return fromSheet;
-  return builtinFundLists();
+  return builtinFundLists_();
 }
 
-function builtinFundLists() {
+function builtinFundLists_() {
   return [
     { name: 'Ran', codes: ['134923', '118834', '118825', '120152', '119716', '120505', '150817', '120164', '120828', '125497', '125354', '146130'], missing: [] },
     { name: 'Man', codes: ['122639', '149219', '120158', '118989', '120381', '118778', '130503', '151113'], missing: [] },
@@ -260,7 +255,7 @@ function builtinFundLists() {
   ];
 }
 
-function readFundSelection(ss, schemes) {
+function readFundSelection_(ss, schemes) {
   var sheet = ss.getSheetByName('fund_selection');
   if (!sheet || sheet.getLastRow() < 2) return null;
   var values = sheet.getDataRange().getValues();
@@ -282,7 +277,7 @@ function readFundSelection(ss, schemes) {
     if (code && code.slice(-2) === '.0') code = code.slice(0, -2);
     var written = nameIdx === -1 ? '' : String(values[i][nameIdx] || '').trim();
     if (!code && !written) continue;
-    var scheme = matchScheme(schemes, code, written);
+    var scheme = matchScheme_(schemes, code, written);
     if (!scheme) {
       byName[listName].missing.push(written || code);
       continue;
@@ -293,7 +288,7 @@ function readFundSelection(ss, schemes) {
   return order.map(function(name) { return byName[name]; });
 }
 
-function selectionNameKey(value) {
+function selectionNameKey_(value) {
   return String(value || '')
     .toLowerCase()
     .replace(/owsal/g, 'oswal')
@@ -306,24 +301,24 @@ function selectionNameKey(value) {
     .trim();
 }
 
-function selectionTokens(value) {
+function selectionTokens_(value) {
   var skip = { fund: 1, direct: 1, plan: 1, growth: 1, option: 1, of: 1, the: 1, and: 1, erstwhile: 1 };
-  return selectionNameKey(value).split(' ').filter(function(token) { return token && !skip[token]; });
+  return selectionNameKey_(value).split(' ').filter(function(token) { return token && !skip[token]; });
 }
 
-function matchScheme(schemes, code, name) {
+function matchScheme_(schemes, code, name) {
   var wantedCode = String(code || '').trim();
   if (wantedCode) {
     for (var i = 0; i < schemes.length; i++) {
       if (schemes[i].code === wantedCode) return schemes[i];
     }
   }
-  var want = selectionTokens(name);
+  var want = selectionTokens_(name);
   if (!want.length) return null;
   var categories = { large: 1, mid: 1, small: 1, flexi: 1, multi: 1, value: 1, gold: 1, silver: 1 };
   var hits = [];
   for (var s = 0; s < schemes.length; s++) {
-    var got = selectionTokens(schemes[s].name);
+    var got = selectionTokens_(schemes[s].name);
     var bag = {};
     got.forEach(function(token) { bag[token] = (bag[token] || 0) + 1; });
     var covered = true;
@@ -347,28 +342,28 @@ function matchScheme(schemes, code, name) {
 var RISK_YEARS = 3;
 var RISK_FREE = 0.065;
 
-function buildRiskStats(series, saleDate) {
-  var empty = blankRisk(saleDate);
-  var pts = windowPoints(series, shiftBack(saleDate, 'year', RISK_YEARS), saleDate);
+function buildRiskStats_(series, saleDate) {
+  var empty = blankRisk_(saleDate);
+  var pts = windowPoints_(series, shiftBack_(saleDate, 'year', RISK_YEARS), saleDate);
   if (pts.length < 61) return empty;
-  var rets = returnSeries(pts);
+  var rets = returnSeries_(pts);
   if (rets.length < 60) return empty;
   var values = rets.map(function(item) { return item.r; });
-  var vol = stdev(values);
-  var downside = downsideDev(values, RISK_FREE / 252);
-  var cagr = trailingCagr(series, new Date(pts[0].t), saleDate, true);
-  empty.windowStart = formatDay(new Date(pts[0].t));
-  empty.windowEnd = formatDay(saleDate);
+  var vol = stdev_(values);
+  var downside = downsideDev_(values, RISK_FREE / 252);
+  var cagr = trailingCagr_(series, new Date(pts[0].t), saleDate, true);
+  empty.windowStart = formatDay_(new Date(pts[0].t));
+  empty.windowEnd = formatDay_(saleDate);
   empty.observations = rets.length;
   empty.cagr = cagr;
   empty.volatility = vol === null ? null : vol * Math.sqrt(252);
   empty.downsideDeviation = downside === null ? null : downside * Math.sqrt(252);
   if (cagr !== null && empty.volatility) empty.sharpe = (cagr - RISK_FREE) / empty.volatility;
   if (cagr !== null && empty.downsideDeviation) empty.sortino = (cagr - RISK_FREE) / empty.downsideDeviation;
-  var path = drawPath(pts);
+  var path = drawPath_(pts);
   empty.maxDrawdown = path.drawdown;
   empty.maxDrawup = path.drawup;
-  var months = monthReturns(pts);
+  var months = monthReturns_(pts);
   if (months.length) {
     var best = months[0];
     var worst = months[0];
@@ -384,16 +379,16 @@ function buildRiskStats(series, saleDate) {
   }
   var sorted = values.slice().sort(function(a, b) { return a - b; });
   empty.var95 = sorted[Math.floor(0.05 * (sorted.length - 1))];
-  var rolling = rollingYearStats(series, saleDate);
+  var rolling = rollingYearStats_(series, saleDate);
   empty.rollingReturn = rolling.rollingReturn;
   empty.rollingHit = rolling.rollingHit;
   return empty;
 }
 
-function blankRisk(saleDate) {
+function blankRisk_(saleDate) {
   return {
     windowStart: null,
-    windowEnd: saleDate ? formatDay(saleDate) : null,
+    windowEnd: saleDate ? formatDay_(saleDate) : null,
     observations: 0,
     cagr: null,
     volatility: null,
@@ -421,7 +416,7 @@ function blankRisk(saleDate) {
   };
 }
 
-function rollingYearStats(series, saleDate) {
+function rollingYearStats_(series, saleDate) {
   var out = { rollingReturn: null, rollingHit: null };
   if (!series || !series.dates.length) return out;
   var yearMs = 365.25 * 86400000;
@@ -444,26 +439,26 @@ function rollingYearStats(series, saleDate) {
   if (windows.length < 6) return out;
   var hits = 0;
   windows.forEach(function(value) { if (value > 0) hits += 1; });
-  out.rollingReturn = mean(windows);
+  out.rollingReturn = mean_(windows);
   out.rollingHit = hits / windows.length;
   return out;
 }
 
-function attachPeerRisk(funds, navIndex, saleDate) {
+function attachPeerRisk_(funds, navIndex, saleDate) {
   var byCat = {};
   funds.forEach(function(fund) {
     var category = fund.category || 'Other';
     if (!byCat[category]) byCat[category] = [];
     byCat[category].push(fund.code);
   });
-  var start = shiftBack(saleDate, 'year', RISK_YEARS);
+  var start = shiftBack_(saleDate, 'year', RISK_YEARS);
   funds.forEach(function(fund) {
-    if (!fund.risk) fund.risk = blankRisk(saleDate);
+    if (!fund.risk) fund.risk = blankRisk_(saleDate);
     var peers = [];
     (byCat[fund.category || 'Other'] || []).forEach(function(code) {
       if (code !== fund.code && navIndex[code]) peers.push(navIndex[code]);
     });
-    var rel = peerRelative(navIndex[fund.code], peers, start, saleDate);
+    var rel = peerRelative_(navIndex[fund.code], peers, start, saleDate);
     fund.risk.upsideCapture = rel.upsideCapture;
     fund.risk.downsideCapture = rel.downsideCapture;
     fund.risk.beta = rel.beta;
@@ -479,15 +474,15 @@ function attachPeerRisk(funds, navIndex, saleDate) {
   });
 }
 
-function peerRelative(series, peers, start, end) {
+function peerRelative_(series, peers, start, end) {
   var out = {
     upsideCapture: null, downsideCapture: null, beta: null, alpha: null,
     informationRatio: null, rSquared: null, correlation: null,
     trackingError: null, trackingDifference: null
   };
   if (!series || !peers.length) return out;
-  var mine = returnMap(returnSeries(windowPoints(series, start, end)));
-  var peerMaps = peers.map(function(peer) { return returnMap(returnSeries(windowPoints(peer, start, end))); });
+  var mine = returnMap_(returnSeries_(windowPoints_(series, start, end)));
+  var peerMaps = peers.map(function(peer) { return returnMap_(returnSeries_(windowPoints_(peer, start, end))); });
   var upF = [];
   var upP = [];
   var downF = [];
@@ -510,23 +505,23 @@ function peerRelative(series, peers, start, end) {
     else if (peer < 0) { downP.push(peer); downF.push(fund); }
   });
   if (xs.length < 30) return out;
-  var peerVar = variance(xs);
-  if (peerVar) out.beta = covariance(xs, ys) / peerVar;
-  var meanF = mean(ys) * 252;
-  var meanP = mean(xs) * 252;
+  var peerVar = variance_(xs);
+  if (peerVar) out.beta = covariance_(xs, ys) / peerVar;
+  var meanF = mean_(ys) * 252;
+  var meanP = mean_(xs) * 252;
   if (out.beta !== null) out.alpha = (meanF - RISK_FREE) - out.beta * (meanP - RISK_FREE);
-  if (upP.length >= 10 && mean(upP)) out.upsideCapture = mean(upF) / mean(upP);
-  if (downP.length >= 10 && mean(downP)) out.downsideCapture = mean(downF) / mean(downP);
-  var fundVar = variance(ys);
-  var cov = covariance(xs, ys);
+  if (upP.length >= 10 && mean_(upP)) out.upsideCapture = mean_(upF) / mean_(upP);
+  if (downP.length >= 10 && mean_(downP)) out.downsideCapture = mean_(downF) / mean_(downP);
+  var fundVar = variance_(ys);
+  var cov = covariance_(xs, ys);
   if (peerVar && fundVar) {
     out.rSquared = Math.pow(cov, 2) / (peerVar * fundVar);
     out.correlation = cov / Math.sqrt(peerVar * fundVar);
   }
   var excess = [];
   for (var i = 0; i < ys.length; i++) excess.push(ys[i] - xs[i]);
-  var tracking = stdev(excess);
-  var excessMean = mean(excess);
+  var tracking = stdev_(excess);
+  var excessMean = mean_(excess);
   if (excessMean !== null) out.trackingDifference = excessMean * 252;
   if (tracking) {
     out.trackingError = tracking * Math.sqrt(252);
@@ -546,7 +541,7 @@ function getFundPublishedProfile(codes) {
   if (codes.length > 8) codes = codes.slice(0, 8);
   var profiles = [];
   for (var i = 0; i < codes.length; i++) {
-    profiles.push(fetchPublishedProfile(codes[i]));
+    profiles.push(fetchPublishedProfile_(codes[i]));
   }
   return {
     profiles: profiles,
@@ -554,9 +549,9 @@ function getFundPublishedProfile(codes) {
   };
 }
 
-function fetchPublishedProfile(item) {
-  var code = String(item.code || item);
-  var name = item.name || code;
+function fetchPublishedProfile_(item) {
+  var code = String(item.code || item).slice(0, 20);
+  var name = String(item.name || code).slice(0, 180);
   var profile = {
     code: code,
     name: name,
@@ -581,11 +576,11 @@ function fetchPublishedProfile(item) {
     }
     var body = JSON.parse(response.getContentText());
     var data = body.data || body;
-    profile.expenseRatio = numberOrNull(data.expense_ratio);
-    profile.aumCr = numberOrNull(data.aum_cr);
+    profile.expenseRatio = numberOrNull_(data.expense_ratio);
+    profile.aumCr = numberOrNull_(data.aum_cr);
     profile.morningstar = data.morningstar || data.rating || null;
     profile.publishedRatios = data.ratios || null;
-    if (data.family_id) fillFamilyProfile(profile, data.family_id);
+    if (data.family_id) fillFamilyProfile_(profile, data.family_id);
     if (!profile.manager && !profile.holdings.length && !profile.error) {
       profile.error = 'This scheme has no manager or portfolio on the public profile. Use Morningstar or Dhan.';
     }
@@ -595,9 +590,11 @@ function fetchPublishedProfile(item) {
   return profile;
 }
 
-function fillFamilyProfile(profile, familyId) {
+function fillFamilyProfile_(profile, familyId) {
+  var familyKey = encodeURIComponent(String(familyId || ''));
+  if (!familyKey) return;
   try {
-    var people = UrlFetchApp.fetch('https://mfdata.in/api/v1/families/' + familyId + '/people', { muteHttpExceptions: true });
+    var people = UrlFetchApp.fetch('https://mfdata.in/api/v1/families/' + familyKey + '/people', { muteHttpExceptions: true });
     if (people.getResponseCode() === 200) {
       var parsed = JSON.parse(people.getContentText());
       var list = parsed.data || parsed;
@@ -609,7 +606,7 @@ function fillFamilyProfile(profile, familyId) {
     }
   } catch (err) {}
   try {
-    var holdings = UrlFetchApp.fetch('https://mfdata.in/api/v1/families/' + familyId + '/holdings', { muteHttpExceptions: true });
+    var holdings = UrlFetchApp.fetch('https://mfdata.in/api/v1/families/' + familyKey + '/holdings', { muteHttpExceptions: true });
     if (holdings.getResponseCode() === 200) {
       var parsedHold = JSON.parse(holdings.getContentText());
       var data = parsedHold.data || parsedHold;
@@ -635,7 +632,7 @@ function getFundOverlap(codes) {
       matrix: [],
       common: [],
       error: 'Select at most 20 funds.',
-      source: overlapSourceNote()
+      source: overlapSourceNote_()
     };
   }
   var funds = [];
@@ -643,8 +640,8 @@ function getFundOverlap(codes) {
   var queries = [];
   var queryOwner = [];
   for (var i = 0; i < codes.length; i++) {
-    var code = String(codes[i].code || codes[i]);
-    var name = codes[i].name || code;
+    var code = String(codes[i].code || codes[i]).slice(0, 20);
+    var name = String(codes[i].name || code).slice(0, 180);
     funds.push({
       code: code,
       name: name,
@@ -655,23 +652,23 @@ function getFundOverlap(codes) {
       error: null
     });
     books.push(null);
-    var variants = overlapQueries(name);
+    var variants = overlapQueries_(name);
     for (var q = 0; q < variants.length; q++) {
-      queries.push(growwSearchUrl(variants[q]));
+      queries.push(growwSearchUrl_(variants[q]));
       queryOwner.push(i);
     }
   }
-  var searchHits = overlapFetchJson(queries);
+  var searchHits = overlapFetchJson_(queries);
   var grouped = funds.map(function() { return []; });
   for (var h = 0; h < searchHits.length; h++) grouped[queryOwner[h]].push(searchHits[h]);
   var detailUrls = [];
   var detailIndex = [];
   var pending = [];
   for (var s = 0; s < funds.length; s++) {
-    var searchId = growwSearchId(grouped[s], funds[s].code);
+    var searchId = growwSearchId_(grouped[s], funds[s].code);
     if (searchId) {
       detailIndex.push(s);
-      detailUrls.push(growwPortfolioUrl(searchId));
+      detailUrls.push(growwPortfolioUrl_(searchId));
     } else {
       pending.push(s);
     }
@@ -679,16 +676,16 @@ function getFundOverlap(codes) {
   var fallbackIds = [];
   var fallbackOwner = [];
   for (var p = 0; p < pending.length; p++) {
-    var candidates = growwSchemeCandidates(grouped[pending[p]]);
+    var candidates = growwSchemeCandidates_(grouped[pending[p]]);
     for (var cnd = 0; cnd < candidates.length; cnd++) {
-      fallbackIds.push(growwPortfolioUrl(candidates[cnd]));
+      fallbackIds.push(growwPortfolioUrl_(candidates[cnd]));
       fallbackOwner.push(pending[p]);
     }
   }
-  var details = overlapFetchJson(detailUrls.concat(fallbackIds));
+  var details = overlapFetchJson_(detailUrls.concat(fallbackIds));
   for (var d = 0; d < detailIndex.length; d++) {
     var idx = detailIndex[d];
-    var book = equityBook(details[d], funds[idx].code);
+    var book = equityBook_(details[d], funds[idx].code);
     if (!book) {
       funds[idx].error = 'The published portfolio did not load.';
       continue;
@@ -698,20 +695,20 @@ function getFundOverlap(codes) {
       funds[idx].asOf = book.asOf;
       continue;
     }
-    fillEquityFund(funds[idx], book);
+    fillEquityFund_(funds[idx], book);
     books[idx] = book.map;
   }
   for (var f = 0; f < fallbackOwner.length; f++) {
     var owner = fallbackOwner[f];
     if (books[owner] || funds[owner].error) continue;
-    var fallbackBook = equityBook(details[detailIndex.length + f], funds[owner].code);
+    var fallbackBook = equityBook_(details[detailIndex.length + f], funds[owner].code);
     if (!fallbackBook) continue;
     if (!fallbackBook.count) {
       funds[owner].error = 'This published portfolio has no equity holdings.';
       funds[owner].asOf = fallbackBook.asOf;
       continue;
     }
-    fillEquityFund(funds[owner], fallbackBook);
+    fillEquityFund_(funds[owner], fallbackBook);
     books[owner] = fallbackBook.map;
   }
   for (var missed = 0; missed < funds.length; missed++) {
@@ -730,20 +727,20 @@ function getFundOverlap(codes) {
         matrix[r][c] = null;
         common[r][c] = 0;
       } else {
-        var pair = pairOverlap(books[r], books[c]);
+        var pair = pairOverlap_(books[r], books[c]);
         matrix[r][c] = pair.overlap;
         common[r][c] = pair.common;
       }
     }
   }
-  return { funds: funds, matrix: matrix, common: common, source: overlapSourceNote() };
+  return { funds: funds, matrix: matrix, common: common, source: overlapSourceNote_() };
 }
 
-function overlapSourceNote() {
+function overlapSourceNote_() {
   return 'Overlap uses the latest published equity portfolio. It is the sum of the smaller weight of each stock held by both funds.';
 }
 
-function overlapQueries(name) {
+function overlapQueries_(name) {
   var queries = [];
   function add(value) {
     var text = String(value || '').replace(/\s+/g, ' ').trim();
@@ -756,15 +753,15 @@ function overlapQueries(name) {
   return queries;
 }
 
-function growwSearchUrl(name) {
+function growwSearchUrl_(name) {
   return 'https://groww.in/v1/api/search/v3/query/global/st_query?page=0&size=12&web=true&query=' + encodeURIComponent(name);
 }
 
-function growwPortfolioUrl(searchId) {
+function growwPortfolioUrl_(searchId) {
   return 'https://groww.in/v1/api/data/mf/web/v4/scheme/search/' + encodeURIComponent(searchId);
 }
 
-function overlapFetchJson(urls) {
+function overlapFetchJson_(urls) {
   if (!urls.length) return [];
   var requests = urls.map(function(url) {
     return {
@@ -784,7 +781,7 @@ function overlapFetchJson(urls) {
   });
 }
 
-function growwSearchId(bodies, code) {
+function growwSearchId_(bodies, code) {
   var want = String(code);
   for (var b = 0; b < bodies.length; b++) {
     var content = bodies[b] && bodies[b].data && bodies[b].data.content;
@@ -799,7 +796,7 @@ function growwSearchId(bodies, code) {
   return null;
 }
 
-function growwSchemeCandidates(bodies) {
+function growwSchemeCandidates_(bodies) {
   var ids = [];
   for (var b = 0; b < bodies.length; b++) {
     var content = bodies[b] && bodies[b].data && bodies[b].data.content;
@@ -814,7 +811,7 @@ function growwSchemeCandidates(bodies) {
   return ids;
 }
 
-function publishedCodeMatches(body, code) {
+function publishedCodeMatches_(body, code) {
   if (!body) return false;
   var want = String(code);
   return String(body.scheme_code) === want ||
@@ -822,8 +819,8 @@ function publishedCodeMatches(body, code) {
     String(body.regular_scheme_code || '') === want;
 }
 
-function equityBook(body, code) {
-  if (!publishedCodeMatches(body, code)) return null;
+function equityBook_(body, code) {
+  if (!publishedCodeMatches_(body, code)) return null;
   var holdings = body.holdings || [];
   var map = {};
   var labels = {};
@@ -845,7 +842,7 @@ function equityBook(body, code) {
       map[key] += weight;
     }
     equityWeight += weight;
-    if (!asOf && row.portfolio_date) asOf = portfolioDay(row.portfolio_date);
+    if (!asOf && row.portfolio_date) asOf = portfolioDay_(row.portfolio_date);
   }
   var top = Object.keys(map).map(function(key) {
     return { name: labels[key], weight: map[key] };
@@ -854,14 +851,14 @@ function equityBook(body, code) {
   return { map: map, count: count, equityWeight: equityWeight / 100, asOf: asOf, top: top.slice(0, 3) };
 }
 
-function fillEquityFund(fund, book) {
+function fillEquityFund_(fund, book) {
   fund.asOf = book.asOf;
   fund.equityCount = book.count;
   fund.equityWeight = book.equityWeight;
   fund.topHoldings = book.top || [];
 }
 
-function portfolioDay(iso) {
+function portfolioDay_(iso) {
   try {
     return Utilities.formatDate(new Date(iso), 'Asia/Kolkata', 'yyyy-MM-dd');
   } catch (err) {
@@ -869,7 +866,7 @@ function portfolioDay(iso) {
   }
 }
 
-function pairOverlap(left, right) {
+function pairOverlap_(left, right) {
   var sum = 0;
   var shared = 0;
   var keys = Object.keys(left);
@@ -882,12 +879,12 @@ function pairOverlap(left, right) {
   return { overlap: sum / 100, common: shared };
 }
 
-function numberOrNull(value) {
+function numberOrNull_(value) {
   var n = Number(value);
   return isNaN(n) ? null : n;
 }
 
-function windowPoints(series, start, end) {
+function windowPoints_(series, start, end) {
   if (!series || !start || !end) return [];
   var startMs = start.getTime();
   var endMs = end.getTime();
@@ -903,7 +900,7 @@ function windowPoints(series, start, end) {
   return pts;
 }
 
-function returnSeries(pts) {
+function returnSeries_(pts) {
   var out = [];
   for (var i = 1; i < pts.length; i++) {
     if (pts[i - 1].nav > 0) out.push({ t: pts[i].t, r: pts[i].nav / pts[i - 1].nav - 1 });
@@ -911,13 +908,13 @@ function returnSeries(pts) {
   return out;
 }
 
-function returnMap(rets) {
+function returnMap_(rets) {
   var map = {};
   rets.forEach(function(item) { map[String(item.t)] = item.r; });
   return map;
 }
 
-function drawPath(pts) {
+function drawPath_(pts) {
   var peak = pts[0].nav;
   var trough = pts[0].nav;
   var drawdown = 0;
@@ -938,7 +935,7 @@ function drawPath(pts) {
   return { drawdown: drawdown, drawup: drawup };
 }
 
-function monthReturns(pts) {
+function monthReturns_(pts) {
   var out = [];
   var monthKey = null;
   var monthStart = null;
@@ -963,35 +960,35 @@ function monthReturns(pts) {
   return out;
 }
 
-function mean(values) {
+function mean_(values) {
   if (!values.length) return null;
   var sum = 0;
   values.forEach(function(value) { sum += value; });
   return sum / values.length;
 }
 
-function variance(values) {
+function variance_(values) {
   if (values.length < 2) return null;
-  var avg = mean(values);
+  var avg = mean_(values);
   var sum = 0;
   values.forEach(function(value) { sum += (value - avg) * (value - avg); });
   return sum / (values.length - 1);
 }
 
-function covariance(xs, ys) {
-  var avgX = mean(xs);
-  var avgY = mean(ys);
+function covariance_(xs, ys) {
+  var avgX = mean_(xs);
+  var avgY = mean_(ys);
   var sum = 0;
   for (var i = 0; i < xs.length; i++) sum += (xs[i] - avgX) * (ys[i] - avgY);
   return sum / (xs.length - 1);
 }
 
-function stdev(values) {
-  var v = variance(values);
+function stdev_(values) {
+  var v = variance_(values);
   return v === null ? null : Math.sqrt(v);
 }
 
-function downsideDev(values, mar) {
+function downsideDev_(values, mar) {
   var sum = 0;
   var n = 0;
   values.forEach(function(value) {
@@ -1004,7 +1001,7 @@ function downsideDev(values, mar) {
 }
 
 /** Groups nav_data into { dates, navs } per scheme_code. Dates are local midnights, sorted ascending. */
-function loadNavIndex(ss, wanted) {
+function loadNavIndex_(ss, wanted) {
   var sheet = ss.getSheetByName('nav_data');
   if (!sheet) {
     throw new Error('Sheet "nav_data" not found in the spreadsheet.');
@@ -1028,7 +1025,7 @@ function loadNavIndex(ss, wanted) {
     if (!code || !wanted[code]) continue;
     var nav = Number(row[navIdx]);
     if (!isFinite(nav) || nav <= 0) continue;
-    var day = toDay(row[dateIdx]);
+    var day = toDay_(row[dateIdx]);
     if (!day || isNaN(day.getTime())) continue;
     if (!index[code]) index[code] = { dates: [], navs: [] };
     index[code].dates.push(day.getTime());
@@ -1037,12 +1034,12 @@ function loadNavIndex(ss, wanted) {
 
   var codes = Object.keys(index);
   for (var c = 0; c < codes.length; c++) {
-    sortSeries(index[codes[c]]);
+    sortSeries_(index[codes[c]]);
   }
   return index;
 }
 
-function sortSeries(series) {
+function sortSeries_(series) {
   var order = [];
   for (var i = 0; i < series.dates.length; i++) order.push(i);
   order.sort(function(a, b) { return series.dates[a] - series.dates[b]; });
@@ -1064,7 +1061,7 @@ function sortSeries(series) {
 }
 
 /** Last published NAV on or before dateObj. Null when the scheme did not exist yet. */
-function lookupNav(series, dateObj) {
+function lookupNav_(series, dateObj) {
   if (!series || !series.dates.length || !dateObj) return null;
   var target = dateObj.getTime();
   var lo = 0;
@@ -1088,21 +1085,21 @@ function lookupNav(series, dateObj) {
  * Cash flows are negative installments plus one positive corpus.
  * Returns xirr null when no installment falls in the window.
  */
-function buildSip(series, sipAmount, sipDay, startDate, endDate) {
+function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
   var empty = { units: 0, invested: 0, corpus: null, profit: null, absoluteReturn: null, xirr: null, redeem: null };
   if (!series || !startDate || !endDate || endDate < startDate) return empty;
 
-  var endNav = lookupNav(series, endDate);
+  var endNav = lookupNav_(series, endDate);
   if (endNav === null) return empty;
 
   var units = 0;
   var invested = 0;
   var flows = [];
   var lots = [];
-  var cur = firstSipOnOrAfter(startDate, sipDay);
+  var cur = firstSipOnOrAfter_(startDate, sipDay);
 
   while (cur && cur.getTime() <= endDate.getTime()) {
-    var nav = lookupNav(series, cur);
+    var nav = lookupNav_(series, cur);
     if (nav !== null && nav > 0) {
       var bought = sipAmount / nav;
       units += bought;
@@ -1110,7 +1107,7 @@ function buildSip(series, sipAmount, sipDay, startDate, endDate) {
       lots.push({ t: cur.getTime(), cost: sipAmount, units: bought });
       flows.push({ date: new Date(cur.getTime()), amount: -sipAmount });
     }
-    cur = nextSipDate(cur, sipDay);
+    cur = nextSipDate_(cur, sipDay);
   }
 
   if (invested <= 0 || units <= 0) return empty;
@@ -1137,21 +1134,21 @@ function buildSip(series, sipAmount, sipDay, startDate, endDate) {
     corpus: corpus,
     profit: corpus - invested,
     absoluteReturn: (corpus - invested) / invested,
-    xirr: calculateXIRR(flows),
+    xirr: calculateXIRR_(flows),
     redeem: {
-      stcgGain: roundRupee(stcgGain),
-      ltcgGain: roundRupee(ltcgGain),
-      exitLoad: roundRupee(exitLoad)
+      stcgGain: roundRupee_(stcgGain),
+      ltcgGain: roundRupee_(ltcgGain),
+      exitLoad: roundRupee_(exitLoad)
     }
   };
 }
 
-function threeYearPath(series, saleDate) {
+function threeYearPath_(series, saleDate) {
   var path = [];
   for (var back = 35; back >= 0; back--) {
-    var end = shiftBack(saleDate, 'month', back);
-    var start = shiftBack(end, 'year', 3);
-    var cagr = trailingCagr(series, start, end, true);
+    var end = shiftBack_(saleDate, 'month', back);
+    var start = shiftBack_(end, 'year', 3);
+    var cagr = trailingCagr_(series, start, end, true);
     path.push(cagr === null ? null : Math.round(cagr * 10000) / 10000);
   }
   return path;
@@ -1160,11 +1157,11 @@ function threeYearPath(series, saleDate) {
 /**
  * Point-to-point NAV change from startDate to endDate.
  * Under 1 year (annualized false) this is the absolute change. From 1Y it is the annualized CAGR.
- * This can be present when buildSip returns a null XIRR.
+ * This can be present when buildSip_ returns a null XIRR.
  */
-function trailingCagr(series, startDate, endDate, annualized) {
-  var startNav = lookupNav(series, startDate);
-  var endNav = lookupNav(series, endDate);
+function trailingCagr_(series, startDate, endDate, annualized) {
+  var startNav = lookupNav_(series, startDate);
+  var endNav = lookupNav_(series, endDate);
   if (startNav === null || endNav === null || startNav <= 0) return null;
   var pointToPoint = (endNav - startNav) / startNav;
   if (!annualized) return pointToPoint;
@@ -1175,41 +1172,41 @@ function trailingCagr(series, startDate, endDate, annualized) {
   return Math.pow(base, 365.25 / days) - 1;
 }
 
-function firstSipOnOrAfter(startDate, sipDay) {
-  var candidate = sipDateInMonth(startDate.getFullYear(), startDate.getMonth(), sipDay);
+function firstSipOnOrAfter_(startDate, sipDay) {
+  var candidate = sipDateInMonth_(startDate.getFullYear(), startDate.getMonth(), sipDay);
   if (candidate.getTime() < startDate.getTime()) {
-    candidate = nextSipDate(candidate, sipDay);
+    candidate = nextSipDate_(candidate, sipDay);
   }
   return candidate;
 }
 
-function nextSipDate(current, sipDay) {
-  return sipDateInMonth(current.getFullYear(), current.getMonth() + 1, sipDay);
+function nextSipDate_(current, sipDay) {
+  return sipDateInMonth_(current.getFullYear(), current.getMonth() + 1, sipDay);
 }
 
-function sipDateInMonth(year, month, sipDay) {
+function sipDateInMonth_(year, month, sipDay) {
   var first = new Date(year, month, 1);
   var last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   return new Date(first.getFullYear(), first.getMonth(), Math.min(sipDay, last));
 }
 
-function shiftBack(dateObj, unit, amount) {
+function shiftBack_(dateObj, unit, amount) {
   if (unit === 'day') {
     return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate() - amount);
   }
   if (unit === 'month') {
-    return clampDay(dateObj.getFullYear(), dateObj.getMonth() - amount, dateObj.getDate());
+    return clampDay_(dateObj.getFullYear(), dateObj.getMonth() - amount, dateObj.getDate());
   }
-  return clampDay(dateObj.getFullYear() - amount, dateObj.getMonth(), dateObj.getDate());
+  return clampDay_(dateObj.getFullYear() - amount, dateObj.getMonth(), dateObj.getDate());
 }
 
-function clampDay(year, month, day) {
+function clampDay_(year, month, day) {
   var first = new Date(year, month, 1);
   var last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   return new Date(first.getFullYear(), first.getMonth(), Math.min(day, last));
 }
 
-function calculateXIRR(cashFlows) {
+function calculateXIRR_(cashFlows) {
   if (!cashFlows || cashFlows.length < 2) return null;
   var d0 = cashFlows[0].date.getTime();
   var rate = 0.1;
@@ -1240,22 +1237,22 @@ function calculateXIRR(cashFlows) {
   return null;
 }
 
-function todayDay() {
+function todayDay_() {
   var now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-function toDay(value) {
+function toDay_(value) {
   if (value === null || value === undefined || value === '') return null;
   if (Object.prototype.toString.call(value) === '[object Date]') {
     if (isNaN(value.getTime())) return null;
     return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
-  return parseDate(value);
+  return parseDate_(value);
 }
 
-function parseDate(str) {
-  if (!str) return todayDay();
+function parseDate_(str) {
+  if (!str) return todayDay_();
   var parts = String(str).split(/[-/]/);
   if (parts.length >= 3) {
     var year = parseInt(parts[0], 10);
@@ -1274,21 +1271,21 @@ function parseDate(str) {
   if (!isNaN(parsed.getTime())) {
     return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
   }
-  return todayDay();
+  return todayDay_();
 }
 
-function formatDay(dateObj) {
+function formatDay_(dateObj) {
   var month = dateObj.getMonth() + 1;
   var day = dateObj.getDate();
   return dateObj.getFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
 }
 
-function roundNav(value) {
+function roundNav_(value) {
   if (value === null || value === undefined || !isFinite(value)) return null;
   return Number(value.toFixed(4));
 }
 
-function roundRupee(value) {
+function roundRupee_(value) {
   if (value === null || value === undefined || !isFinite(value)) return null;
   return Math.round(value * 100) / 100;
 }
