@@ -6,13 +6,16 @@ alwaysApply: false
 
 # code.gs contracts
 
-Match the existing `var` / `function` style. Sheet names are exact: `scheme_codes`, `nav_data`.
+Match the existing `var` / `function` style. Sheet names are exact: `scheme_codes`, `nav_data`, and `fund_selection` when that sheet is present.
 
 ## Entry points — do not rename
 `onOpen` menu **Mutual Fund Matrix**; `showSidebar`; `showDialog` (1250×820); `doGet` (viewport meta); `getFundMatrixData(params)`.
 
 ## NAV
 `loadNavIndex` reads `nav_data` once per call and keeps only scheme codes listed on `scheme_codes`. Match by `scheme_code`, not by fund name. `lookupNav` is the last NAV on or before the day. Do not synthesize NAV. Do not cache the sheet in `CacheService`.
+
+## Fund lists
+`fund_selection` columns are `list_name`, `scheme_code`, `scheme_name`. When the sheet has rows, those lists replace the built-in Ran, Man, Sai, Best of One Per Category, Best of Two Per Category, Best of Mid & Small, and Only of International Category sets. A partial `scheme_name` matches one `scheme_codes` row. The screen uses that scheme’s real name. A name that matches nothing is reported and left out. Sai stays an empty list until rows are added.
 
 ## Params
 `sipAmount` (1000), `sipDay` (5), `fromDate` (today minus 1 year), `toDate` (today), `saleDate` (today). Dates are `yyyy-MM-dd`.

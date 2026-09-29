@@ -3,7 +3,7 @@
  * Apps Script file. The HTML file in this project must be named Index.
  *
  * Follow these rules when changing this file:
- * - Read sheets scheme_codes and nav_data. Never invent a NAV.
+ * - Read sheets scheme_codes, nav_data, and fund_selection when that sheet exists. Never invent a NAV.
  * - Join on scheme_code. scheme_codes supplies the fund name; nav_data supplies date and NAV.
  * - lookupNav uses the last NAV on or before the requested day.
  * - Tenure columns look back from Sale Date only. Do not clip them with From Date or To Date.
@@ -230,8 +230,112 @@ function getFundMatrixData(params) {
     categories: Object.keys(categoriesSet).sort(),
     amcs: Object.keys(amcSet).sort(),
     tenures: TENURE_CONFIG,
-    pathMonths: pathMonths
+    pathMonths: pathMonths,
+    lists: fundSelectionLists(ss, schemes)
   };
+}
+
+// Named sets for the fund search. fund_selection columns: list_name, scheme_code, scheme_name.
+// A partial scheme_name is matched to scheme_codes. The screen then uses that scheme's real name.
+function fundSelectionLists(ss, schemes) {
+  var fromSheet = readFundSelection(ss, schemes);
+  if (fromSheet) return fromSheet;
+  return builtinFundLists();
+}
+
+function builtinFundLists() {
+  return [
+    { name: 'Ran', codes: ['134923', '118834', '118825', '120152', '119716', '120505', '150817', '120164', '120828', '125497', '125354', '146130'], missing: [] },
+    { name: 'Man', codes: ['122639', '149219', '120158', '118989', '120381', '118778', '130503', '151113'], missing: [] },
+    { name: 'Sai', codes: [], missing: [] },
+    { name: 'Best of One Per Category', codes: ['147946', '120403', '148404', '147704', '148381', '120685', '149775'], missing: ['Invesco Large Cap'] },
+    { name: 'Best of Two Per Category', codes: ['147946', '147919', '120403', '151036', '148404', '147704', '148381', '120685', '149775'], missing: ['Invesco Large Cap'] },
+    { name: 'Best of Mid & Small', codes: ['147946', '147919', '120403', '120381'], missing: [] },
+    { name: 'Only of International Category', codes: ['148381', '149219'], missing: [] }
+  ];
+}
+
+function readFundSelection(ss, schemes) {
+  var sheet = ss.getSheetByName('fund_selection');
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0].map(function(cell) { return String(cell).trim().toLowerCase(); });
+  var listIdx = headers.indexOf('list_name');
+  if (listIdx === -1) return null;
+  var codeIdx = headers.indexOf('scheme_code');
+  var nameIdx = headers.indexOf('scheme_name');
+  var order = [];
+  var byName = {};
+  for (var i = 1; i < values.length; i++) {
+    var listName = String(values[i][listIdx] || '').trim();
+    if (!listName) continue;
+    if (!byName[listName]) {
+      byName[listName] = { name: listName, codes: [], missing: [] };
+      order.push(listName);
+    }
+    var code = codeIdx === -1 ? '' : String(values[i][codeIdx] || '').trim();
+    if (code && code.slice(-2) === '.0') code = code.slice(0, -2);
+    var written = nameIdx === -1 ? '' : String(values[i][nameIdx] || '').trim();
+    if (!code && !written) continue;
+    var scheme = matchScheme(schemes, code, written);
+    if (!scheme) {
+      byName[listName].missing.push(written || code);
+      continue;
+    }
+    if (byName[listName].codes.indexOf(scheme.code) === -1) byName[listName].codes.push(scheme.code);
+  }
+  if (!order.length) return null;
+  return order.map(function(name) { return byName[name]; });
+}
+
+function selectionNameKey(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/owsal/g, 'oswal')
+    .replace(/midcap/g, 'mid cap')
+    .replace(/smallcap/g, 'small cap')
+    .replace(/largecap/g, 'large cap')
+    .replace(/flexicap/g, 'flexi cap')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function selectionTokens(value) {
+  var skip = { fund: 1, direct: 1, plan: 1, growth: 1, option: 1, of: 1, the: 1, and: 1, erstwhile: 1 };
+  return selectionNameKey(value).split(' ').filter(function(token) { return token && !skip[token]; });
+}
+
+function matchScheme(schemes, code, name) {
+  var wantedCode = String(code || '').trim();
+  if (wantedCode) {
+    for (var i = 0; i < schemes.length; i++) {
+      if (schemes[i].code === wantedCode) return schemes[i];
+    }
+  }
+  var want = selectionTokens(name);
+  if (!want.length) return null;
+  var categories = { large: 1, mid: 1, small: 1, flexi: 1, multi: 1, value: 1, gold: 1, silver: 1 };
+  var hits = [];
+  for (var s = 0; s < schemes.length; s++) {
+    var got = selectionTokens(schemes[s].name);
+    var bag = {};
+    got.forEach(function(token) { bag[token] = (bag[token] || 0) + 1; });
+    var covered = true;
+    for (var t = 0; t < want.length; t++) {
+      if (!bag[want[t]]) { covered = false; break; }
+      bag[want[t]] -= 1;
+    }
+    if (!covered) continue;
+    var extraCategory = false;
+    got.forEach(function(token) {
+      if (categories[token] && want.indexOf(token) === -1) extraCategory = true;
+    });
+    if (extraCategory) continue;
+    hits.push(schemes[s]);
+  }
+  if (hits.length === 1) return hits[0];
+  return null;
 }
 
 // Risk window and the cash rate used inside Sharpe and Sortino. Do not change these silently.

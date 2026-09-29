@@ -183,6 +183,9 @@
     .filter-panel { max-height: 240px; }
     .fund-pick-btn { min-height: 0; height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--color-boundary-border-mildest); background: transparent; color: var(--color-text-secondary); font-weight: 600; }
     .fund-pick-btn.is-on { background: var(--color-fill-brand); color: var(--color-text-on-brand); border-color: var(--color-fill-brand); }
+    .fund-list-bar { display: flex; flex-wrap: wrap; gap: 4px; }
+    .fund-list-btn { min-height: 0; height: auto; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); color: var(--color-text-secondary); font-size: 11px; font-weight: 600; line-height: 16px; }
+    .fund-list-btn.is-on { background: var(--color-fill-brand); color: var(--color-text-on-brand); border-color: var(--color-fill-brand); }
     /* Header sticks on vertical scroll. # and Fund Name stick on horizontal scroll. Fund Name width is --name-width. */
     .matrix-scroll { max-height: calc(100vh - 11rem); }
     .sheet thead th.tone-short, .sheet thead th.tone-1y { background: var(--color-fill-semantic-success-mildest); color: var(--color-text-semantic-success); }
@@ -216,7 +219,14 @@
     .money-table th, .money-table td { padding: 6px 8px; font-size: 12px; line-height: 16px; }
     .money-table th { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); text-align: right; border-bottom: 1px solid var(--color-boundary-divider); }
     .money-table td { text-align: right; font-variant-numeric: tabular-nums lining-nums; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-boundary-divider); }
-    .money-table .is-name { width: 40%; text-align: left; font-weight: 600; }
+    .money-table .is-name { width: 22%; text-align: left; font-weight: 600; }
+    .money-table table { min-width: 52rem; }
+    .money-table tr.is-newer td { background: var(--color-fill-semantic-success-mildest); }
+    .held-all { font-weight: 600; margin-bottom: 4px; }
+    .newer-pick { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--color-boundary-border-mildest); }
+    .newer-pick span { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
+    .newer-pick strong { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--color-text-secondary); }
+    .newer-pick p { margin-top: 2px; font-size: 12px; line-height: 16px; color: var(--color-text-secondary); }
     .money-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
     .money-stats div { min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-container); }
     .money-stats span { display: block; font-size: 11px; line-height: 14px; color: var(--color-text-placeholder); }
@@ -404,6 +414,10 @@
       </div>
       <div id="heatLegend" class="flex items-center flex-wrap gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-[10px] self-start lg:self-center"></div>
     </div>
+    <div>
+      <div id="fundListBar" class="fund-list-bar"></div>
+      <p id="fundListHint" class="hidden text-[11px] text-slate-400"></p>
+    </div>
 
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="matrix-scroll sheet">
@@ -425,13 +439,13 @@
 
     <div id="panelCompare" class="hidden space-y-4">
       <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <input type="search" id="compareSearch" oninput="renderComparePicker()" placeholder="Search funds to add..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
+          <label class="inline-flex items-center gap-2 ml-auto text-xs font-semibold text-slate-700">
             <input type="checkbox" id="compareWithin" onchange="renderComparator()">
             Compare within category
             <span id="compareCount" class="font-medium text-slate-400">None selected</span>
           </label>
-          <input type="search" id="compareSearch" oninput="renderComparePicker()" placeholder="Search funds to add..." aria-label="Search funds" class="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
                 </div>
         <p class="text-[11px] text-slate-400">Your selection is ranked by Custom Range XIRR. Check the box and every category in the selection gets its own table, one after another. The category leader is shown as if every selected SIP in that category went into that one fund.</p>
         <div id="comparePicker" class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs"></div>
@@ -536,6 +550,8 @@
     var overlapPayload = null;
     var overlapOrder = [];
     var heldFunds = {};
+    var fundLists = [];
+    var fundListHint = '';
 
     window.onload = function() {
       var today = new Date();
@@ -695,6 +711,8 @@
           btn.classList.remove('opacity-50', 'pointer-events-none');
           allFunds = response.funds || [];
           pathMonths = response.pathMonths || [];
+          fundLists = response.lists || [];
+          fundListHint = '';
           rebuildFilters(response);
           updateKPIs(allFunds);
           applyFilters();
@@ -780,6 +798,7 @@
       if (kind === 'scheme') {
         filterSelected.scheme = {};
         heldFunds = {};
+        fundListHint = '';
       }
       else filterOptions[kind].forEach(function(item) { filterSelected[kind][item.value] = !!checked; });
       renderFilter(kind);
@@ -799,6 +818,7 @@
         if (kind === 'scheme') delete heldFunds[value];
       }
       filterAll[kind] = kind === 'scheme' ? false : filterOptions[kind].every(function(item) { return filterSelected[kind][item.value]; });
+      if (kind === 'scheme') fundListHint = '';
       renderFilter(kind);
       if (kind === 'scheme') renderFundSearch();
       applyFilters();
@@ -889,11 +909,68 @@
         groups[category].forEach(function(fund) {
           var on = !!(options.selected && options.selected[fund.code]);
           html += '<label class="pick-row' + (on ? ' is-on' : '') + '">';
-          html += '<input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="' + options.onchange(fund) + '">';
+          html += '<input type="checkbox" data-code="' + esc(fund.code) + '" ' + (on ? 'checked' : '') + ' onchange="' + options.onchange(fund) + '">';
           html += '<span>' + esc(fund.name) + '</span></label>';
         });
       });
       return html;
+    }
+
+    function listIsActive(list) {
+      if (!list || !list.codes || !list.codes.length || filterAll.scheme) return false;
+      var selected = {};
+      var count = 0;
+      allFunds.forEach(function(fund) {
+        if (filterSelected.scheme[fund.code]) {
+          selected[fund.code] = true;
+          count++;
+        }
+      });
+      var wanted = list.codes.filter(function(code) {
+        return allFunds.some(function(fund) { return String(fund.code) === String(code); });
+      });
+      if (wanted.length !== count) return false;
+      return wanted.every(function(code) { return selected[String(code)]; });
+    }
+
+    function renderFundLists() {
+      var bar = document.getElementById('fundListBar');
+      var hint = document.getElementById('fundListHint');
+      if (!bar) return;
+      var html = '';
+      fundLists.forEach(function(list, index) {
+        html += '<button type="button" class="fund-list-btn' + (listIsActive(list) ? ' is-on' : '') + '" onclick="applyFundList(' + index + ')">' + esc(list.name) + '</button>';
+      });
+      bar.innerHTML = html;
+      if (!hint) return;
+      hint.textContent = fundListHint || '';
+      hint.classList.toggle('hidden', !fundListHint);
+    }
+
+    function applyFundList(index) {
+      var list = fundLists[index];
+      if (!list) return;
+      filterAll.scheme = false;
+      filterSelected.scheme = {};
+      var known = {};
+      allFunds.forEach(function(fund) { known[String(fund.code)] = true; });
+      var applied = 0;
+      (list.codes || []).forEach(function(code) {
+        var key = String(code);
+        if (!known[key]) return;
+        filterSelected.scheme[key] = true;
+        applied++;
+      });
+      Object.keys(heldFunds).forEach(function(code) {
+        if (!filterSelected.scheme[code]) delete heldFunds[code];
+      });
+      var notes = [];
+      if (!applied) notes.push(list.name + ' has no funds yet. Add rows on the fund_selection sheet.');
+      if (list.missing && list.missing.length) notes.push('Not in scheme_codes: ' + list.missing.join(', ') + '.');
+      fundListHint = notes.join(' ');
+      renderFilter('scheme');
+      renderFundSearch();
+      applyFilters();
     }
 
     function renderFundSearch() {
@@ -989,6 +1066,7 @@
       currentDisplayFunds = filtered;
       renderTable(currentDisplayFunds);
       renderFundSearch();
+      renderFundLists();
       renderActiveTab();
     }
 
@@ -1834,7 +1912,43 @@
     function setHeld(code, on) {
       if (on) heldFunds[code] = true;
       else delete heldFunds[code];
-      if (activeTab === 'final') renderFinal();
+      if (activeTab === 'final') refreshHeldMarks();
+    }
+
+    function setHeldAll(on) {
+      selectedFundList().forEach(function(fund) {
+        if (on) heldFunds[fund.code] = true;
+        else delete heldFunds[fund.code];
+      });
+      if (activeTab === 'final') refreshHeldMarks();
+    }
+
+    function heldAllOn(funds) {
+      return funds.length > 0 && funds.every(function(fund) { return heldFunds[fund.code]; });
+    }
+
+    // Checkbox state only. Rebuilding the list sends the scroller back to the first fund.
+    function syncHeldChecks() {
+      var picker = document.getElementById('heldPicker');
+      if (!picker) return false;
+      var inputs = picker.querySelectorAll('input[data-code]');
+      for (var i = 0; i < inputs.length; i++) {
+        var checked = !!heldFunds[inputs[i].getAttribute('data-code')];
+        inputs[i].checked = checked;
+        if (inputs[i].parentNode) inputs[i].parentNode.classList.toggle('is-on', checked);
+      }
+      var all = document.getElementById('heldSelectAll');
+      var every = heldAllOn(selectedFundList());
+      if (all) {
+        all.checked = every;
+        if (all.parentNode) all.parentNode.classList.toggle('is-on', every);
+      }
+      return true;
+    }
+
+    function refreshHeldMarks() {
+      if (!syncHeldChecks()) renderFinal();
+      else renderDecisionList();
     }
 
     function tenureCagr(fund, key) {
@@ -2003,29 +2117,28 @@
     }
 
     function buildBooks(owned, leader) {
+      var lotByCode = {};
+      var selling = owned.filter(function(fund) { return !leader || fund.code !== leader.code; });
+      selling.forEach(function(fund) {
+        if (fund.redeem) lotByCode[fund.code] = fund.redeem;
+      });
       var book = {
-        holdings: owned.map(function(fund) {
+        rows: owned.map(function(fund) {
+          var lot = lotByCode[fund.code];
           return {
             name: briefName(fund.name),
             invested: formatInrWhole(fund.investedAmount),
             worth: formatInrWhole(fund.sipCorpus),
-            profit: formatInrWhole(fund.netProfit)
+            profit: formatInrWhole(fund.netProfit),
+            ltcg: lot ? formatInrWhole(lot.ltcgGain) : '—',
+            stcg: lot ? formatInrWhole(lot.stcgGain) : '—',
+            load: lot ? formatInrWhole(lot.exitLoad) : '—',
+            newer: false
           };
         }),
-        lots: [],
         stats: []
       };
-      var selling = owned.filter(function(fund) { return !leader || fund.code !== leader.code; });
       if (!selling.length) return book;
-      selling.forEach(function(fund) {
-        if (!fund.redeem) return;
-        book.lots.push({
-          name: briefName(fund.name),
-          ltcg: formatInrWhole(fund.redeem.ltcgGain),
-          stcg: formatInrWhole(fund.redeem.stcgGain),
-          load: formatInrWhole(fund.redeem.exitLoad)
-        });
-      });
       var money = combinedRedeem(selling);
       if (money) {
         book.stats.push({ label: 'Tax if sold today', value: formatInrWhole(money.tax) });
@@ -2052,17 +2165,15 @@
       return book;
     }
 
-    function moneyTable(title, headers, rows, read) {
+    function moneyTable(headers, rows, read) {
       if (!rows.length) return '';
-      var html = '<div class="money-table">';
-      if (title) html += '<div class="money-title">' + esc(title) + '</div>';
-      html += '<table><thead><tr>';
+      var html = '<div class="money-table"><table><thead><tr>';
       headers.forEach(function(header, index) {
         html += '<th' + (index ? '' : ' class="is-name"') + '>' + esc(header) + '</th>';
       });
       html += '</tr></thead><tbody>';
       rows.forEach(function(row) {
-        html += '<tr>';
+        html += '<tr' + (row.newer ? ' class="is-newer"' : '') + '>';
         read(row).forEach(function(cell, index) {
           html += '<td' + (index ? '' : ' class="is-name"') + '>' + esc(cell) + '</td>';
         });
@@ -2070,6 +2181,24 @@
       });
       html += '</tbody></table></div>';
       return html;
+    }
+
+    function newerHoldingRow(leader, missed) {
+      var hint = 'Highlighted row is the newer fund on this same SIP. Compare Worth and Profit with the funds you hold.';
+      if (missed !== null) {
+        hint = 'Same SIP in this newer fund is ' + (missed >= 0 ? 'ahead ' : 'behind ') + formatInrWhole(Math.abs(missed)) + ' before tax. ' + hint;
+      }
+      return {
+        name: briefName(leader.name) + ' · Newer',
+        invested: formatInrWhole(leader.investedAmount),
+        worth: formatInrWhole(leader.sipCorpus),
+        profit: formatInrWhole(leader.netProfit),
+        ltcg: '—',
+        stcg: '—',
+        load: '—',
+        newer: true,
+        hint: hint
+      };
     }
 
     function taxNote(category) {
@@ -2108,13 +2237,13 @@
         html += '<h2 class="text-sm font-semibold text-slate-900 mt-1">' + esc(decision.title) + '</h2>';
       }
       html += '<p class="text-xs text-slate-600 mt-2">' + esc(decision.sentence) + '</p>';
-      if (decision.books && decision.books.holdings && decision.books.holdings.length) {
+      if (decision.books && decision.books.rows && decision.books.rows.length) {
         html += '<div class="money-block">';
-        html += moneyTable('', ['Fund', 'Invested', 'Worth', 'Profit'], decision.books.holdings, function(row) {
-          return [row.name, row.invested, row.worth, row.profit];
-        });
-        html += moneyTable('Tax lots', ['Fund', 'Long-term gain', 'Short-term gain', 'Exit load'], decision.books.lots, function(row) {
-          return [row.name, row.ltcg, row.stcg, row.load];
+        var newerRow = null;
+        decision.books.rows.forEach(function(row) { if (row.newer) newerRow = row; });
+        if (newerRow && newerRow.hint) html += '<p class="text-[11px] text-slate-500 mb-1">' + esc(newerRow.hint) + '</p>';
+        html += moneyTable(['Fund', 'Invested', 'Worth', 'Profit', 'Long-term gain', 'Short-term gain', 'Exit load'], decision.books.rows, function(row) {
+          return [row.name, row.invested, row.worth, row.profit, row.ltcg, row.stcg, row.load];
         });
         if (decision.books.stats.length) {
           html += '<div class="money-stats">';
@@ -2144,7 +2273,8 @@
       var sentence = 'No decision yet.';
       var note = 'Tax and exit load are not in this book. Custom Range XIRR is context, usually the shorter SIP window.';
       var books = null;
-      if (!leader) return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books };
+      var recommend = null;
+      if (!leader) return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books, recommend: recommend };
 
       function shouldSwitch(fund) {
         return fund.code !== leader.code && returnLead(leader, fund).clear && !drawdownWorse(leader, fund) && ratiosNotWorse(leader, fund);
@@ -2205,6 +2335,7 @@
             if (leadDraw !== null && drawSpan) pros.push('Max drawdown is ' + formatPct(leadDraw) + ' versus ' + drawSpan + ', inside the 3-point limit.');
             if (missed !== null && missed > 0) pros.push('The same SIP is already worth ' + formatInrWhole(missed) + ' more in ' + intoName + ', before tax.');
           }
+          if (books && !heldFunds[leader.code]) books.rows.unshift(newerHoldingRow(leader, missed));
           if (!money) cons.push('Lot gains are not on this load yet, so the tax lines stay blank until code.gs is refreshed.');
           if (lead.short) cons.push('3Y and 5Y CAGR are missing, so this gap is only the shorter SIP window.');
         } else {
@@ -2256,8 +2387,50 @@
         action = 'Start';
         title = 'Start ' + briefName(starting.name);
         note = 'No fund in ' + category + ' is marked held, so this is a fresh SIP. It is not a switch and not an exit.';
+        if (starting && !heldFunds[starting.code]) {
+          recommend = { category: category, action: action, name: briefName(starting.name), line: sentence };
+        }
       }
-      return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books };
+      if (action === 'Switch' && leader && !heldFunds[leader.code]) {
+        recommend = { category: category, action: action, name: briefName(leader.name), line: sentence };
+      }
+      return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books, recommend: recommend };
+    }
+
+    function newerFundsHtml(decisions) {
+      var picks = decisions.filter(function(decision) { return decision.recommend; });
+      var html = '<div class="compare-card p-4"><div class="text-xs font-semibold text-slate-800">Newer funds</div>';
+      if (!picks.length) {
+        html += '<p class="text-xs text-slate-600 mt-2">No newer fund to move into. What you hold already leads, or the gap does not clear the return, drawdown, tax, and exit-load rules.</p>';
+      } else {
+        html += '<p class="text-[11px] text-slate-400 mt-1">These are not marked as held. Each one is the fund that category note says to switch into or start.</p>';
+        picks.forEach(function(decision) {
+          var pick = decision.recommend;
+          html += '<div class="newer-pick"><span>' + esc(pick.category) + ' · ' + esc(pick.action) + '</span>';
+          html += '<strong>' + esc(pick.name) + '</strong><p>' + esc(pick.line) + '</p></div>';
+        });
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function renderDecisionList() {
+      var list = document.getElementById('decisionList');
+      if (!list) return;
+      var funds = selectedFundList();
+      var html = '<div class="decision-list">';
+      var decisions = [];
+      var seenCats = {};
+      funds.forEach(function(fund) { seenCats[fund.category || 'Other'] = true; });
+      Object.keys(seenCats).sort().forEach(function(category) {
+        var decision = categoryDecision(category, funds);
+        decisions.push(decision);
+        html += decisionCard(decision);
+      });
+      html += '</div>';
+      html += newerFundsHtml(decisions);
+      html += '<p class="text-[11px] text-slate-400">Each note is one category. Keep or switch applies only to a fund you mark as held. Start means a new SIP. A switch needs at least 2 points of 3Y or 5Y CAGR, and the replacement must not have a max drawdown more than 3 points worse. The highlighted row is the newer fund on the same SIP, so Worth and Profit sit next to the fund you hold. The one-year rupee comparison repeats the past 3-year CAGR after equity tax and an assumed 1% exit load on installments under 12 months. The full figures stay on Return Matrix, Fund Comparator, and Risk and Rating.</p>';
+      list.innerHTML = html;
     }
 
     function renderFinal() {
@@ -2268,24 +2441,23 @@
         box.innerHTML = '<div class="compare-card p-4 text-xs text-slate-500">Check the funds you are reviewing. On Summary, mark the ones you already hold. The note then says keep, switch, or start.</div>';
         return;
       }
+      var every = heldAllOn(funds);
       var html = '<div class="compare-card p-4"><div class="text-xs font-semibold text-slate-800">Funds you hold</div>';
       html += '<p class="text-[11px] text-slate-400 mt-1">Mark a fund only if you already own it. Leave it unmarked if you are only considering a new SIP.</p>';
-      html += '<div class="fund-picker overflow-y-auto border border-slate-100 rounded-lg p-2 text-xs mt-2">';
+      html += '<div class="border border-slate-100 rounded-lg p-2 text-xs mt-2">';
+      html += '<label class="pick-row held-all' + (every ? ' is-on' : '') + '">';
+      html += '<input type="checkbox" id="heldSelectAll" ' + (every ? 'checked' : '') + ' onchange="setHeldAll(this.checked)">';
+      html += '<span>Select All</span></label>';
+      html += '<div id="heldPicker" class="fund-picker overflow-y-auto">';
       html += fundChecklistHtml({
         funds: funds,
         selected: heldFunds,
         onchange: function(fund) { return 'setHeld(\'' + esc(fund.code) + '\', this.checked)'; }
       });
       html += '</div></div>';
-      html += '<div class="decision-list">';
-      var seenCats = {};
-      funds.forEach(function(fund) { seenCats[fund.category || 'Other'] = true; });
-      Object.keys(seenCats).sort().forEach(function(category) {
-        html += decisionCard(categoryDecision(category, funds));
-      });
-      html += '</div>';
-      html += '<p class="text-[11px] text-slate-400">Each note is one category. Keep or switch applies only to a fund you mark as held. Start means a new SIP. A switch needs at least 2 points of 3Y or 5Y CAGR, and the replacement must not have a max drawdown more than 3 points worse. The one-year rupee comparison repeats the past 3-year CAGR after equity tax and an assumed 1% exit load on installments under 12 months. The full figures stay on Return Matrix, Fund Comparator, and Risk and Rating.</p>';
+      html += '<div id="decisionList"></div>';
       box.innerHTML = html;
+      renderDecisionList();
     }
 
     function applyTheme(mode) {
