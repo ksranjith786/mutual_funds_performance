@@ -130,9 +130,12 @@
     .sheet { overflow: auto; width: 100%; -webkit-overflow-scrolling: touch; }
     .sheet table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; line-height: 16px; }
     .compare-card .sheet table { table-layout: fixed; }
-    .compare-card .risk-sheet table { table-layout: auto; width: max-content; min-width: 100%; }
-    .risk-sheet thead th:not(.freeze-name),
-    .risk-sheet tbody td:not(.freeze-name) { white-space: nowrap; width: auto; min-width: max-content; }
+    .compare-card .risk-sheet table,
+    .compare-card .compare-sheet table { table-layout: auto; width: max-content; min-width: 100%; }
+    .risk-sheet thead th:not(.freeze-name):not(.freeze-move),
+    .risk-sheet tbody td:not(.freeze-name):not(.freeze-move),
+    .compare-sheet thead th:not(.freeze-name):not(.freeze-move),
+    .compare-sheet tbody td:not(.freeze-name):not(.freeze-move) { white-space: nowrap; width: auto; min-width: max-content; }
     .sheet th, .sheet td { border-bottom: 1px solid var(--color-boundary-divider); }
     .sheet thead th { position: sticky; top: 0; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; vertical-align: bottom; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
     .overlap-board { overflow: auto; width: 100%; }
@@ -1752,7 +1755,7 @@
         body += heatRateCell(series['10Y'], heatScale(tenureByKey('10Y')));
         body += '</tr>';
       });
-      return '<div class="compare-card"><div class="compare-card-title">' + esc(title) + '</div>' + sheetTable(head, body) + '</div>';
+      return '<div class="compare-card"><div class="compare-card-title">' + esc(title) + '</div>' + sheetTable(head, body, 'compare-sheet') + '</div>';
     }
 
     function groupByCategory(funds) {
