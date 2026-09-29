@@ -10,7 +10,7 @@
  * - Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return use From Date through To Date only.
  * - Keep TENURE_CONFIG in this order, including 7Y. The same keys and order live in index.html TENURES.
  * - A tenure is null when the scheme has no NAV on or before the window start.
- *   Do not relabel a shorter history as 12Y. SIP XIRR is also null when the window contains no SIP date.
+ *   Do not relabel a shorter history as 15Y. SIP XIRR is also null when the window contains no SIP date.
  * - 5D and 15D have no tenure XIRR. A monthly SIP does not fit those windows. Trailing CAGR still uses them.
  * - fund.risk is a 3-year window ending on Sale Date, from daily NAV. Cash rate is 6.5%.
  *   Capture, beta, alpha, information ratio, and R-squared use the other tracked funds in the same category, not Nifty.
@@ -92,7 +92,8 @@ var TENURE_CONFIG = [
   { key: '5Y', label: '5Y', unit: 'year', n: 5, annualized: true, group: 'long' },
   { key: '7Y', label: '7Y', unit: 'year', n: 7, annualized: true, group: 'long' },
   { key: '10Y', label: '10Y', unit: 'year', n: 10, annualized: true, group: 'long' },
-  { key: '12Y', label: '12Y', unit: 'year', n: 12, annualized: true, group: 'long' }
+  { key: '12Y', label: '12Y', unit: 'year', n: 12, annualized: true, group: 'long' },
+  { key: '15Y', label: '15Y', unit: 'year', n: 15, annualized: true, group: 'long' }
 ];
 
 /**
