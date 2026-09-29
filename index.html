@@ -403,10 +403,6 @@
           <input type="search" id="fundSearch" placeholder="All funds" onfocus="openFundSearch()" oninput="renderFundSearch()" aria-label="Search funds" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none">
           <div id="fundSearchPanel" class="hidden filter-panel overflow-y-auto absolute z-40 mt-1 w-full sm:w-80 bg-white border border-slate-200 rounded-lg shadow-lg p-2"></div>
         </div>
-        <button id="toggleTop2Btn" onclick="toggleTop2Filter()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-amber-500 border-amber-600 text-white shadow-sm transition-all" title="Top 2 schemes in each category by the active 1Y series">
-          <span>Top 2 / Cat (1Y)</span>
-          <span id="top2Badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-700 text-white">Active</span>
-        </button>
         <div class="seg">
           <button id="metricXirrBtn" onclick="setMetricMode('xirr')" class="is-on">SIP XIRR</button>
           <button id="metricCagrBtn" onclick="setMetricMode('cagr')">Trailing CAGR</button>
@@ -493,7 +489,7 @@
     // Tenure cells switch between tenureXirr and tenureCagr. They look back from Sale Date.
     // customRangeXirr, sipCorpus, netProfit, and absoluteReturn stay on From Date to To Date
     // and do not follow the SIP XIRR / Trailing CAGR switch.
-    // Top 2 uses the active 1Y series. Filters start on Select All, which means no restriction.
+    // Category and AMC start on Select All, which means no restriction. The first load selects the first fund list.
     // Default sort is 1Y descending. Heat colors on corpus and net profit follow absoluteReturn.
     var TENURES = [
       { key: '5D', group: 'short', annualized: false },
@@ -535,7 +531,7 @@
     var allFunds = [];
     var pathMonths = [];
     var currentDisplayFunds = [];
-    var top2FilterActive = true;
+    var openedOnFirstList = false;
     var activeMetric = 'xirr';
     var currentSortField = '1Y';
     var currentSortAsc = false;
@@ -715,6 +711,13 @@
           fundListHint = '';
           rebuildFilters(response);
           updateKPIs(allFunds);
+          if (!openedOnFirstList) {
+            openedOnFirstList = true;
+            if (fundLists.length) {
+              applyFundList(0);
+              return;
+            }
+          }
           applyFilters();
         })
         .withFailureHandler(function(err) {
@@ -987,7 +990,7 @@
       });
     }
 
-    // Re-renders only. Both series are already on each fund. Also re-ranks Top 2 by the active 1Y value.
+    // Re-renders only. Both series are already on each fund.
     function setMetricMode(mode) {
       activeMetric = mode;
       var xBtn = document.getElementById('metricXirrBtn');
@@ -1003,22 +1006,6 @@
       applyFilters();
     }
 
-    function toggleTop2Filter() {
-      top2FilterActive = !top2FilterActive;
-      var btn = document.getElementById('toggleTop2Btn');
-      var badge = document.getElementById('top2Badge');
-      if (top2FilterActive) {
-        btn.className = 'inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-amber-500 border-amber-600 text-white shadow-sm transition-all';
-        badge.className = 'px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-700 text-white';
-        badge.textContent = 'Active';
-      } else {
-        btn.className = 'inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50 transition-all';
-        badge.className = 'px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600';
-        badge.textContent = 'All Funds';
-      }
-      applyFilters();
-    }
-
     // Tenure display series. Custom-range columns must not read this.
     function activeSeries(fund) {
       return activeMetric === 'cagr' ? fund.tenureCagr : fund.tenureXirr;
@@ -1029,39 +1016,12 @@
       return !!filterSelected[kind][value];
     }
 
-    function getTop2Codes(funds) {
-      var catMap = {};
-      funds.forEach(function(fund) {
-        var category = fund.category || 'Other';
-        if (!catMap[category]) catMap[category] = [];
-        catMap[category].push(fund);
-      });
-      var topCodes = {};
-      Object.keys(catMap).forEach(function(category) {
-        var sorted = catMap[category].slice().sort(function(a, b) {
-          return rankValue(b) - rankValue(a);
-        });
-        sorted.slice(0, 2).forEach(function(fund) { topCodes[fund.code] = true; });
-      });
-      return topCodes;
-    }
-
-    function rankValue(fund) {
-      var series = activeSeries(fund);
-      var value = series ? series['1Y'] : null;
-      return value === null || value === undefined || isNaN(value) ? -999 : value;
-    }
-
     function applyFilters() {
       var filtered = allFunds.filter(function(fund) {
         return passesFilter('category', fund.category) &&
           passesFilter('amc', fund.amc) &&
           passesFilter('scheme', fund.code);
       });
-      if (top2FilterActive && filterAll.scheme) {
-        var topCodes = getTop2Codes(filtered);
-        filtered = filtered.filter(function(fund) { return topCodes[fund.code]; });
-      }
       sortFundsList(filtered, currentSortField, currentSortAsc);
       currentDisplayFunds = filtered;
       renderTable(currentDisplayFunds);
@@ -1169,10 +1129,8 @@
       });
 
       tbody.innerHTML = html;
-      var seriesName = activeMetric === 'xirr' ? 'SIP XIRR' : 'Trailing CAGR';
       document.getElementById('footerCount').textContent =
-        'Showing ' + funds.length + ' of ' + allFunds.length + ' schemes' +
-        (top2FilterActive ? ' (Top 2 per category by 1Y ' + seriesName + ')' : '');
+        'Showing ' + funds.length + ' of ' + allFunds.length + ' schemes';
     }
 
     function nameResizer() {
