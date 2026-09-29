@@ -103,6 +103,31 @@
     .brand-mark { width: 28px; height: 28px; margin-top: 1px; border-radius: 8px; background: var(--color-fill-brand); box-shadow: inset 0 -7px 0 rgba(0, 0, 0, 0.14); flex-shrink: 0; }
     .live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--color-fill-brand) 12%, var(--color-fill-surface)); color: var(--color-text-brand); font-size: 12px; font-weight: 600; }
     .live-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-semantic-success); }
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .kpi-summary { grid-column: 1 / -1; }
+    .kpi-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .kpi-stats div { min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-container); }
+    .kpi-stats span { display: block; font-size: 12px; line-height: 16px; color: var(--color-text-placeholder); }
+    .kpi-stats strong { display: block; margin-top: 2px; font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; color: var(--color-text-primary); }
+    .total-board { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+    .total-col { min-width: 0; padding: 12px 14px; border-radius: 12px; background: var(--color-fill-container); }
+    .total-col h3 { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
+    .total-names { margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--color-text-secondary); }
+    .total-row { display: grid; grid-template-columns: minmax(7.5rem, 46%) minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--color-boundary-border-mildest); }
+    .total-row span { font-size: 12px; line-height: 16px; color: var(--color-text-placeholder); }
+    .total-row strong { font-size: 14px; line-height: 20px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums lining-nums; color: var(--color-text-primary); }
+    .total-row strong.is-up { color: var(--color-text-semantic-success); }
+    .total-row strong.is-down { color: #cd2629; }
+    .total-tax { margin-top: 4px; }
+    .total-tax h4 { margin-top: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
+    .total-result { margin-top: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); font-size: 14px; line-height: 20px; color: var(--color-text-primary); }
+    @media (min-width: 900px) {
+      .total-board { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); align-items: start; }
+    }
+    @media (min-width: 1024px) {
+      .kpi-grid { grid-template-columns: 14rem 18rem minmax(0, 1fr); }
+      .kpi-summary { grid-column: auto; }
+    }
     .kpi-card { position: relative; overflow: hidden; }
     .kpi-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--color-fill-brand); }
     .kpi-card.kpi-good::before { background: var(--color-text-semantic-success); }
@@ -326,26 +351,25 @@
 
   <main class="max-w-[1600px] mx-auto px-3 sm:px-6 py-4 sm:py-5 flex-1 w-full space-y-4">
     
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div class="kpi-grid">
       <div class="kpi-card bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Tracked Schemes</span>
         <p id="kpiTotalFunds" class="num-display text-2xl font-bold text-slate-900 mt-1">-</p>
-        <span class="text-[11px] text-slate-400">Schemes in this book</span>
-      </div>
-      <div class="kpi-card kpi-good bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Average Absolute Return</span>
-        <p id="kpiAvgReturn" class="num-display text-2xl font-bold text-emerald-600 mt-1">-</p>
-        <span class="text-[11px] text-slate-400">Custom range, From to To</span>
+        <span class="text-[11px] text-slate-400">In this selection</span>
       </div>
       <div class="kpi-card bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Top Outperformer</span>
         <p id="kpiBestFund" class="text-sm font-bold text-slate-900 truncate mt-1">-</p>
         <span id="kpiBestReturn" class="num-display text-xs font-semibold text-emerald-600">-</span>
       </div>
-      <div class="kpi-card bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Monthly SIP</span>
-        <p id="kpiSipAmount" class="num-display text-2xl font-bold text-slate-900 mt-1">₹1,000</p>
-        <span id="kpiSipDesc" class="text-[11px] text-slate-400">Debited every 5th of month</span>
+      <div class="kpi-card kpi-summary bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total corpus</span>
+        <p id="kpiCorpus" class="num-display text-2xl font-bold text-slate-900 mt-1">-</p>
+        <p id="kpiReturnLine" class="num-display text-sm font-semibold mt-1">-</p>
+        <div class="kpi-stats">
+          <div><span>Invested</span><strong id="kpiInvested">-</strong></div>
+          <div><span>XIRR</span><strong id="kpiAvgXirr">-</strong></div>
+        </div>
       </div>
     </div>
 
@@ -699,8 +723,6 @@
         toDate: document.getElementById('inputToDate').value,
         saleDate: document.getElementById('inputSaleDate').value
       };
-      document.getElementById('kpiSipAmount').textContent = '₹' + Number(params.sipAmount).toLocaleString('en-IN');
-      document.getElementById('kpiSipDesc').textContent = 'Debited every ' + ordinal(Number(params.sipDay)) + ' of month';
       document.getElementById('footerRange').textContent =
         'Custom Range XIRR: ' + formatLongDate(params.fromDate) + ' to ' + formatLongDate(params.toDate) +
         '. Tenure columns look back from Sale Date ' + formatLongDate(params.saleDate) + '.';
@@ -713,7 +735,6 @@
           fundLists = response.lists || [];
           fundListHint = '';
           rebuildFilters(response);
-          updateKPIs(allFunds);
           if (!openedOnFirstList) {
             openedOnFirstList = true;
             if (fundLists.length) {
@@ -1031,6 +1052,7 @@
       sortFundsList(filtered, currentSortField, currentSortAsc);
       currentDisplayFunds = filtered;
       renderTable(currentDisplayFunds);
+      updateKPIs(selectedFundList());
       renderFundSearch();
       renderFundLists();
       renderActiveTab();
@@ -1208,24 +1230,94 @@
       return (rounded < 0 ? '\u2212' : '') + '₹' + text;
     }
 
-    function updateKPIs(funds) {
-      document.getElementById('kpiTotalFunds').textContent = funds.length;
-      if (!funds.length) return;
-      var sum = 0;
-      var counted = 0;
-      var best = null;
-      funds.forEach(function(fund) {
-        if (fund.absoluteReturn === null || fund.absoluteReturn === undefined || isNaN(fund.absoluteReturn)) return;
-        sum += fund.absoluteReturn;
-        counted += 1;
-        if (!best || fund.absoluteReturn > best.absoluteReturn) best = fund;
+    function bookTotals(funds) {
+      var invested = 0;
+      var worth = 0;
+      var any = false;
+      (funds || []).forEach(function(fund) {
+        var paid = finiteNumber(fund.investedAmount);
+        var corpus = finiteNumber(fund.sipCorpus);
+        if (paid === null || corpus === null) return;
+        any = true;
+        invested += paid;
+        worth += corpus;
       });
-      document.getElementById('kpiAvgReturn').textContent = counted ? formatPct(sum / counted) : '-';
-      if (best) {
-        document.getElementById('kpiBestFund').textContent = best.name;
-        document.getElementById('kpiBestReturn').textContent =
-          formatPct(best.absoluteReturn) + ' absolute · ' + formatPct(best.customRangeXirr) + ' XIRR';
+      var profit = any ? worth - invested : null;
+      return {
+        count: (funds || []).length,
+        invested: any ? invested : null,
+        worth: any ? worth : null,
+        profit: profit,
+        abs: any && invested ? profit / invested : null,
+        xirr: weightedRate(funds, 'customRangeXirr')
+      };
+    }
+
+    function weightedRate(funds, key) {
+      var weighted = 0;
+      var weight = 0;
+      var plain = 0;
+      var count = 0;
+      (funds || []).forEach(function(fund) {
+        var rate = finiteNumber(fund[key]);
+        if (rate === null) return;
+        var paid = finiteNumber(fund.investedAmount);
+        if (paid !== null && paid > 0) {
+          weighted += rate * paid;
+          weight += paid;
+        } else {
+          plain += rate;
+          count += 1;
+        }
+      });
+      if (weight > 0) return weighted / weight;
+      if (count) return plain / count;
+      return null;
+    }
+
+    function updateKPIs(funds) {
+      var list = funds || [];
+      var book = bookTotals(list);
+      var best = null;
+      var bestAbs = null;
+      list.forEach(function(fund) {
+        var abs = finiteNumber(fund.absoluteReturn);
+        if (abs === null) return;
+        if (bestAbs === null || abs > bestAbs) {
+          bestAbs = abs;
+          best = fund;
+        }
+      });
+      document.getElementById('kpiTotalFunds').textContent = String(list.length);
+      document.getElementById('kpiCorpus').textContent = book.worth === null ? '-' : formatInrWhole(book.worth);
+      var gain = document.getElementById('kpiReturnLine');
+      if (book.profit === null) {
+        gain.textContent = '-';
+        gain.style.color = '';
+      } else {
+        gain.textContent = formatInrWhole(book.profit) + ' (' + formatPct(book.abs) + ')';
+        gain.style.color = book.profit < 0 ? '#cd2629' : 'var(--color-text-semantic-success)';
       }
+      document.getElementById('kpiInvested').textContent = book.invested === null ? '-' : formatInrWhole(book.invested);
+      setKpiRate('kpiAvgXirr', book.xirr);
+      var bestName = document.getElementById('kpiBestFund');
+      var bestLine = document.getElementById('kpiBestReturn');
+      if (best) {
+        bestName.textContent = best.name;
+        bestName.title = best.name;
+        bestLine.textContent = formatPct(best.absoluteReturn) + ' absolute · ' + formatPct(best.customRangeXirr) + ' XIRR';
+      } else {
+        bestName.textContent = '-';
+        bestName.title = '';
+        bestLine.textContent = '-';
+      }
+    }
+
+    function setKpiRate(id, value) {
+      var node = document.getElementById(id);
+      if (!node) return;
+      node.textContent = formatPct(value);
+      node.style.color = value === null || isNaN(value) ? '' : (value < 0 ? '#cd2629' : 'var(--color-text-semantic-success)');
     }
 
     function formatPct(val) {
@@ -2239,7 +2331,7 @@
       var note = 'Tax and exit load are not in this book. Custom Range XIRR is context, usually the shorter SIP window.';
       var books = null;
       var recommend = null;
-      if (!leader) return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books, recommend: recommend };
+      if (!leader) return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books, recommend: recommend, movingFunds: [], switchLeader: null };
 
       function shouldSwitch(fund) {
         return fund.code !== leader.code && returnLead(leader, fund).clear && !drawdownWorse(leader, fund) && ratiosNotWorse(leader, fund);
@@ -2359,7 +2451,21 @@
       if (action === 'Switch' && leader && !heldFunds[leader.code]) {
         recommend = { category: category, action: action, name: briefName(leader.name), line: sentence };
       }
-      return { category: category, action: action, title: title, leave: leave, into: into, sentence: sentence, pros: pros, cons: cons, note: note, books: books, recommend: recommend };
+      return {
+        category: category,
+        action: action,
+        title: title,
+        leave: leave,
+        into: into,
+        sentence: sentence,
+        pros: pros,
+        cons: cons,
+        note: note,
+        books: books,
+        recommend: recommend,
+        movingFunds: action === 'Switch' ? moving : [],
+        switchLeader: action === 'Switch' ? leader : null
+      };
     }
 
     function newerFundsHtml(decisions) {
@@ -2374,6 +2480,137 @@
           html += '<div class="newer-pick"><span>' + esc(pick.category) + ' · ' + esc(pick.action) + '</span>';
           html += '<strong>' + esc(pick.name) + '</strong><p>' + esc(pick.line) + '</p></div>';
         });
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function sumField(funds, key) {
+      var total = 0;
+      var any = false;
+      funds.forEach(function(fund) {
+        var value = finiteNumber(fund[key]);
+        if (value === null) return;
+        any = true;
+        total += value;
+      });
+      return any ? total : null;
+    }
+
+    function rupeeText(value) {
+      return value === null || value === undefined || isNaN(value) ? '—' : formatInrWhole(value);
+    }
+
+    function fundNames(funds) {
+      var seen = {};
+      var names = [];
+      (funds || []).forEach(function(fund) {
+        var name = briefName(fund.name);
+        if (!name || seen[name]) return;
+        seen[name] = true;
+        names.push(name);
+      });
+      if (!names.length) return 'None';
+      return names.join(', ');
+    }
+
+    function totalRow(label, value, tone) {
+      var klass = tone === 'up' ? ' is-up' : (tone === 'down' ? ' is-down' : '');
+      return '<div class="total-row"><span>' + esc(label) + '</span><strong class="' + klass + '">' + esc(value) + '</strong></div>';
+    }
+
+    function returnTone(value) {
+      if (value === null || value === undefined || isNaN(value) || value === 0) return '';
+      return value < 0 ? 'down' : 'up';
+    }
+
+    function totalColumn(title, names, book, countLabel) {
+      var returns = book.profit === null ? '—' : formatInrWhole(book.profit) + ' (' + formatPct(book.abs) + ')';
+      var html = '<section class="total-col">';
+      html += '<h3>' + esc(title) + '</h3>';
+      html += '<p class="total-names">' + esc(names) + '</p>';
+      html += totalRow(countLabel || 'Funds', String(book.count));
+      html += totalRow('Invested', rupeeText(book.invested));
+      html += totalRow('Current value', rupeeText(book.worth));
+      html += totalRow('Total returns', returns, returnTone(book.profit));
+      html += totalRow('XIRR', book.xirr === null ? '—' : formatPct(book.xirr), returnTone(book.xirr));
+      html += '</section>';
+      return html;
+    }
+
+    function overallSummaryHtml(funds, decisions) {
+      var switches = [];
+      var seen = {};
+      var alt = [];
+      var skipped = 0;
+      decisions.forEach(function(decision) {
+        if (decision.action !== 'Switch' || !decision.movingFunds) return;
+        decision.movingFunds.forEach(function(fund) {
+          if (!fund || seen[fund.code]) return;
+          seen[fund.code] = true;
+          switches.push(fund);
+          var leader = decision.switchLeader;
+          if (!leader || finiteNumber(leader.sipCorpus) === null || finiteNumber(fund.sipCorpus) === null || fund.investedAmount !== leader.investedAmount) {
+            skipped += 1;
+            return;
+          }
+          alt.push(leader);
+        });
+      });
+      var money = switches.length ? combinedRedeem(switches) : null;
+      var altWorth = sumField(alt, 'sipCorpus');
+      var switchWorth = sumField(switches, 'sipCorpus');
+      var matchedWorth = null;
+      if (alt.length && skipped === 0) matchedWorth = switchWorth;
+      else if (alt.length) {
+        matchedWorth = 0;
+        decisions.forEach(function(decision) {
+          if (decision.action !== 'Switch' || !decision.movingFunds) return;
+          decision.movingFunds.forEach(function(fund) {
+            var leader = decision.switchLeader;
+            if (!leader || finiteNumber(leader.sipCorpus) === null || fund.investedAmount !== leader.investedAmount) return;
+            if (finiteNumber(fund.sipCorpus) !== null) matchedWorth += fund.sipCorpus;
+          });
+        });
+      }
+      var missed = altWorth !== null && matchedWorth !== null ? altWorth - matchedWorth : null;
+      var selection = bookTotals(funds);
+      var heldNow = bookTotals(switches);
+      var recommended = bookTotals(alt);
+      var html = '<div class="compare-card p-4"><div class="text-xs font-semibold text-slate-800">Total</div>';
+      html += '<p class="text-[11px] text-slate-400 mt-1">Each column lists the funds in that total. Current value is what the SIP is worth today. Total returns is current value minus invested. XIRR is weighted by the amount invested.</p>';
+      html += '<div class="total-board">';
+      html += totalColumn('Your selection', fundNames(funds), selection);
+      if (switches.length) {
+        var switchHtml = totalColumn('Funds to switch', fundNames(switches), heldNow);
+        if (money) {
+          var tax = '<div class="total-tax"><h4>If sold today</h4>';
+          tax += '<p class="total-names">Long-term tax is 12.5% after one ₹1.25 lakh exemption for this whole switch. Short-term tax is 20%. Exit load is 1% of installments under 12 months.</p>';
+          tax += totalRow('Long-term gain', rupeeText(money.ltcgGain), returnTone(money.ltcgGain));
+          tax += totalRow('Short-term gain', rupeeText(money.stcgGain), returnTone(money.stcgGain));
+          tax += totalRow('Long-term tax', rupeeText(money.ltcgTax));
+          tax += totalRow('Short-term tax', rupeeText(money.stcgTax));
+          tax += totalRow('Exit load', rupeeText(money.exitLoad));
+          tax += totalRow('Left after tax', rupeeText(money.net));
+          tax += '</div>';
+          switchHtml = switchHtml.replace('</section>', tax + '</section>');
+        } else {
+          switchHtml = switchHtml.replace('</section>', '<p class="total-names">Tax needs the sale breakdown for each fund you would leave.</p></section>');
+        }
+        html += switchHtml;
+        if (alt.length) html += totalColumn('Recommended funds', fundNames(alt), recommended, 'SIPs');
+      }
+      html += '</div>';
+      if (!switches.length) {
+        html += '<p class="total-result">No fund on this list is marked to switch, so there is no tax total and no comparison with a recommended fund.</p>';
+      } else if (missed === null) {
+        html += '<p class="total-result">The recommended current value needs the same SIP amount in each fund you would leave and in its replacement.</p>';
+      } else {
+        var ahead = missed >= 0;
+        var result = 'The same SIP is worth ' + rupeeText(matchedWorth) + ' in the funds you would leave and ' + rupeeText(altWorth) + ' in the recommended funds. That is ' + rupeeText(Math.abs(missed)) + (ahead ? ' more' : ' less') + ' before tax.';
+        if (money) result += ' Selling them today leaves ' + rupeeText(money.net) + ' after tax and the assumed exit load. Keeping them leaves ' + rupeeText(switchWorth) + '.';
+        if (skipped) result += ' ' + skipped + ' fund' + (skipped === 1 ? '' : 's') + ' ' + (skipped === 1 ? 'does' : 'do') + ' not share this SIP amount, so ' + (skipped === 1 ? 'it is' : 'they are') + ' left out of this gap.';
+        html += '<p class="total-result">' + esc(result) + '</p>';
       }
       html += '</div>';
       return html;
@@ -2394,6 +2631,7 @@
       });
       html += '</div>';
       html += newerFundsHtml(decisions);
+      html += overallSummaryHtml(funds, decisions);
       html += '<p class="text-[11px] text-slate-400">Each note is one category. Keep or switch applies only to a fund you mark as held. Start means a new SIP. A switch needs at least 2 points of 3Y or 5Y CAGR, and the replacement must not have a max drawdown more than 3 points worse. The highlighted row is the newer fund on the same SIP, so Worth and Profit sit next to the fund you hold. The one-year rupee comparison repeats the past 3-year CAGR after equity tax and an assumed 1% exit load on installments under 12 months. The full figures stay on Return Matrix, Fund Comparator, and Risk and Rating.</p>';
       list.innerHTML = html;
     }
