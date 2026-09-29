@@ -6,7 +6,7 @@
   <title>Mutual Fund Valuation & Return Matrix</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     /* Freshworks Dew 2.0 tokens. Type scale: 12 / 14 / 18 / 24. Weights: 400, 500, 600. */
     :root {
@@ -90,20 +90,15 @@
     .bg-amber-700 { background-color: rgba(0, 0, 0, 0.18) !important; color: var(--color-text-on-brand) !important; }
     input, select { background: var(--color-fill-container); color: var(--color-text-primary); border-color: var(--color-boundary-border-mild); }
     html.dark input, html.dark select { color-scheme: dark; }
-    /* Table figures only. Labels stay Inter. IBM Plex Sans is built for columns of amounts and rates. */
-    .heatmap-cell, .font-mono, .cmp-rank, .overlap-pct, .money-table td, .overlap-hold span:last-child {
-      font-family: "IBM Plex Sans", Inter, sans-serif !important;
+    /* One proportional face. Digits use tabular figures so columns line up. That is not a monospace font. */
+    .heatmap-cell, .cmp-rank, .overlap-pct, .money-table td, .money-stats strong, .sheet td, .num-display, .overlap-hold span:last-child {
       font-variant-numeric: tabular-nums lining-nums;
       font-feature-settings: "tnum" 1, "lnum" 1;
-      font-weight: 500 !important;
-      font-size: 12px;
-      line-height: 16px;
-      letter-spacing: 0.01em;
     }
-    .heatmap-cell { display: inline-block; padding: 2px 5px; border-radius: 6px; border: 0 !important; text-align: center; }
+    .heatmap-cell { display: inline-block; padding: 2px 5px; border-radius: 6px; border: 0 !important; text-align: center; font-weight: 500; font-size: 12px; line-height: 16px; }
     .heatmap-cell:hover { box-shadow: 0 0 0 1px rgba(18, 51, 76, 0.16); }
     html.dark .heatmap-cell:hover { box-shadow: 0 0 0 1px rgba(201, 211, 219, 0.35); }
-    .num-display { font-family: "IBM Plex Sans", Inter, sans-serif !important; font-variant-numeric: tabular-nums lining-nums; letter-spacing: -0.03em; }
+    .num-display { font-variant-numeric: tabular-nums lining-nums; letter-spacing: -0.02em; }
     .field-label { display: block; margin-bottom: 4px; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--color-text-secondary); }
     .brand-mark { width: 28px; height: 28px; margin-top: 1px; border-radius: 8px; background: var(--color-fill-brand); box-shadow: inset 0 -7px 0 rgba(0, 0, 0, 0.14); flex-shrink: 0; }
     .live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--color-fill-brand) 12%, var(--color-fill-surface)); color: var(--color-text-brand); font-size: 12px; font-weight: 600; }
@@ -136,19 +131,19 @@
     .sheet table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; line-height: 16px; }
     .compare-card .sheet table { table-layout: fixed; }
     .sheet th, .sheet td { border-bottom: 1px solid var(--color-boundary-divider); }
-    .sheet thead th { position: sticky; top: 0; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; vertical-align: bottom; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
+    .sheet thead th { position: sticky; top: 0; z-index: 3; background: var(--color-fill-container); color: var(--color-text-secondary); font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; vertical-align: bottom; box-shadow: inset 0 -1px 0 var(--color-boundary-divider); }
     .overlap-board { overflow: auto; width: 100%; }
     .overlap-mosaic { display: grid; align-items: start; grid-template-columns: repeat(var(--overlap-n), minmax(0, 1fr)); gap: 6px; width: min(100%, calc(var(--overlap-n) * 7.25rem)); }
     .overlap-pair, .overlap-fund, .overlap-void { border-radius: 10px; aspect-ratio: 1; min-width: 0; min-height: 0; overflow: hidden; }
     .overlap-pair { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px; text-align: center; color: #fff; background: linear-gradient(180deg, #3c5fe8 0%, #6a3eab 100%); container-type: inline-size; }
-    .overlap-pill { display: inline-flex; max-width: 100%; align-items: center; justify-content: center; border-radius: 99px; padding: 1px 6px; font-size: 9px; font-weight: 600; line-height: 12px; color: #fff; text-align: center; }
+    .overlap-pill { display: inline-flex; max-width: 100%; align-items: center; justify-content: center; border-radius: 99px; padding: 1px 6px; font-size: 12px; font-weight: 600; line-height: 16px; color: #fff; text-align: center; }
     @container (max-width: 5.5rem) {
       .overlap-pill { width: 8px; height: 8px; padding: 0; font-size: 0; line-height: 0; }
     }
     .overlap-pill.is-low { background: #146c43; }
     .overlap-pill.is-mid { background: #0b3d2c; }
     .overlap-pill.is-high { background: #9f1239; }
-    .overlap-pct { font-size: clamp(12px, 1.5vw, 20px) !important; line-height: 1.15 !important; font-weight: 600 !important; letter-spacing: -0.03em !important; }
+    .overlap-pct { font-size: clamp(14px, 1.5vw, 18px) !important; line-height: 1.2 !important; font-weight: 600 !important; letter-spacing: -0.02em !important; }
     .overlap-fund { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 8px; background: #171a22; color: #e8eef4; border: 1px solid rgba(255, 255, 255, 0.06); }
     .overlap-fund:hover, .overlap-fund:focus-within { z-index: 5; aspect-ratio: auto; height: auto; min-height: 100%; justify-content: flex-start; overflow: visible; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28); }
     .overlap-more { display: none; }
@@ -158,7 +153,7 @@
     .overlap-fund:hover .overlap-hold span:first-child, .overlap-fund:focus-within .overlap-hold span:first-child { white-space: normal; }
     .overlap-tools { display: flex; align-items: center; gap: 4px; }
     .overlap-remove { min-height: 0; width: 16px; height: 14px; padding: 0; border: 0; background: transparent; color: #cd2629; font-size: 14px; line-height: 14px; cursor: pointer; }
-    .overlap-count { font-size: 11px; line-height: 14px; color: #8e9dac; }
+    .overlap-count { font-size: 12px; line-height: 16px; color: #8e9dac; }
     .overlap-hold { display: flex; justify-content: space-between; gap: 8px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; line-height: 16px; }
     .overlap-hold span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .overlap-hold span:last-child { font-variant-numeric: tabular-nums lining-nums; }
@@ -184,7 +179,7 @@
     .fund-pick-btn { min-height: 0; height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--color-boundary-border-mildest); background: transparent; color: var(--color-text-secondary); font-weight: 600; }
     .fund-pick-btn.is-on { background: var(--color-fill-brand); color: var(--color-text-on-brand); border-color: var(--color-fill-brand); }
     .fund-list-bar { display: flex; flex-wrap: wrap; gap: 4px; }
-    .fund-list-btn { min-height: 0; height: auto; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); color: var(--color-text-secondary); font-size: 11px; font-weight: 600; line-height: 16px; }
+    .fund-list-btn { min-height: 0; height: auto; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); color: var(--color-text-secondary); font-size: 12px; font-weight: 600; line-height: 16px; }
     .fund-list-btn.is-on { background: var(--color-fill-brand); color: var(--color-text-on-brand); border-color: var(--color-fill-brand); }
     /* Header sticks on vertical scroll. # and Fund Name stick on horizontal scroll. Fund Name width is --name-width. */
     .matrix-scroll { max-height: calc(100vh - 11rem); }
@@ -201,7 +196,7 @@
     .sheet tbody .freeze-move, .sheet tbody .freeze-name { z-index: 2; }
     main { padding-bottom: 2.75rem; }
     .theme-switch { display: flex; gap: 2px; padding: 2px; border-radius: 99px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); box-shadow: var(--shadow-sm); }
-    .theme-switch button { min-height: 0; height: 22px; padding: 0 8px; border: 0; border-radius: 99px; background: transparent; color: var(--color-text-placeholder); font-size: 11px; line-height: 16px; }
+    .theme-switch button { min-height: 0; height: 24px; padding: 0 8px; border: 0; border-radius: 99px; background: transparent; color: var(--color-text-placeholder); font-size: 12px; line-height: 16px; }
     .theme-switch button.is-active { background: var(--color-fill-brand); color: var(--color-text-on-brand); font-weight: 600; }
     .compare-winner { background: var(--color-fill-semantic-success-mildest); }
     html, body { max-width: 100%; overflow-x: hidden; }
@@ -210,27 +205,27 @@
     .decision-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
     .decision-card { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); box-shadow: var(--shadow-sm); }
     .switch-line { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-    .switch-line span { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
-    .switch-line strong { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--color-text-secondary); }
+    .switch-line span { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
+    .switch-line strong { display: block; margin-top: 2px; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--color-text-secondary); }
     .money-block { width: 100%; margin-top: 10px; }
-    .money-title { margin: 10px 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
+    .money-title { margin: 10px 0 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); }
     .money-table { width: 100%; overflow-x: auto; }
     .money-table table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .money-table th, .money-table td { padding: 6px 8px; font-size: 12px; line-height: 16px; }
-    .money-table th { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); text-align: right; border-bottom: 1px solid var(--color-boundary-divider); }
+    .money-table th { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-placeholder); text-align: right; border-bottom: 1px solid var(--color-boundary-divider); }
     .money-table td { text-align: right; font-variant-numeric: tabular-nums lining-nums; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-boundary-divider); }
     .money-table .is-name { width: 22%; text-align: left; font-weight: 600; }
     .money-table table { min-width: 52rem; }
     .money-table tr.is-newer td { background: var(--color-fill-semantic-success-mildest); }
     .held-all { font-weight: 600; margin-bottom: 4px; }
     .newer-pick { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--color-boundary-border-mildest); }
-    .newer-pick span { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
-    .newer-pick strong { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--color-text-secondary); }
+    .newer-pick span { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
+    .newer-pick strong { display: block; margin-top: 2px; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--color-text-secondary); }
     .newer-pick p { margin-top: 2px; font-size: 12px; line-height: 16px; color: var(--color-text-secondary); }
     .money-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
     .money-stats div { min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-container); }
-    .money-stats span { display: block; font-size: 11px; line-height: 14px; color: var(--color-text-placeholder); }
-    .money-stats strong { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
+    .money-stats span { display: block; font-size: 12px; line-height: 16px; color: var(--color-text-placeholder); }
+    .money-stats strong { display: block; margin-top: 2px; font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
     .pro-con { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
     .pro-con h3 { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
     .pro-con ul { margin: 0; padding-left: 16px; }
@@ -239,7 +234,7 @@
     .pro-con .is-con { color: #cd2629; }
     .final-metric { position: sticky; left: 0; z-index: 2; min-width: 11rem; }
     .sheet thead th.final-metric { z-index: 6; }
-    .sheet tbody tr.final-group td { background: var(--color-fill-container); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-secondary); }
+    .sheet tbody tr.final-group td { background: var(--color-fill-container); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-secondary); }
     .sheet thead th.final-col,
     .sheet tbody td.final-col,
     .sheet tbody tr:nth-child(even) td.final-col,
@@ -258,7 +253,7 @@
     .filter-panel { max-width: calc(100vw - 2rem); }
     button { min-height: 32px; }
     .move-pair { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1; }
-    .move-btn { min-height: 0; width: 14px; height: 11px; padding: 0; border: 0; background: transparent; font-size: 9px; line-height: 11px; cursor: pointer; }
+    .move-btn { min-height: 0; width: 16px; height: 14px; padding: 0; border: 0; background: transparent; font-size: 12px; line-height: 14px; cursor: pointer; }
     .move-up { color: #00795c; }
     .move-down { color: #cd2629; }
     .move-btn:disabled { opacity: 0.28; cursor: default; }
@@ -1112,7 +1107,7 @@
         html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.category) + '">' + esc(fund.category) + '</span></td>';
         html += moneyCell(fund.navStart, false);
         html += moneyCell(fund.navEnd, true);
-        html += '<td class="py-2.5 px-2 text-right font-mono text-emerald-700 font-bold">' + formatUnits(fund.units) + '</td>';
+        html += '<td class="py-2.5 px-2 text-right text-emerald-700 font-bold">' + formatUnits(fund.units) + '</td>';
         html += moneyCell(fund.investedAmount, false);
         html += heatMoneyCell(fund.sipCorpus, fund.absoluteReturn);
         html += heatMoneyCell(fund.netProfit, fund.absoluteReturn);
@@ -1167,7 +1162,7 @@
 
     function moneyCell(value, strong) {
       var cls = strong ? 'text-slate-900 font-semibold' : 'text-slate-600 font-medium';
-      return '<td class="py-2.5 px-2 text-right font-mono ' + cls + '">' + formatInrWhole(value) + '</td>';
+      return '<td class="py-2.5 px-2 text-right ' + cls + '">' + formatInrWhole(value) + '</td>';
     }
 
     function heatMoneyCell(value, rate) {
