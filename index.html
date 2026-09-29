@@ -104,8 +104,9 @@
     .live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--color-fill-brand) 12%, var(--color-fill-surface)); color: var(--color-text-brand); font-size: 12px; font-weight: 600; }
     .live-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-semantic-success); }
     .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .kpi-summary { grid-column: 1 / -1; }
-    .kpi-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .kpi-summary { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 12px; }
+    .kpi-hero { min-width: 0; }
+    .kpi-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; width: 100%; }
     .kpi-stats div { min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--color-fill-container); }
     .kpi-stats span { display: block; font-size: 12px; line-height: 16px; color: var(--color-text-placeholder); }
     .kpi-stats strong { display: block; margin-top: 2px; font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; color: var(--color-text-primary); }
@@ -132,10 +133,14 @@
     @media (min-width: 900px) {
       .total-board { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); align-items: start; }
     }
+    @media (min-width: 640px) {
+      .kpi-summary { flex-direction: row; align-items: stretch; }
+      .kpi-hero { flex: 1 1 auto; }
+      .kpi-stats { width: 17.5rem; flex: 0 0 17.5rem; }
+    }
     @media (min-width: 1024px) {
       .kpi-grid { grid-template-columns: 14rem 18rem minmax(0, 1fr); }
       .kpi-summary { grid-column: auto; }
-      .kpi-summary .kpi-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
     .kpi-card { position: relative; overflow: hidden; }
     .kpi-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--color-fill-brand); }
@@ -239,7 +244,9 @@
     .theme-switch button { min-height: 0; height: 24px; padding: 0 8px; border: 0; border-radius: 99px; background: transparent; color: var(--color-text-placeholder); font-size: 12px; line-height: 16px; }
     .theme-switch button.is-active { background: var(--color-fill-brand); color: var(--color-text-on-brand); font-weight: 600; }
     .compare-winner { background: var(--color-fill-semantic-success-mildest); }
-    html, body { max-width: 100%; overflow-x: hidden; }
+    html { max-width: 100%; overflow-x: clip; }
+    body { max-width: 100%; overflow-x: clip; }
+    .page-chrome { position: sticky; top: 0; z-index: 40; }
     main, header, #panelMatrix, #panelCompare, #panelRisk, #panelOverlap, #panelFinal { min-width: 0; max-width: 100%; }
     .final-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-brand); }
     .decision-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
@@ -330,7 +337,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-8">
 
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+  <header class="page-chrome bg-white border-b border-slate-200 shadow-sm">
     <div class="page-header-row max-w-[1600px] mx-auto px-3 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-start gap-3 min-w-0">
         <span class="brand-mark" aria-hidden="true"></span>
@@ -372,9 +379,11 @@
         <span id="kpiBestReturn" class="num-display text-xs font-semibold text-emerald-600">-</span>
       </div>
       <div class="kpi-card kpi-summary bg-white p-4 pl-5 rounded-xl border border-slate-200 shadow-sm">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total corpus</span>
-        <p id="kpiCorpus" class="num-display text-2xl font-bold text-slate-900 mt-1">-</p>
-        <p id="kpiReturnLine" class="num-display text-sm font-semibold mt-1">-</p>
+        <div class="kpi-hero">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total corpus</span>
+          <p id="kpiCorpus" class="num-display text-2xl font-bold text-slate-900 mt-1">-</p>
+          <p id="kpiReturnLine" class="num-display text-sm font-semibold mt-1">-</p>
+        </div>
         <div class="kpi-stats">
           <div><span>Total SIP amount</span><strong id="kpiSipTotal">-</strong></div>
           <div><span>Invested months</span><strong id="kpiMonths">-</strong></div>
