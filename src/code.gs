@@ -172,7 +172,11 @@ function getFundMatrixData(params) {
     }
 
     var rowDay = sipDayForCode_(scheme.code, sipDay, params);
-    var row = schemeRow_(series, sipAmount, rowDay, fromDate, toDate, saleDate);
+    var rowAmount = sipAmountForCode_(scheme.code, sipAmount, params);
+    var rowFrom = sipWindowForCode_(scheme.code, fromDate, params, 'from');
+    var rowTo = sipWindowForCode_(scheme.code, toDate, params, 'to');
+    if (rowTo < rowFrom) rowTo = rowFrom;
+    var row = schemeRow_(series, rowAmount, rowDay, rowFrom, rowTo, saleDate);
     row.code = scheme.code;
     row.name = scheme.name;
     row.amc = scheme.amc;
@@ -201,19 +205,55 @@ function getFundMatrixData(params) {
   };
 }
 
-// Named sets for the fund search. fund_selection columns: list_name, scheme_code, sip_date, scheme_name.
-// sip_date is the SIP day of the month for that row. A blank cell uses the page SIP day.
+// Named sets for the fund search. fund_selection columns: list_name, scheme_code, sip_amount, sip_day, sip_start_date, sip_end_date, scheme_name.
+// A blank SIP cell uses the page input.
 // A partial scheme_name is matched to scheme_codes. The screen then uses that scheme's real name.
 
 function sipDayForCode_(code, pageDay, params) {
   params = params || {};
   if (params.forceSipDay) return pageDay;
-  var overrides = params.sipDays || {};
-  var custom = sipDayValue_(overrides[code]);
-  if (custom) return custom;
   var listed = sipDayValue_(SELECTION_SIP_DAYS[code]);
   if (listed) return listed;
   return pageDay;
+}
+
+function sipAmountForCode_(code, pageAmount, params) {
+  params = params || {};
+  if (params.forceSipDay) return pageAmount;
+  var listed = sipAmountValue_(SELECTION_SIP_AMOUNTS[code]);
+  if (listed) return listed;
+  return pageAmount;
+}
+
+function sipWindowForCode_(code, pageDate, params, which) {
+  params = params || {};
+  if (params.forceSipWindow) return pageDate;
+  var table = which === 'to' ? SELECTION_SIP_TO : SELECTION_SIP_FROM;
+  var listed = sipIsoValue_(table[code]);
+  if (!listed) return pageDate;
+  var parsed = toDay_(listed);
+  return parsed || pageDate;
+}
+
+function sipIsoValue_(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    if (isNaN(value.getTime())) return null;
+    var day = toDay_(value);
+    return day ? formatDay_(day) : null;
+  }
+  var text = String(value).trim();
+  if (!text || (text.indexOf('-') === -1 && text.indexOf('/') === -1)) return null;
+  var parsed = parseDate_(text);
+  if (!parsed || isNaN(parsed.getTime())) return null;
+  return formatDay_(parsed);
+}
+
+function sipAmountValue_(value) {
+  if (value === null || value === undefined || value === '') return null;
+  var n = Number(String(value).replace(/[, ]/g, ''));
+  if (!isFinite(n) || n <= 0) return null;
+  return n;
 }
 
 function sipDayValue_(value) {
@@ -235,6 +275,9 @@ function sipDayValue_(value) {
 }
 
 var SELECTION_SIP_DAYS = {};
+var SELECTION_SIP_AMOUNTS = {};
+var SELECTION_SIP_FROM = {};
+var SELECTION_SIP_TO = {};
 function fundSelectionLists_(ss, schemes) {
   var fromSheet = readFundSelection_(ss, schemes);
   if (fromSheet) return fromSheet;
@@ -255,6 +298,9 @@ function builtinFundLists_() {
 
 function readFundSelection_(ss, schemes) {
   SELECTION_SIP_DAYS = {};
+  SELECTION_SIP_AMOUNTS = {};
+  SELECTION_SIP_FROM = {};
+  SELECTION_SIP_TO = {};
   var sheet = ss.getSheetByName('fund_selection');
   if (!sheet || sheet.getLastRow() < 2) return null;
   var values = sheet.getDataRange().getValues();
@@ -263,14 +309,18 @@ function readFundSelection_(ss, schemes) {
   if (listIdx === -1) return null;
   var codeIdx = headers.indexOf('scheme_code');
   var nameIdx = headers.indexOf('scheme_name');
-  var sipIdx = headers.indexOf('sip_date');
+  var sipIdx = headers.indexOf('sip_day');
+  if (sipIdx === -1) sipIdx = headers.indexOf('sip_date');
+  var amountIdx = headers.indexOf('sip_amount');
+  var fromIdx = headers.indexOf('sip_start_date');
+  var toIdx = headers.indexOf('sip_end_date');
   var order = [];
   var byName = {};
   for (var i = 1; i < values.length; i++) {
     var listName = String(values[i][listIdx] || '').trim();
     if (!listName) continue;
     if (!byName[listName]) {
-      byName[listName] = { name: listName, codes: [], sipDays: {}, missing: [] };
+      byName[listName] = { name: listName, codes: [], sipDays: {}, sipAmounts: {}, missing: [] };
       order.push(listName);
     }
     var code = codeIdx === -1 ? '' : String(values[i][codeIdx] || '').trim();
@@ -288,6 +338,15 @@ function readFundSelection_(ss, schemes) {
       byName[listName].sipDays[scheme.code] = listedDay;
       if (!SELECTION_SIP_DAYS[scheme.code]) SELECTION_SIP_DAYS[scheme.code] = listedDay;
     }
+    var listedAmount = amountIdx === -1 ? null : sipAmountValue_(values[i][amountIdx]);
+    if (listedAmount) {
+      byName[listName].sipAmounts[scheme.code] = listedAmount;
+      if (!SELECTION_SIP_AMOUNTS[scheme.code]) SELECTION_SIP_AMOUNTS[scheme.code] = listedAmount;
+    }
+    var listedFrom = fromIdx === -1 ? null : sipIsoValue_(values[i][fromIdx]);
+    if (listedFrom && !SELECTION_SIP_FROM[scheme.code]) SELECTION_SIP_FROM[scheme.code] = listedFrom;
+    var listedTo = toIdx === -1 ? null : sipIsoValue_(values[i][toIdx]);
+    if (listedTo && !SELECTION_SIP_TO[scheme.code]) SELECTION_SIP_TO[scheme.code] = listedTo;
   }
   if (!order.length) return null;
   return order.map(function(name) { return byName[name]; });
@@ -1118,7 +1177,10 @@ function schemeRow_(series, sipAmount, sipDay, fromDate, toDate, saleDate) {
   }
 
   return {
+    sipAmount: sipAmount,
     sipDay: sipDay,
+    sipFrom: formatDay_(fromDate),
+    sipTo: formatDay_(toDate),
     navStart: navStart ? navStart.nav : null,
     navStartDate: navStart ? formatDay_(new Date(navStart.date)) : '',
     navEnd: navEnd ? navEnd.nav : null,
@@ -1284,6 +1346,9 @@ function getSipTransactions(params) {
   if (sipDay < 1) sipDay = 1;
   if (sipDay > 31) sipDay = 31;
   var sipDays = params.sipDays || {};
+  var sipAmounts = params.sipAmounts || {};
+  var sipFroms = params.sipFroms || {};
+  var sipTos = params.sipTos || {};
   var fromDate = params.fromDate ? toDay_(params.fromDate) : shiftBack_(today, 'year', 1);
   var toDate = params.toDate ? toDay_(params.toDate) : today;
   var saleDate = params.saleDate ? toDay_(params.saleDate) : today;
@@ -1338,7 +1403,13 @@ function getSipTransactions(params) {
     var rowDay = Math.round(Number(sipDays[scheme.code]) || sipDay);
     if (rowDay < 1) rowDay = 1;
     if (rowDay > 31) rowDay = 31;
-    var book = collectSipLots_(navIndex[scheme.code], sipAmount, rowDay, fromDate, toDate);
+    var rowAmount = Number(sipAmounts[scheme.code]);
+    if (!isFinite(rowAmount) || rowAmount <= 0) rowAmount = sipAmount;
+    var rowFrom = sipFroms[scheme.code] ? toDay_(sipFroms[scheme.code]) : fromDate;
+    var rowTo = sipTos[scheme.code] ? toDay_(sipTos[scheme.code]) : toDate;
+    if (!rowFrom) rowFrom = fromDate;
+    if (!rowTo || rowTo < rowFrom) rowTo = rowFrom;
+    var book = collectSipLots_(navIndex[scheme.code], rowAmount, rowDay, rowFrom, rowTo);
     var salePoint = lookupPoint_(navIndex[scheme.code], saleDate);
     if (!book || !book.lots.length || !salePoint) continue;
     book.endNav = salePoint.nav;
@@ -1400,6 +1471,8 @@ function getSipTransactions(params) {
     sipAmount: sipAmount,
     sipDay: sipDay,
     mixedDays: !!params.mixedDays,
+    mixedAmounts: !!params.mixedAmounts,
+    mixedWindows: !!params.mixedWindows,
     note: priced ? '' : 'No SIP installment falls in this window.'
   };
 }

@@ -1,56 +1,67 @@
-list_name,scheme_code,sip_date,scheme_name
-Ran,134923,,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
-Ran,118834,,Mirae Asset Large & Midcap Fund - Direct Plan - Growth
-Ran,118825,,Mirae Asset Large Cap Fund - Direct Plan - Growth
-Ran,120152,,Kotak Large Cap  Fund - Growth - Direct
-Ran,119716,,SBI MIDCAP FUND - DIRECT PLAN - GROWTH
-Ran,120505,,Axis Midcap Fund - Direct Plan - Growth
-Ran,150817,,Canara Robeco Mid Cap Fund- Direct Plan- Growth Option
-Ran,120164,,Kotak-Small Cap Fund - Growth - Direct
-Ran,120828,,quant Small Cap Fund - Growth Option - Direct Plan
-Ran,125497,,SBI Small Cap Fund - Direct Plan - Growth
-Ran,125354,,Axis Small Cap Fund - Direct Plan - Growth
-Ran,146130,,CANARA ROBECO SMALL CAP FUND - DIRECT PLAN - GROWTH OPTION
-Man,118989,,HDFC Mid Cap Fund - Growth Option - Direct Plan
-Man,120403,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
-Man,118632,,Nippon India Large Cap Fund - Direct Plan Growth Plan - Growth Option
-Man,147946,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
-Man,145678,,BANK OF INDIA Small Cap Fund Direct Plan Growth
-Sai,122639,,Parag Parikh Flexi Cap Fund - Direct Plan - Growth
-Sai,149219,,ICICI Prudential NASDAQ 100 Index Fund - Direct Plan - Growth
-Sai,120158,,Kotak Large & Mid Cap Fund - Direct- Growth
-Sai,118989,,HDFC Mid Cap Fund - Growth Option - Direct Plan
-Sai,120381,,ICICI Prudential Mid Cap Fund - Direct Plan -  Growth
-Sai,118778,,Nippon India Small Cap Fund - Direct Plan Growth Plan - Growth Option
-Sai,130503,,HDFC Small Cap Fund - Growth Option - Direct Plan
-Sai,151113,,HSBC Value Fund - Direct Growth
-Best of One,147946,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
-Best of One,120403,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
-Best of One,118632,,Nippon India Large Cap Fund - Direct Plan Growth Plan - Growth Option
-Best of One,148404,,BANK OF INDIA Flexi Cap Fund Direct Plan -Growth
-Best of One,147704,,Motilal Oswal Large and Midcap Fund - Direct Plan Growth
-Best of One,148381,,Motilal Oswal S&P 500 Index Fund - Direct Plan Growth
-Best of One,119132,,HDFC Gold ETF Fund of Fund - Direct Plan
-Best of One,150737,,HDFC Silver ETF Fund of Fund - Growth Option - Direct Plan
-Best of Two,147946,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
-Best of Two,147919,,ITI Small Cap Fund - Direct Plan - Growth Option
-Best of Two,120403,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
-Best of Two,151036,,HSBC Midcap Fund - Direct Growth
-Best of Two,118632,,Nippon India Large Cap Fund - Direct Plan Growth Plan - Growth Option
-Best of Two,148404,,BANK OF INDIA Flexi Cap Fund Direct Plan -Growth
-Best of Two,147704,,Motilal Oswal Large and Midcap Fund - Direct Plan Growth
-Best of Two,148381,,Motilal Oswal S&P 500 Index Fund - Direct Plan Growth
-Best of Two,119132,,HDFC Gold ETF Fund of Fund - Direct Plan
-Best of Two,150737,,HDFC Silver ETF Fund of Fund - Growth Option - Direct Plan
-Best of Equity,147946,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
-Best of Equity,120403,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
-Best of Equity,118632,,Nippon India Large Cap Fund - Direct Plan Growth Plan - Growth Option
-Best of Equity,148404,,BANK OF INDIA Flexi Cap Fund Direct Plan -Growth
-Best of Equity,147704,,Motilal Oswal Large and Midcap Fund - Direct Plan Growth
-Best of Equity,148381,,Motilal Oswal S&P 500 Index Fund - Direct Plan Growth
-Best of Mid & Small,147946,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
-Best of Mid & Small,147919,,ITI Small Cap Fund - Direct Plan - Growth Option
-Best of Mid & Small,120403,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
-Best of Mid & Small,120381,,ICICI Prudential Mid Cap Fund - Direct Plan -  Growth
-Only International,148381,,Motilal Oswal S&P 500 Index Fund - Direct Plan Growth
-Only International,149219,,ICICI Prudential NASDAQ 100 Index Fund - Direct Plan - Growth
+list_name,scheme_code,sip_amount,sip_day,sip_start_date,sip_end_date,scheme_name
+Ran,119212,,,,,DSP Small Cap Fund - Direct Plan - Growth
+Ran,118825,,,,,Mirae Asset Large Cap Fund - Direct Plan - Growth
+Har,134923,5000,2,2022-09-02,,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
+Har,134923,5000,9,2022-09-09,,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
+Har,134923,5000,16,2022-09-16,,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
+Har,134923,5000,24,2022-08-24,,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
+Har,134923,5000,11,2022-07-20,,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
+Har,134923,5000,28,2022-07-20,,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
+Har,134923,1500,24,2021-08-24,2022-08-24,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
+Har,134923,1500,8,2020-05-08,2022-04-12,Nippon India US Equity Opportunities Fund- Direct Plan- Growth Plan- Growth Option
+Har,118834,2500,,,,Mirae Asset Large & Midcap Fund - Direct Plan - Growth
+Har,118825,2500,,,,Mirae Asset Large Cap Fund - Direct Plan - Growth
+Har,120152,2500,,,,Kotak Large Cap Fund - Growth - Direct
+Har,120505,10000,28,2022-08-22,2026-08-28,Axis Midcap Fund - Direct Plan - Growth
+Har,120505,2000,13,2022-05-13,2025-04-12,Axis Midcap Fund - Direct Plan - Growth
+Har,150817,2500,,,,Canara Robeco Mid Cap Fund- Direct Plan- Growth Option
+Har,120164,2500,,,,Kotak-Small Cap Fund - Growth - Direct
+Har,120828,2500,,,,quant Small Cap Fund - Growth Option - Direct Plan
+Har,125497,10000,22,2022-08-22,2026-05-25,SBI Small Cap Fund - Direct Plan - Growth
+Har,125497,1500,19,2018-06-19,2021-06-21,SBI Small Cap Fund - Direct Plan - Growth
+Har,125354,2500,,,,Axis Small Cap Fund - Direct Plan - Growth
+Har,146130,5000,16,2022-06-16,2026-09-16,CANARA ROBECO SMALL CAP FUND - DIRECT PLAN - GROWTH OPTION
+Har,146130,10000,23,2022-08-23,2026-05-24,CANARA ROBECO SMALL CAP FUND - DIRECT PLAN - GROWTH OPTION
+Man,118989,,,,,HDFC Mid Cap Fund - Growth Option - Direct Plan
+Man,120403,,,,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
+Man,118632,,,,,Nippon India Large Cap Fund - Direct Plan Growth Plan - Growth Option
+Man,147946,,,,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
+Man,145678,,,,,BANK OF INDIA Small Cap Fund Direct Plan Growth
+Sai,122639,,,,,Parag Parikh Flexi Cap Fund - Direct Plan - Growth
+Sai,149219,,,,,ICICI Prudential NASDAQ 100 Index Fund - Direct Plan - Growth
+Sai,120158,,,,,Kotak Large & Mid Cap Fund - Direct- Growth
+Sai,118989,,,,,HDFC Mid Cap Fund - Growth Option - Direct Plan
+Sai,120381,,,,,ICICI Prudential Mid Cap Fund - Direct Plan - Growth
+Sai,118778,,,,,Nippon India Small Cap Fund - Direct Plan Growth Plan - Growth Option
+Sai,130503,,,,,HDFC Small Cap Fund - Growth Option - Direct Plan
+Sai,151113,,,,,HSBC Value Fund - Direct Growth
+Best of One,147946,10000,1,,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
+Best of One,120403,10000,5,,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
+Best of One,118632,5000,,,,Nippon India Large Cap Fund - Direct Plan Growth Plan - Growth Option
+Best of One,148404,10000,24,,,BANK OF INDIA Flexi Cap Fund Direct Plan -Growth
+Best of One,147704,5000,,,,Motilal Oswal Large and Midcap Fund - Direct Plan Growth
+Best of One,148381,10000,15,,,Motilal Oswal S&P 500 Index Fund - Direct Plan Growth
+Best of One,119132,5000,,,,HDFC Gold ETF Fund of Fund - Direct Plan
+Best of One,150737,5000,28,,,HDFC Silver ETF Fund of Fund - Growth Option - Direct Plan
+Best of Two,147946,5000,1,,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
+Best of Two,147919,5000,3,,,ITI Small Cap Fund - Direct Plan - Growth Option
+Best of Two,120403,5000,5,,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
+Best of Two,151036,5000,8,,,HSBC Midcap Fund - Direct Growth
+Best of Two,118632,5000,,,,Nippon India Large Cap Fund - Direct Plan Growth Plan - Growth Option
+Best of Two,148404,5000,14,,,BANK OF INDIA Flexi Cap Fund Direct Plan -Growth
+Best of Two,147704,5000,,,,Motilal Oswal Large and Midcap Fund - Direct Plan Growth
+Best of Two,148381,5000,21,,,Motilal Oswal S&P 500 Index Fund - Direct Plan Growth
+Best of Two,119132,5000,25,,,HDFC Gold ETF Fund of Fund - Direct Plan
+Best of Two,150737,5000,28,,,HDFC Silver ETF Fund of Fund - Growth Option - Direct Plan
+Best of Equity,147946,10000,4,,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
+Best of Equity,120403,10000,9,,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
+Best of Equity,118632,10000,14,,,Nippon India Large Cap Fund - Direct Plan Growth Plan - Growth Option
+Best of Equity,148404,10000,19,,,BANK OF INDIA Flexi Cap Fund Direct Plan -Growth
+Best of Equity,147704,10000,24,,,Motilal Oswal Large and Midcap Fund - Direct Plan Growth
+Best of Equity,148381,10000,28,,,Motilal Oswal S&P 500 Index Fund - Direct Plan Growth
+Best of Mid & Small,147946,15000,,,,BANDHAN SMALL CAP FUND - DIRECT PLAN GROWTH
+Best of Mid & Small,147919,15000,,,,ITI Small Cap Fund - Direct Plan - Growth Option
+Best of Mid & Small,120403,15000,,,,Invesco India Mid Cap Fund - Direct Plan - Growth Option
+Best of Mid & Small,120381,15000,,,,ICICI Prudential Mid Cap Fund - Direct Plan - Growth
+Only International,148381,,,,,Motilal Oswal S&P 500 Index Fund - Direct Plan Growth
+Only International,149219,,,,,ICICI Prudential NASDAQ 100 Index Fund - Direct Plan - Growth

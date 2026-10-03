@@ -208,6 +208,8 @@
     html:not(.dark) .overlap-void { background: #e8edf2; }
     .txn-link { min-height: 0; height: auto; padding: 0; border: 0; background: transparent; color: var(--color-text-brand); font-size: 12px; font-weight: 600; line-height: 16px; text-decoration: underline; cursor: pointer; }
     .sip-day-input { width: 3.25rem; height: 28px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--color-boundary-border-mild); background: var(--color-fill-container); color: var(--color-text-primary); font-size: 12px; font-weight: 600; text-align: right; }
+    .sip-amount-input { width: 5.5rem; }
+    .sip-date-input { width: 8.5rem; }
     .txn-shade { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: 24px 12px; background: rgba(16, 18, 24, 0.45); overflow: auto; }
     .txn-panel { width: min(72rem, 100%); margin-top: 12px; padding: 16px; border-radius: 12px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); box-shadow: var(--shadow-sm); }
     .txn-scroll { max-height: 55vh; overflow: auto; margin-top: 12px; }
@@ -404,7 +406,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 text-xs">
         <div>
           <label class="field-label">Monthly SIP (₹)</label>
-          <input type="number" id="inputSipAmount" value="1000" step="500" min="100" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <input type="number" id="inputSipAmount" value="1000" step="500" min="100" onchange="forcePageSipDay = true; loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
           <label class="field-label">SIP Day of Month</label>
@@ -412,11 +414,11 @@
         </div>
         <div>
           <label class="field-label">From Date</label>
-          <input type="date" id="inputFromDate" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <input type="date" id="inputFromDate" onchange="forcePageWindow = true; loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
           <label class="field-label">To Date</label>
-          <input type="date" id="inputToDate" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <input type="date" id="inputToDate" onchange="forcePageWindow = true; loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
           <label class="field-label">Sale Date</label>
@@ -565,7 +567,10 @@
       { key: 'name', label: 'Fund Name' },
       { key: 'amc', label: 'AMC' },
       { key: 'category', label: 'Category' },
-      { key: 'sipDay', label: 'SIP Date', numeric: true },
+      { key: 'sipAmount', label: 'SIP Amount', numeric: true },
+      { key: 'sipDay', label: 'SIP Day', numeric: true },
+      { key: 'sipFrom', label: 'SIP Start Date' },
+      { key: 'sipTo', label: 'SIP End Date' },
       { key: 'navStart', label: 'NAV Start', numeric: true },
       { key: 'navEnd', label: 'NAV End', numeric: true },
       { key: 'units', label: 'Units', numeric: true },
@@ -588,6 +593,7 @@
     var currentDisplayFunds = [];
     var openedOnFirstList = false;
     var forcePageSipDay = false;
+    var forcePageWindow = false;
     var activeMetric = 'xirr';
     var currentSortField = '1Y';
     var currentSortAsc = false;
@@ -603,6 +609,9 @@
     var overlapOrder = [];
     var heldFunds = {};
     var rdAnnualRate = 7.5;
+    var inflationRate = 6;
+    var sipAltCache = {};
+    var sipAltPending = {};
     var fundLists = [];
     var fundListHint = '';
 
@@ -752,18 +761,13 @@
         sipAmount: document.getElementById('inputSipAmount').value,
         sipDay: document.getElementById('inputSipDay').value,
         forceSipDay: forcePageSipDay,
+        forceSipWindow: forcePageWindow,
         fromDate: document.getElementById('inputFromDate').value,
         toDate: document.getElementById('inputToDate').value,
         saleDate: document.getElementById('inputSaleDate').value
       };
       forcePageSipDay = false;
-      if (!params.forceSipDay && allFunds.length) {
-        var keptDays = {};
-        allFunds.forEach(function(fund) {
-          if (fund.sipDay) keptDays[String(fund.code)] = fund.sipDay;
-        });
-        params.sipDays = keptDays;
-      }
+      forcePageWindow = false;
       document.getElementById('footerRange').textContent =
         'Custom Range XIRR: ' + formatLongDate(params.fromDate) + ' to ' + formatLongDate(params.toDate) +
         '. Tenure columns look back from Sale Date ' + formatLongDate(params.saleDate) + '.';
@@ -772,13 +776,21 @@
         .withSuccessHandler(function(response) {
           btn.classList.remove('opacity-50', 'pointer-events-none');
           try {
+            sipAltCache = {};
+            sipAltPending = {};
             allFunds = response.funds || [];
             var pageSipDay = Math.round(Number(document.getElementById('inputSipDay').value) || 5);
             if (pageSipDay < 1) pageSipDay = 1;
             if (pageSipDay > 31) pageSipDay = 31;
+            var pageSipAmount = Number(document.getElementById('inputSipAmount').value) || 1000;
+            if (!isFinite(pageSipAmount) || pageSipAmount <= 0) pageSipAmount = 1000;
             allFunds.forEach(function(fund) {
-              var listed = Math.round(Number(fund.sipDay) || 0);
-              fund.sipDay = listed >= 1 && listed <= 31 ? listed : pageSipDay;
+              var listedDay = Math.round(Number(fund.sipDay) || 0);
+              var listedAmount = Number(fund.sipAmount);
+              fund.sipDay = listedDay >= 1 && listedDay <= 31 ? listedDay : pageSipDay;
+              fund.sipAmount = isFinite(listedAmount) && listedAmount > 0 ? listedAmount : pageSipAmount;
+              fund.sipFrom = fund.sipFrom || document.getElementById('inputFromDate').value;
+              fund.sipTo = fund.sipTo || document.getElementById('inputToDate').value;
             });
             pathMonths = response.pathMonths || [];
             fundLists = response.lists || [];
@@ -1192,7 +1204,10 @@
         html += fundNameCell(fund.name, nameNote('Inception ' + esc(fund.minNavDate || '-')), false);
         html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.amc || 'N/A') + '">' + esc(fund.amc || 'N/A') + '</span></td>';
         html += '<td class="py-2.5 px-2"><span class="meta-pill" title="' + esc(fund.category) + '">' + esc(fund.category) + '</span></td>';
+        html += sipAmountCell(fund);
         html += sipDayCell(fund);
+        html += sipDateCell(fund, 'from');
+        html += sipDateCell(fund, 'to');
         html += navCell(fund.navStart, fund.navStartDate);
         html += navCell(fund.navEnd, fund.navEndDate);
         html += '<td class="py-2.5 px-2 text-right text-emerald-700 font-bold">' + formatUnits(fund.units) + '</td>';
@@ -1225,22 +1240,56 @@
         'Showing ' + funds.length + ' of ' + allFunds.length + ' schemes';
     }
 
-    function sipDayCell(fund) {
-      var day = Math.round(Number(fund.sipDay) || Number(document.getElementById('inputSipDay').value) || 5);
+    function sipAmountInput(fund) {
+      var amount = Number(fund.sipAmount);
+      if (!isFinite(amount) || amount <= 0) amount = Number(document.getElementById('inputSipAmount').value) || 1000;
       var code = String(fund.code || '').replace(/'/g, '');
-      return '<td class="py-1 px-2 text-right"><input type="number" min="1" max="31" step="1" class="sip-day-input" title="SIP day of the month for this fund" value="' + day + '" onchange="setRowSipDay(\'' + code + '\', this.value)"></td>';
+      return '<input type="number" min="1" step="500" class="sip-day-input sip-amount-input" title="Monthly SIP for this fund" value="' + amount + '" onchange="setRowSip(\'' + code + '\', \'amount\', this.value)">';
     }
 
-    function setRowSipDay(code, value) {
-      var day = Math.round(Number(value) || 0);
+    function sipAmountCell(fund) {
+      return '<td class="py-1 px-2 text-right">' + sipAmountInput(fund) + '</td>';
+    }
+
+    function sipDayInput(fund) {
+      var day = Math.round(Number(fund.sipDay) || Number(document.getElementById('inputSipDay').value) || 5);
+      var code = String(fund.code || '').replace(/'/g, '');
+      return '<input type="number" min="1" max="31" step="1" class="sip-day-input" title="SIP day of the month for this fund" value="' + day + '" onchange="setRowSip(\'' + code + '\', \'day\', this.value)">';
+    }
+
+    function sipDayCell(fund) {
+      return '<td class="py-1 px-2 text-right">' + sipDayInput(fund) + '</td>';
+    }
+
+    function sipDateCell(fund, which) {
+      var pageId = which === 'to' ? 'inputToDate' : 'inputFromDate';
+      var value = which === 'to' ? fund.sipTo : fund.sipFrom;
+      if (!value) value = document.getElementById(pageId).value;
+      var code = String(fund.code || '').replace(/'/g, '');
+      var kind = which === 'to' ? 'end' : 'start';
+      var title = which === 'to' ? 'Last SIP date for this fund' : 'First SIP date for this fund';
+      return '<td class="py-1 px-2"><input type="date" class="sip-day-input sip-date-input" title="' + title + '" value="' + esc(value) + '" onchange="setRowSip(\'' + code + '\', \'' + kind + '\', this.value)"></td>';
+    }
+
+    function setRowSip(code, kind, value) {
+      var fund = fundByCode(code);
+      if (!fund) return;
+      var amount = kind === 'amount' ? Number(value) : Number(fund.sipAmount);
+      var day = kind === 'day' ? Math.round(Number(value) || 0) : Math.round(Number(fund.sipDay) || 0);
+      var fromDate = kind === 'start' ? value : (fund.sipFrom || document.getElementById('inputFromDate').value);
+      var toDate = kind === 'end' ? value : (fund.sipTo || document.getElementById('inputToDate').value);
+      if (!isFinite(amount) || amount <= 0) amount = Number(document.getElementById('inputSipAmount').value) || 1000;
       if (day < 1) day = 1;
       if (day > 31) day = 31;
-      var fund = fundByCode(code);
-      if (!fund || fund.sipDay === day) {
+      if (toDate < fromDate) toDate = fromDate;
+      if (fund.sipAmount === amount && fund.sipDay === day && fund.sipFrom === fromDate && fund.sipTo === toDate) {
         renderTable(currentDisplayFunds);
         return;
       }
+      fund.sipAmount = amount;
       fund.sipDay = day;
+      fund.sipFrom = fromDate;
+      fund.sipTo = toDate;
       if (typeof google === 'undefined' || !google.script || !google.script.run) return;
       google.script.run
         .withSuccessHandler(function(row) { applySipRow(code, row); })
@@ -1250,9 +1299,9 @@
         .getFundSipRow({
           code: code,
           sipDay: day,
-          sipAmount: document.getElementById('inputSipAmount').value,
-          fromDate: document.getElementById('inputFromDate').value,
-          toDate: document.getElementById('inputToDate').value,
+          sipAmount: amount,
+          fromDate: fromDate,
+          toDate: toDate,
           saleDate: document.getElementById('inputSaleDate').value
         });
     }
@@ -1299,21 +1348,43 @@
       }
       panel.innerHTML = txnFrame('Transactions', '<div class="load-mark"></div><p class="text-xs text-slate-500 mt-2">Reading SIP transactions</p>');
       var sipDays = {};
+      var sipAmounts = {};
+      var sipFroms = {};
+      var sipTos = {};
       var firstDay = null;
+      var firstAmount = null;
+      var firstWindow = null;
       var mixed = false;
+      var mixedAmounts = false;
+      var mixedWindows = false;
       codes.forEach(function(item) {
         var fund = fundByCode(item);
         var day = fund ? Math.round(Number(fund.sipDay) || 0) : 0;
+        var amount = fund ? Number(fund.sipAmount) : 0;
         if (day < 1) day = Math.round(Number(document.getElementById('inputSipDay').value) || 5);
+        if (!isFinite(amount) || amount <= 0) amount = Number(document.getElementById('inputSipAmount').value) || 1000;
         sipDays[item] = day;
+        sipAmounts[item] = amount;
+        sipFroms[item] = fund && fund.sipFrom ? fund.sipFrom : document.getElementById('inputFromDate').value;
+        sipTos[item] = fund && fund.sipTo ? fund.sipTo : document.getElementById('inputToDate').value;
+        var windowKey = sipFroms[item] + '|' + sipTos[item];
+        if (firstWindow === null) firstWindow = windowKey;
+        else if (firstWindow !== windowKey) mixedWindows = true;
         if (firstDay === null) firstDay = day;
         else if (firstDay !== day) mixed = true;
+        if (firstAmount === null) firstAmount = amount;
+        else if (firstAmount !== amount) mixedAmounts = true;
       });
       var params = {
-        sipAmount: document.getElementById('inputSipAmount').value,
+        sipAmount: firstAmount,
         sipDay: firstDay,
         sipDays: sipDays,
+        sipAmounts: sipAmounts,
+        sipFroms: sipFroms,
+        sipTos: sipTos,
         mixedDays: mixed,
+        mixedAmounts: mixedAmounts,
+        mixedWindows: mixedWindows,
         fromDate: document.getElementById('inputFromDate').value,
         toDate: document.getElementById('inputToDate').value,
         saleDate: document.getElementById('inputSaleDate').value,
@@ -1350,9 +1421,10 @@
       var title = rows.length === 1 || (payload.funds === 1 && rows.length)
         ? (rows[0] ? rows[0].name : 'Transactions')
         : 'Selected funds';
-      var html = '<p class="text-[11px] text-slate-400 mt-1">SIP of ' + esc(formatInrWhole(payload.sipAmount)) +
-        (payload.mixedDays ? ' on each fund’s SIP day, from ' : (' on day ' + esc(payload.sipDay) + ', from ')) + esc(formatLongDate(payload.fromDate)) +
-        ' through ' + esc(formatLongDate(payload.toDate)) +
+      var html = '<p class="text-[11px] text-slate-400 mt-1">' +
+        (payload.mixedAmounts ? 'Each fund’s SIP amount' : ('SIP of ' + esc(formatInrWhole(payload.sipAmount)))) +
+        (payload.mixedDays ? ' on each fund’s SIP day, ' : (' on day ' + esc(payload.sipDay) + ', ')) +
+        (payload.mixedWindows ? 'on each fund’s SIP dates' : ('from ' + esc(formatLongDate(payload.fromDate)) + ' through ' + esc(formatLongDate(payload.toDate)))) +
         '. The date is the SIP day. The purchase uses that day’s published NAV, or the next published date when that day is missing, and the sale uses the last published NAV on or before Sale Date.</p>';
       if (payload.note) html += '<p class="text-xs text-slate-500 mt-2">' + esc(payload.note) + '</p>';
       if (rows.length) {
@@ -1549,14 +1621,28 @@
         gain.style.color = book.profit < 0 ? '#cd2629' : 'var(--color-text-semantic-success)';
       }
       document.getElementById('kpiInvested').textContent = book.invested === null ? '-' : formatInrWhole(book.invested);
-      var sipEach = Number(document.getElementById('inputSipAmount').value);
-      if (!isFinite(sipEach) || sipEach < 0) sipEach = 0;
-      document.getElementById('kpiSipTotal').textContent = list.length ? formatInrWhole(sipEach * list.length) + ' / month' : '-';
+      var sipEach = 0;
+      list.forEach(function(fund) {
+        var amount = Number(fund.sipAmount);
+        if (!isFinite(amount) || amount <= 0) amount = Number(document.getElementById('inputSipAmount').value) || 0;
+        sipEach += amount;
+      });
+      document.getElementById('kpiSipTotal').textContent = list.length ? formatInrWhole(sipEach) + ' / month' : '-';
       var sipFrom = parseIsoDate(document.getElementById('inputFromDate').value);
       var sipTo = parseIsoDate(document.getElementById('inputToDate').value);
-      var sipDay = Number(document.getElementById('inputSipDay').value) || 5;
-      var investedMonths = clientSipDates(sipFrom, sipTo, sipDay).length;
-      document.getElementById('kpiMonths').textContent = list.length && investedMonths ? String(investedMonths) : '-';
+      var monthKey = null;
+      var mixedWindow = false;
+      list.forEach(function(fund) {
+        var key = fundSipDay(fund) + '|' + (fund.sipFrom || document.getElementById('inputFromDate').value) + '|' + (fund.sipTo || document.getElementById('inputToDate').value);
+        if (monthKey === null) monthKey = key;
+        else if (monthKey !== key) mixedWindow = true;
+      });
+      var investedMonths = clientSipDates(sipFrom, sipTo, Number(document.getElementById('inputSipDay').value) || 5).length;
+      if (!mixedWindow && list.length) {
+        var sample = list[0];
+        investedMonths = clientSipDates(parseIsoDate(sample.sipFrom) || sipFrom, parseIsoDate(sample.sipTo) || sipTo, fundSipDay(sample)).length;
+      }
+      document.getElementById('kpiMonths').textContent = !list.length || !investedMonths ? '-' : (mixedWindow ? 'Mixed' : String(investedMonths));
       setKpiRate('kpiAvgXirr', book.xirr);
       var bestName = document.getElementById('kpiBestFund');
       var bestLine = document.getElementById('kpiBestReturn');
@@ -2469,6 +2555,28 @@
       if (missed !== null && leader) {
         book.stats.push({ label: 'Same SIP, before tax', value: (missed >= 0 ? 'Ahead ' : 'Behind ') + formatInrWhole(Math.abs(missed)) });
       }
+      var movedWorth = 0;
+      var heldWorth = 0;
+      var movedReady = selling.length > 0;
+      for (var s = 0; s < selling.length; s++) {
+        var altCorpus = leader ? leaderCorpusOnHeldSip(leader, selling[s]) : null;
+        if (altCorpus === null || finiteNumber(selling[s].sipCorpus) === null) movedReady = false;
+        else {
+          movedWorth += altCorpus;
+          heldWorth += selling[s].sipCorpus;
+        }
+      }
+      if (leader && selling.length && movedReady) {
+        var movedGap = movedWorth - heldWorth;
+        book.stats.push({ label: 'This SIP in the newer fund', value: formatInrWhole(movedWorth) });
+        book.stats.push({ label: 'Gap before tax', value: (movedGap >= 0 ? 'Ahead ' : 'Behind ') + formatInrWhole(Math.abs(movedGap)) });
+        var realGap = afterInflation(movedGap);
+        if (realGap !== null && readInflationRate() > 0) {
+          book.stats.push({ label: 'Gap after ' + readInflationRate() + '% inflation', value: (realGap >= 0 ? 'Ahead ' : 'Behind ') + formatInrWhole(Math.abs(realGap)) });
+        }
+      } else if (leader && selling.length) {
+        book.stats.push({ label: 'This SIP in the newer fund', value: 'Reading this SIP day' });
+      }
       var ahead = yearAhead(selling, leader, money);
       if (ahead) {
         book.stats.push({ label: 'Hold one more year', value: formatInrWhole(ahead.stay) });
@@ -2807,6 +2915,99 @@
       return rdAnnualRate;
     }
 
+    function readInflationRate() {
+      var node = document.getElementById('inflationRate');
+      if (node && node.value !== '') {
+        var typed = Number(node.value);
+        if (isFinite(typed)) inflationRate = typed;
+      }
+      if (!isFinite(inflationRate) || inflationRate < 0) inflationRate = 0;
+      if (inflationRate > 15) inflationRate = 15;
+      return inflationRate;
+    }
+
+    function fundSipAmount(fund) {
+      var amount = fund ? Number(fund.sipAmount) : NaN;
+      if (!isFinite(amount) || amount <= 0) amount = Number(document.getElementById('inputSipAmount').value) || 1000;
+      return amount;
+    }
+
+    function fundSipDay(fund) {
+      var day = fund ? Math.round(Number(fund.sipDay) || 0) : 0;
+      if (day < 1 || day > 31) day = Math.round(Number(document.getElementById('inputSipDay').value) || 5);
+      return day;
+    }
+
+    function sipAltKey(leader, held) {
+      return [leader.code, fundSipAmount(held), fundSipDay(held),
+        held.sipFrom || document.getElementById('inputFromDate').value,
+        held.sipTo || document.getElementById('inputToDate').value,
+        document.getElementById('inputSaleDate').value].join('|');
+    }
+
+    function queueLeaderOnHeldSip(leader, held) {
+      var key = sipAltKey(leader, held);
+      if (sipAltPending[key] || typeof google === 'undefined' || !google.script || !google.script.run) return;
+      sipAltPending[key] = true;
+      google.script.run
+        .withSuccessHandler(function(row) {
+          delete sipAltPending[key];
+          sipAltCache[key] = row && finiteNumber(row.sipCorpus) !== null ? row.sipCorpus : null;
+          if (activeTab === 'final') renderDecisionList();
+        })
+        .withFailureHandler(function() {
+          delete sipAltPending[key];
+          sipAltCache[key] = null;
+          if (activeTab === 'final') renderDecisionList();
+        })
+        .getFundSipRow({
+          code: leader.code,
+          sipAmount: fundSipAmount(held),
+          sipDay: fundSipDay(held),
+          fromDate: held.sipFrom || document.getElementById('inputFromDate').value,
+          toDate: held.sipTo || document.getElementById('inputToDate').value,
+          saleDate: document.getElementById('inputSaleDate').value
+        });
+    }
+
+    function sameSipWindow(a, b) {
+      var pageFrom = document.getElementById('inputFromDate').value;
+      var pageTo = document.getElementById('inputToDate').value;
+      return fundSipDay(a) === fundSipDay(b)
+        && (a.sipFrom || pageFrom) === (b.sipFrom || pageFrom)
+        && (a.sipTo || pageTo) === (b.sipTo || pageTo);
+    }
+
+    /** What the newer fund would be worth on this held fund's SIP amount, day, and dates. */
+    function leaderCorpusOnHeldSip(leader, held) {
+      if (!leader || !held || finiteNumber(leader.sipCorpus) === null) return null;
+      if (sameSipWindow(leader, held)) {
+        var base = fundSipAmount(leader);
+        if (!(base > 0)) return null;
+        return leader.sipCorpus * (fundSipAmount(held) / base);
+      }
+      var key = sipAltKey(leader, held);
+      if (Object.prototype.hasOwnProperty.call(sipAltCache, key)) return sipAltCache[key];
+      queueLeaderOnHeldSip(leader, held);
+      return null;
+    }
+
+    function inflationYears() {
+      var from = parseIsoDate(document.getElementById('inputFromDate').value);
+      var sale = parseIsoDate(document.getElementById('inputSaleDate').value);
+      if (!from || !sale) return 0;
+      var years = (sale.getTime() - from.getTime()) / (365.25 * 86400000);
+      return years > 0 ? years : 0;
+    }
+
+    function afterInflation(amount) {
+      var rate = readInflationRate() / 100;
+      var years = inflationYears();
+      if (amount === null || !isFinite(amount)) return null;
+      if (!(rate > 0) || !(years > 0)) return amount;
+      return amount / Math.pow(1 + rate, years);
+    }
+
     function parseIsoDate(value) {
       var parts = String(value || '').split('-');
       if (parts.length < 3) return null;
@@ -2868,9 +3069,10 @@
       var leftOut = 0;
       var used = {};
       for (var i = 0; i < dates.length; i++) {
-        var deposit = installment;
+        var when = dates[i].getTime ? dates[i] : dates[i].date;
+        var deposit = dates[i].amount != null ? dates[i].amount : installment;
         if (yearCap) {
-          var key = String(fyStartYear(dates[i]));
+          var key = String(fyStartYear(when));
           var soFar = used[key] || 0;
           var room = Math.max(0, yearCap - soFar);
           var take = Math.min(deposit, room);
@@ -2880,34 +3082,63 @@
         }
         balance += deposit;
         accepted += deposit;
-        var until = i + 1 < dates.length ? dates[i + 1] : end;
-        var days = (until.getTime() - dates[i].getTime()) / 86400000;
+        var until = i + 1 < dates.length ? (dates[i + 1].getTime ? dates[i + 1] : dates[i + 1].date) : end;
+        var days = (until.getTime() - when.getTime()) / 86400000;
         if (days > 0 && balance > 0) balance *= Math.pow(1 + annualRate, days / 365.25);
       }
       return { invested: accepted, corpus: balance, leftOut: leftOut };
     }
 
-    function savingsCompareHtml(invested) {
+    function savingsCompareHtml(funds) {
       var ratePct = readRdRate();
       var from = parseIsoDate(document.getElementById('inputFromDate').value);
       var to = parseIsoDate(document.getElementById('inputToDate').value);
-      var sipDay = Number(document.getElementById('inputSipDay').value) || 5;
-      var dates = clientSipDates(from, to, sipDay);
+      var pageAmount = Number(document.getElementById('inputSipAmount').value) || 1000;
+      var pageDay = Number(document.getElementById('inputSipDay').value) || 5;
       var html = '<div class="savings-note">';
       html += '<div class="text-xs font-semibold text-slate-800">Same SIP in RD, EPF, and PPF</div>';
-      html += '<p class="text-[11px] text-slate-400 mt-1">This uses the same total invested, on the same SIP dates, through To Date. Corpus before tax is the maturity. Corpus after tax subtracts the tax on the gain. RD interest is compounded quarterly. EPF and PPF compound from each deposit to the next date.</p>';
+      html += '<p class="text-[11px] text-slate-400 mt-1">This uses each fund’s SIP amount and SIP day through To Date. Corpus before tax is the maturity. Corpus after tax subtracts the tax on the gain. RD interest is compounded quarterly. EPF and PPF compound from each deposit to the next date.</p>';
       html += '<label class="savings-rate text-xs text-slate-600">RD interest % <input id="rdRate" type="number" min="0" max="20" step="0.1" value="' + ratePct + '" onchange="renderDecisionList()"></label>';
-      if (invested === null || !dates.length) {
+      html += '<label class="savings-rate text-xs text-slate-600">Inflation % <input id="inflationRate" type="number" min="0" max="15" step="0.1" value="' + readInflationRate() + '" onchange="renderDecisionList()"></label>';
+      var invested = 0;
+      var rdCorpus = 0;
+      var bag = {};
+      var first = null;
+      (funds || []).forEach(function(fund) {
+        var amount = Number(fund.sipAmount);
+        if (!isFinite(amount) || amount <= 0) amount = pageAmount;
+        var day = Math.round(Number(fund.sipDay) || pageDay);
+        if (day < 1) day = pageDay;
+        var spanFrom = parseIsoDate(fund.sipFrom) || from;
+        var spanTo = parseIsoDate(fund.sipTo) || to;
+        var dates = clientSipDates(spanFrom, spanTo, day);
+        if (!dates.length || amount <= 0) return;
+        invested += amount * dates.length;
+        rdCorpus += rdMaturity(amount, dates.length, ratePct / 100);
+        dates.forEach(function(date) {
+          var key = String(date.getTime());
+          if (!bag[key]) bag[key] = { date: date, amount: 0 };
+          bag[key].amount += amount;
+          if (!first || date.getTime() < first.getTime()) first = date;
+        });
+      });
+      var deposits = Object.keys(bag).map(function(key) { return bag[key]; });
+      deposits.sort(function(a, b) { return a.date.getTime() - b.date.getTime(); });
+      if (!invested || !deposits.length) {
         html += '<p class="text-xs text-slate-600 mt-2">The comparison waits until this selection has an invested amount for the From and To dates.</p></div>';
         return html;
       }
-      var monthly = invested / dates.length;
-      var rdCorpus = rdMaturity(monthly, dates.length, ratePct / 100);
       var rdInterest = rdCorpus - invested;
       var rdTax = Math.max(0, rdInterest) * 0.30;
-      var epf = compoundDeposits(dates, to, monthly, 0.0825, 0);
-      var ppf = compoundDeposits(dates, to, monthly, 0.071, 150000);
-      var spanYears = (to.getTime() - dates[0].getTime()) / (365.25 * 86400000);
+      var savingsEnd = to;
+      (funds || []).forEach(function(fund) {
+        var end = parseIsoDate(fund.sipTo);
+        if (end && (!savingsEnd || end.getTime() > savingsEnd.getTime())) savingsEnd = end;
+      });
+      if (!savingsEnd) savingsEnd = first;
+      var epf = compoundDeposits(deposits, savingsEnd, 0, 0.0825, 0);
+      var ppf = compoundDeposits(deposits, savingsEnd, 0, 0.071, 150000);
+      var spanYears = (savingsEnd.getTime() - first.getTime()) / (365.25 * 86400000);
       var epfInterest = epf.corpus - epf.invested;
       var epfTax = spanYears >= 5 ? 0 : Math.max(0, epfInterest) * 0.30;
       var rows = [
@@ -3010,7 +3241,34 @@
         if (skipped) result += ' ' + skipped + ' fund' + (skipped === 1 ? '' : 's') + ' ' + (skipped === 1 ? 'does' : 'do') + ' not share this SIP amount, so ' + (skipped === 1 ? 'it is' : 'they are') + ' left out of this gap.';
         html += '<p class="total-result">' + esc(result) + '</p>';
       }
-      html += savingsCompareHtml(selection.invested);
+      var movedWorth = 0;
+      var heldWorth = 0;
+      var movedCount = 0;
+      var movedWait = false;
+      decisions.forEach(function(decision) {
+        if (decision.action !== 'Switch' || !decision.movingFunds || !decision.switchLeader) return;
+        decision.movingFunds.forEach(function(fund) {
+          var altCorpus = leaderCorpusOnHeldSip(decision.switchLeader, fund);
+          if (altCorpus === null || finiteNumber(fund.sipCorpus) === null) movedWait = true;
+          else {
+            movedWorth += altCorpus;
+            heldWorth += fund.sipCorpus;
+            movedCount += 1;
+          }
+        });
+      });
+      if (movedCount && !movedWait) {
+        var movedGap = movedWorth - heldWorth;
+        var movedLine = 'On each fund’s own SIP amount and day, the newer fund is worth ' + rupeeText(movedWorth) + ' against ' + rupeeText(heldWorth) + ' now. That is ' + rupeeText(Math.abs(movedGap)) + (movedGap >= 0 ? ' more' : ' less') + ' before tax.';
+        var realGap = afterInflation(movedGap);
+        if (realGap !== null && readInflationRate() > 0 && inflationYears() > 0) {
+          movedLine += ' At ' + readInflationRate() + '% inflation over ' + inflationYears().toFixed(1) + ' years, that gap is ' + rupeeText(Math.abs(realGap)) + ' in starting rupees.';
+        }
+        html += '<p class="total-result">' + esc(movedLine) + '</p>';
+      } else if (movedWait) {
+        html += '<p class="total-result">Reading the newer fund on each held SIP day.</p>';
+      }
+      html += savingsCompareHtml(funds);
       html += '</div>';
       return html;
     }
