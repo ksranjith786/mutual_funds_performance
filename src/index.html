@@ -214,6 +214,7 @@
     .txn-panel { width: min(72rem, 100%); margin-top: 12px; padding: 16px; border-radius: 12px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); box-shadow: var(--shadow-sm); }
     .txn-scroll { max-height: 55vh; overflow: auto; margin-top: 12px; }
     .txn-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .txn-actions { display: flex; gap: 8px; flex-shrink: 0; }
     .txn-close { min-height: 0; height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); color: var(--color-text-secondary); font-size: 12px; font-weight: 600; }
     .sheet thead tr.sheet-group th { text-transform: none; letter-spacing: normal; }
     .sheet thead tr:first-child th { top: 0; }
@@ -1407,9 +1408,98 @@
       if (shade) shade.classList.add('hidden');
     }
 
+    var lastTxnExport = null;
+
     function txnFrame(title, body) {
+      var actions = '<div class="txn-actions">' +
+        '<button type="button" class="txn-close" onclick="exportTransactions(\'csv\')">CSV</button>' +
+        '<button type="button" class="txn-close" onclick="exportTransactions(\'xls\')">Excel</button>' +
+        '<button type="button" class="txn-close" onclick="closeTransactions()">Close</button></div>';
       return '<div class="txn-head"><div><div class="text-sm font-semibold text-slate-800">' + esc(title) + '</div></div>' +
-        '<button type="button" class="txn-close" onclick="closeTransactions()">Close</button></div>' + body;
+        actions + '</div>' + body;
+    }
+
+    function txnExportRows(payload) {
+      var header = ['Transaction Date', 'Scheme Code', 'Scheme Name', 'Purchased NAV', 'Purchase NAV Date', 'Purchased Units', 'Sold NAV', 'Sale NAV Date', 'Absolute Return', 'CAGR'];
+      var lines = [header];
+      (payload.rows || []).forEach(function(row) {
+        lines.push([
+          row.date || '',
+          row.code || '',
+          row.name || '',
+          row.purchaseNav,
+          row.purchaseNavDate || '',
+          row.units,
+          row.saleNav,
+          row.saleNavDate || '',
+          row.absoluteReturn,
+          row.cagr
+        ]);
+      });
+      var summary = payload.summary || {};
+      lines.push([]);
+      lines.push(['Summary']);
+      [
+        ['Invested amount', summary.invested],
+        ['Current value', summary.corpus],
+        ['Profit or loss', summary.profit],
+        ['Absolute return', summary.absoluteReturn],
+        ['CAGR', summary.cagr],
+        ['XIRR', summary.xirr],
+        ['Long-term gain', summary.ltcgGain],
+        ['Short-term gain', summary.stcgGain],
+        ['Long-term tax', summary.ltcgTax],
+        ['Short-term tax', summary.stcgTax],
+        ['Exit load', summary.exitLoad],
+        ['Tax', summary.tax],
+        ['Left after tax', summary.net]
+      ].forEach(function(pair) { lines.push(pair); });
+      return lines;
+    }
+
+    function txnCsvCell(value) {
+      if (value === null || value === undefined || value === '') return '';
+      var text = String(value);
+      if (/[",\n]/.test(text) || /^[=+\-@]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
+      return text;
+    }
+
+    function downloadTxnFile(filename, mime, text) {
+      var blob = new Blob([text], { type: mime });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    }
+
+    function exportTransactions(kind) {
+      var payload = lastTxnExport;
+      if (!payload || !(payload.rows || []).length) return;
+      var lines = txnExportRows(payload);
+      var stamp = (payload.saleDate || 'sale').replace(/[^\d-]/g, '');
+      if (kind === 'xls') {
+        var table = '<table>';
+        lines.forEach(function(line) {
+          table += '<tr>';
+          line.forEach(function(cell) {
+            var numeric = typeof cell === 'number' && isFinite(cell);
+            table += '<td' + (numeric ? ' x:num="' + cell + '"' : '') + '>' + esc(cell === null || cell === undefined ? '' : cell) + '</td>';
+          });
+          table += '</tr>';
+        });
+        table += '</table>';
+        var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>' + table + '</body></html>';
+        downloadTxnFile('sip-transactions-' + stamp + '.xls', 'application/vnd.ms-excel;charset=utf-8', html);
+        return;
+      }
+      var csv = '\uFEFF' + lines.map(function(line) {
+        return line.map(txnCsvCell).join(',');
+      }).join('\n');
+      downloadTxnFile('sip-transactions-' + stamp + '.csv', 'text/csv;charset=utf-8', csv);
     }
 
     function renderTransactions(payload) {
@@ -1418,6 +1508,7 @@
       payload = payload || {};
       var rows = payload.rows || [];
       var summary = payload.summary || {};
+      lastTxnExport = rows.length ? payload : null;
       var title = rows.length === 1 || (payload.funds === 1 && rows.length)
         ? (rows[0] ? rows[0].name : 'Transactions')
         : 'Selected funds';
