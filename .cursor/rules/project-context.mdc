@@ -15,7 +15,7 @@ Runtime reads the spreadsheet, not the repo CSVs. Never load all of `nav_data` i
 
 ## Returns
 - Tenure columns look back from **Sale Date**. Each tenure stores SIP XIRR and trailing CAGR. The toolbar switch chooses which is shown.
-- **Custom Range** uses **From Date** through **To Date**, SIP amount, and SIP day only: Custom Range XIRR, SIP Corpus, Net Profit, Absolute return. Sale Date does not change these.
+- **Custom Range** SIPs run from **From Date** through **To Date**. Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return are valued at the **Sale Date** NAV.
 - NAV is the last published NAV on or before the date. The screen shows that sheet NAV and that sheet date. Return math uses the sheet NAV. Invested, corpus, and profit stay exact until a rupee total is shown. Do not invent a NAV.
 
 ## Defaults

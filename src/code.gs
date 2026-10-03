@@ -167,7 +167,7 @@ function getFundMatrixData(params) {
     if (scheme.amc) amcSet[scheme.amc] = true;
 
     // Custom range is From Date through To Date. Sale Date is not an input to these figures.
-    var custom = buildSip_(series, sipAmount, sipDay, fromDate, toDate);
+    var custom = buildSip_(series, sipAmount, sipDay, fromDate, toDate, saleDate);
     var navStart = lookupPoint_(series, fromDate);
     var navEnd = lookupPoint_(series, toDate);
     var saleNav = lookupPoint_(series, saleDate);
@@ -1093,15 +1093,18 @@ function lookupNav_(series, dateObj) {
 }
 
 /**
- * Monthly SIP from startDate through endDate, redeemed at the endDate NAV.
+ * Monthly SIP from startDate through endDate, redeemed at redeemDate (Sale Date).
  * Cash flows are negative installments plus one positive corpus.
  * Returns xirr null when no installment falls in the window.
  */
-function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
+function buildSip_(series, sipAmount, sipDay, startDate, endDate, redeemDate) {
   var empty = { units: 0, invested: 0, corpus: null, profit: null, absoluteReturn: null, xirr: null, redeem: null };
   if (!series || !startDate || !endDate || endDate < startDate) return empty;
   var book = collectSipLots_(series, sipAmount, sipDay, startDate, endDate);
-  if (!book) return empty;
+  if (!book || !book.lots.length) return empty;
+  var redeemOn = redeemDate || endDate;
+  var salePoint = lookupPoint_(series, redeemOn);
+  if (!salePoint) return empty;
 
   var units = 0;
   var invested = 0;
@@ -1114,9 +1117,9 @@ function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
   }
   if (invested <= 0 || units <= 0) return empty;
 
-  var corpus = units * book.endNav;
-  flows.push({ date: new Date(endDate.getTime()), amount: corpus });
-  var tax = lotTax_(book.lots, endDate.getTime(), book.endNav);
+  var corpus = units * salePoint.nav;
+  flows.push({ date: new Date(redeemOn.getTime()), amount: corpus });
+  var tax = lotTax_(book.lots, redeemOn.getTime(), salePoint.nav);
   return {
     units: units,
     invested: invested,
@@ -1134,8 +1137,7 @@ function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
 
 /** One installment on sipDay each month. Same-day NAV when that date is published; otherwise the next published date. */
 function collectSipLots_(series, sipAmount, sipDay, startDate, endDate) {
-  var endPoint = lookupPoint_(series, endDate);
-  if (!endPoint) return null;
+  if (!series || !startDate || !endDate) return null;
   var lots = [];
   var slot = firstSipSlot_(startDate, sipDay);
   while (slot && slot.date.getTime() <= endDate.getTime()) {
@@ -1151,7 +1153,8 @@ function collectSipLots_(series, sipAmount, sipDay, startDate, endDate) {
     }
     slot = nextSipSlot_(slot, sipDay);
   }
-  return { lots: lots, endNav: endPoint.nav, endStamp: endPoint.date };
+  var endPoint = lookupPoint_(series, endDate);
+  return { lots: lots, endNav: endPoint ? endPoint.nav : null, endStamp: endPoint ? endPoint.date : null };
 }
 
 /** Equity illustration: 12.5% LTCG after one ₹1.25 lakh exemption, 20% STCG, 1% exit load on lots under 12 months. */

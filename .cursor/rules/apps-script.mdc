@@ -25,7 +25,7 @@ Every other function name ends with `_`. Apps Script lets the browser call any f
 ## Params
 `sipAmount` (1000), `sipDay` (1–31, default 5), `fromDate` (today minus 1 year), `toDate` (today), `saleDate` (today). Dates are `yyyy-MM-dd`. If `sipDay` is missing in a month, that installment is the 1st of the next month. Units are bought at that day’s published NAV. When that day has no row, units are bought at the next published date and its NAV.
 
-Custom range: one SIP on `sipDay` each month from From through To, redeemed at the To Date NAV. Fields: `customRangeXirr`, `sipCorpus`, `netProfit`, `absoluteReturn`, `navStart`, `navEnd`, `units`, `investedAmount`. `redeem` splits that SIP into lots held 12 months or more (`ltcgGain`) and younger lots (`stcgGain`, plus `exitLoad` at 1% of those lots' value). `switchPath` is 36 month-end 3-year CAGRs ending on Sale Date, aligned with `pathMonths`. `saleNav` is the Sale Date NAV and is not an input to the custom range.
+Custom range: one SIP on `sipDay` each month from From through To, redeemed at the Sale Date NAV. Fields: `customRangeXirr`, `sipCorpus`, `netProfit`, `absoluteReturn`, `navStart`, `navEnd`, `units`, `investedAmount`. `navEnd` stays the To Date NAV. `redeem` splits that SIP into lots held 12 months or more (`ltcgGain`) and younger lots (`stcgGain`, plus `exitLoad` at 1% of those lots' value), measured to Sale Date. `switchPath` is 36 month-end 3-year CAGRs ending on Sale Date, aligned with `pathMonths`. `saleNav` is the Sale Date NAV and is the NAV used for the custom-range corpus.
 
 ## Tenures (`TENURE_CONFIG`)
 Calendar lookbacks from Sale Date, not fixed day counts. Short: `5D` `15D` `1M` `3M` `6M` `9M` `1Y`. Long: `2Y` `3Y` `5Y` `7Y` `10Y` `12Y` `15Y`. `7Y` is intentional.

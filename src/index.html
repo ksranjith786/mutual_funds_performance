@@ -527,9 +527,9 @@
                 </div>
 
     <div class="page-notes text-[11px] leading-4 text-slate-400 space-y-1.5">
-      <p><span class="font-semibold text-slate-500">From Date</span> is the first SIP in Custom Range. <span class="font-semibold text-slate-500">To Date</span> is the last SIP and the redemption day for corpus, profit, invested, units, NAV Start, NAV End, and Custom Range XIRR. <span class="font-semibold text-slate-500">SIP day</span> can be any day from 1 to 31. If that day is missing in a month, the installment moves to the 1st of the next month. If that day has a published NAV, the units are bought at it. If that day is missing, the units are bought at the next published date and its NAV.</p>
-      <p><span class="font-semibold text-slate-500">Sale Date</span> is the as-of day for 5D through 15Y, Sale NAV, and Risk. Set it to an older day to read how 1Y, 2Y, and longer looked then. It leaves Custom Range unchanged. <span class="font-semibold text-slate-500">Transactions</span> lists each SIP from From Date through To Date and values it at the Sale Date NAV. It loads only when opened.</p>
-      <p><span class="font-semibold text-slate-500">Custom Range XIRR</span> is the annualized SIP rate from From Date through To Date. <span class="font-semibold text-slate-500">Short Term SIP XIRR</span> (1M–1Y) and <span class="font-semibold text-slate-500">Long Term SIP XIRR</span> (2Y–15Y) use the same annualized SIP math, looking back from Sale Date. 5D and 15D have no SIP XIRR.</p>
+      <p><span class="font-semibold text-slate-500">From Date</span> is the first SIP. <span class="font-semibold text-slate-500">To Date</span> is the last SIP. NAV Start and NAV End use those days. <span class="font-semibold text-slate-500">SIP day</span> can be any day from 1 to 31. If that day is missing in a month, the installment moves to the 1st of the next month. If that day has a published NAV, the units are bought at it. If that day is missing, the units are bought at the next published date and its NAV.</p>
+      <p><span class="font-semibold text-slate-500">Sale Date</span> is the valuation day for corpus, profit, absolute return, Custom Range XIRR, 5D through 15Y, Sale NAV, and Risk. <span class="font-semibold text-slate-500">Transactions</span> lists each SIP from From Date through To Date and values every rate at the Sale Date NAV. It loads only when opened.</p>
+      <p><span class="font-semibold text-slate-500">Custom Range XIRR</span> is the annualized SIP rate for installments from From Date through To Date, redeemed on Sale Date. <span class="font-semibold text-slate-500">Short Term SIP XIRR</span> (1M–1Y) and <span class="font-semibold text-slate-500">Long Term SIP XIRR</span> (2Y–15Y) use the same annualized SIP math, looking back from Sale Date. 5D and 15D have no SIP XIRR.</p>
       <p><span class="font-semibold text-slate-500">Trailing CAGR</span> under 1Y is the point-to-point NAV change for that window. From 1Y it is annualized. <span class="font-semibold text-slate-500">Absolute Return</span> is that NAV change on every tenure, without annualizing. Those two match how Moneycontrol and Value Research show 1M, 3M, and 6M.</p>
     </div>
   </main>
@@ -539,7 +539,7 @@
     // SIP XIRR hides 5D and 15D. Those windows do not hold a monthly SIP. Trailing CAGR still shows them.
     // Tenure cells switch between tenureXirr, tenureCagr, and tenureAbsolute. They look back from Sale Date.
     // tenureAbsolute is the point-to-point NAV change and is not annualized.
-    // customRangeXirr, sipCorpus, netProfit, and the Absolute Return column stay on From Date to To Date
+    // SIP installments run From Date through To Date. Corpus, profit, absolute return, and customRangeXirr are valued on Sale Date.
     // and do not follow the SIP XIRR / Trailing CAGR switch.
     // Category and AMC start on Select All, which means no restriction. The first load selects the first fund list.
     // Default sort is 1Y descending. Heat colors on corpus and net profit follow absoluteReturn.
