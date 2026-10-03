@@ -206,6 +206,12 @@
     html:not(.dark) .overlap-fund { background: #f6f7f8; color: #12334c; border-color: #e3e8ee; }
     html:not(.dark) .overlap-hold { border-top-color: #e3e8ee; }
     html:not(.dark) .overlap-void { background: #e8edf2; }
+    .txn-link { min-height: 0; height: auto; padding: 0; border: 0; background: transparent; color: var(--color-text-brand); font-size: 12px; font-weight: 600; line-height: 16px; text-decoration: underline; cursor: pointer; }
+    .txn-shade { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: 24px 12px; background: rgba(16, 18, 24, 0.45); overflow: auto; }
+    .txn-panel { width: min(72rem, 100%); margin-top: 12px; padding: 16px; border-radius: 12px; background: var(--color-fill-surface); border: 1px solid var(--color-boundary-border-mildest); box-shadow: var(--shadow-sm); }
+    .txn-scroll { max-height: 55vh; overflow: auto; margin-top: 12px; }
+    .txn-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .txn-close { min-height: 0; height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--color-boundary-border-mildest); background: var(--color-fill-surface); color: var(--color-text-secondary); font-size: 12px; font-weight: 600; }
     .sheet thead tr.sheet-group th { text-transform: none; letter-spacing: normal; }
     .sheet thead tr:first-child th { top: 0; }
     .sheet thead tr:nth-child(2) th { top: 2.05rem; }
@@ -522,7 +528,7 @@
 
     <div class="page-notes text-[11px] leading-4 text-slate-400 space-y-1.5">
       <p><span class="font-semibold text-slate-500">From Date</span> is the first SIP in Custom Range. <span class="font-semibold text-slate-500">To Date</span> is the last SIP and the redemption day for corpus, profit, invested, units, NAV Start, NAV End, and Custom Range XIRR. <span class="font-semibold text-slate-500">SIP day</span> can be any day from 1 to 31. If that day is missing in a month, the installment moves to the 1st of the next month. If that day has no published NAV, the units are bought on the next NAV.</p>
-      <p><span class="font-semibold text-slate-500">Sale Date</span> is the as-of day for 5D through 15Y, Sale NAV, and Risk. Set it to an older day to read how 1Y, 2Y, and longer looked then. It leaves Custom Range unchanged.</p>
+      <p><span class="font-semibold text-slate-500">Sale Date</span> is the as-of day for 5D through 15Y, Sale NAV, and Risk. Set it to an older day to read how 1Y, 2Y, and longer looked then. It leaves Custom Range unchanged. <span class="font-semibold text-slate-500">Transactions</span> lists each SIP from From Date through Sale Date and values it at the Sale Date NAV. It loads only when opened.</p>
       <p><span class="font-semibold text-slate-500">Custom Range XIRR</span> is the annualized SIP rate from From Date through To Date. <span class="font-semibold text-slate-500">Short Term SIP XIRR</span> (1M–1Y) and <span class="font-semibold text-slate-500">Long Term SIP XIRR</span> (2Y–15Y) use the same annualized SIP math, looking back from Sale Date. 5D and 15D have no SIP XIRR.</p>
       <p><span class="font-semibold text-slate-500">Trailing CAGR</span> under 1Y is the point-to-point NAV change for that window. From 1Y it is annualized. <span class="font-semibold text-slate-500">Absolute Return</span> is that NAV change on every tenure, without annualizing. Those two match how Moneycontrol and Value Research show 1M, 3M, and 6M.</p>
     </div>
@@ -623,7 +629,7 @@
     }
 
     function columnCount() {
-      return 1 + FIXED_COLS.length + visibleTenures().length;
+      return 2 + FIXED_COLS.length + visibleTenures().length;
     }
 
     function isoDate(dateObj) {
@@ -701,6 +707,7 @@
       group += '<th colspan="' + customCount + '" class="py-2 px-3 text-left normal-case tracking-normal text-[11px] text-slate-500">Custom range</th>';
       group += '<th colspan="' + shortCount + '" class="tone-short py-2 px-2 text-center text-emerald-800">Short Term</th>';
       group += '<th colspan="' + longCount + '" class="tone-long py-2 px-2 text-center text-amber-900">Long Term</th>';
+      group += '<th class="py-2 px-2 text-center normal-case tracking-normal text-[11px] text-slate-500">Ledger</th>';
       group += '</tr>';
 
       var cols = '<tr>';
@@ -718,6 +725,7 @@
         cols += '<th onclick="handleSort(\'' + tenure.key + '\')" class="py-2 px-1 text-center min-w-[46px] cursor-pointer hover:bg-slate-200/70 ' + tone + '">';
         cols += '<div class="inline-flex items-center justify-center space-x-0.5"><span>' + tenure.key + '</span><span id="sortIcon-' + tenure.key + '" class="text-[10px] text-slate-400">⇅</span></div></th>';
       });
+      cols += '<th class="py-2 px-2 text-center">Transactions</th>';
       cols += '</tr>';
       document.getElementById('matrixTableHead').innerHTML = group + cols;
       updateSortIcons();
@@ -1180,12 +1188,119 @@
           var value = series ? series[tenure.key] : null;
           html += heatRateCell(value, heatScale(tenure));
         });
+        html += txnCell(fund.code);
         html += '</tr>';
       });
+
+      html += '<tr class="txn-total">';
+      html += '<td class="freeze-move py-2 px-0"></td>';
+      html += fundNameCell('Total', nameNote(funds.length + (funds.length === 1 ? ' fund' : ' funds')), false);
+      for (var blank = 1; blank < FIXED_COLS.length; blank++) html += '<td class="py-2 px-2"></td>';
+      visibleTenures().forEach(function() { html += '<td class="py-2 px-1"></td>'; });
+      html += txnCell('');
+      html += '</tr>';
 
       tbody.innerHTML = html;
       document.getElementById('footerCount').textContent =
         'Showing ' + funds.length + ' of ' + allFunds.length + ' schemes';
+    }
+
+    function txnCell(code) {
+      var arg = code ? '\'' + String(code).replace(/'/g, '') + '\'' : '\'\'';
+      return '<td class="py-2 px-2 text-center"><button type="button" class="txn-link" onclick="openTransactions(' + arg + ')">Transactions</button></td>';
+    }
+
+    function openTransactions(code) {
+      var shade = document.getElementById('txnShade');
+      var panel = document.getElementById('txnPanel');
+      if (!shade || !panel) return;
+      var codes = [];
+      if (code) codes.push(String(code));
+      else (currentDisplayFunds || []).forEach(function(fund) { codes.push(String(fund.code)); });
+      shade.classList.remove('hidden');
+      if (!codes.length) {
+        panel.innerHTML = txnFrame('Transactions', '<p class="text-xs text-slate-500">No funds in this table.</p>');
+        return;
+      }
+      panel.innerHTML = txnFrame('Transactions', '<div class="load-mark"></div><p class="text-xs text-slate-500 mt-2">Reading SIP transactions</p>');
+      var params = {
+        sipAmount: document.getElementById('inputSipAmount').value,
+        sipDay: document.getElementById('inputSipDay').value,
+        fromDate: document.getElementById('inputFromDate').value,
+        saleDate: document.getElementById('inputSaleDate').value,
+        codes: codes
+      };
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        panel.innerHTML = txnFrame('Transactions', '<p class="text-xs text-slate-500">Open the matrix from the spreadsheet to load transactions.</p>');
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(renderTransactions)
+        .withFailureHandler(function(err) {
+          panel.innerHTML = txnFrame('Transactions', '<p class="text-xs text-slate-500">' + esc(err && err.message ? err.message : err) + '</p>');
+        })
+        .getSipTransactions(params);
+    }
+
+    function closeTransactions() {
+      var shade = document.getElementById('txnShade');
+      if (shade) shade.classList.add('hidden');
+    }
+
+    function txnFrame(title, body) {
+      return '<div class="txn-head"><div><div class="text-sm font-semibold text-slate-800">' + esc(title) + '</div></div>' +
+        '<button type="button" class="txn-close" onclick="closeTransactions()">Close</button></div>' + body;
+    }
+
+    function renderTransactions(payload) {
+      var panel = document.getElementById('txnPanel');
+      if (!panel) return;
+      payload = payload || {};
+      var rows = payload.rows || [];
+      var summary = payload.summary || {};
+      var title = rows.length === 1 || (payload.funds === 1 && rows.length)
+        ? (rows[0] ? rows[0].name : 'Transactions')
+        : 'Selected funds';
+      var html = '<p class="text-[11px] text-slate-400 mt-1">SIP of ' + esc(formatInrWhole(payload.sipAmount)) +
+        ' on day ' + esc(payload.sipDay) + ', from ' + esc(formatLongDate(payload.fromDate)) +
+        ' through ' + esc(formatLongDate(payload.saleDate)) +
+        '. Each row is bought at the next published NAV on or after the SIP day and sold at the last published NAV on or before Sale Date.</p>';
+      if (payload.note) html += '<p class="text-xs text-slate-500 mt-2">' + esc(payload.note) + '</p>';
+      if (rows.length) {
+        var head = '<th class="py-2 px-2 text-left">Transaction Date</th><th class="py-2 px-2 text-left">Scheme Code</th><th class="py-2 px-2 text-left">Scheme Name</th>' +
+          moneyHead('Purchased NAV') + moneyHead('Purchased Units') + moneyHead('Sold NAV') + rateHead('Absolute Return') + rateHead('CAGR');
+        var body = '';
+        rows.forEach(function(row) {
+          body += '<tr>';
+          body += '<td class="py-2 px-2">' + esc(row.date) + '</td>';
+          body += '<td class="py-2 px-2">' + esc(row.code) + '</td>';
+          body += '<td class="py-2 px-2">' + esc(row.name) + '</td>';
+          body += '<td class="py-2 px-2 text-right">' + formatNav(row.purchaseNav) + '</td>';
+          body += '<td class="py-2 px-2 text-right">' + formatUnits(row.units) + '</td>';
+          body += '<td class="py-2 px-2 text-right">' + formatNav(row.saleNav) + '<span class="block text-[11px] font-medium text-slate-400">' + esc(row.saleNavDate || '') + '</span></td>';
+          body += '<td class="py-2 px-2 text-center">' + formatPct(row.absoluteReturn) + '</td>';
+          body += '<td class="py-2 px-2 text-center">' + formatPct(row.cagr) + '</td>';
+          body += '</tr>';
+        });
+        html += '<div class="txn-scroll">' + sheetTable(head, body) + '</div>';
+      }
+      html += '<div class="total-board"><div class="total-col"><h3>Summary</h3>';
+      html += totalRow('Invested amount', formatInrWhole(summary.invested));
+      html += totalRow('Current value', formatInrWhole(summary.corpus));
+      html += totalRow('Profit or loss', formatInrWhole(summary.profit), returnTone(summary.profit));
+      html += totalRow('Absolute return', formatPct(summary.absoluteReturn), returnTone(summary.absoluteReturn));
+      html += totalRow('CAGR', formatPct(summary.cagr), returnTone(summary.cagr));
+      html += totalRow('XIRR', formatPct(summary.xirr), returnTone(summary.xirr));
+      html += totalRow('Long-term gain', formatInrWhole(summary.ltcgGain), returnTone(summary.ltcgGain));
+      html += totalRow('Short-term gain', formatInrWhole(summary.stcgGain), returnTone(summary.stcgGain));
+      html += totalRow('Long-term tax', formatInrWhole(summary.ltcgTax));
+      html += totalRow('Short-term tax', formatInrWhole(summary.stcgTax));
+      html += totalRow('Exit load', formatInrWhole(summary.exitLoad));
+      html += totalRow('Tax', formatInrWhole(summary.tax));
+      html += totalRow('Left after tax', formatInrWhole(summary.net));
+      html += '</div></div>';
+      html += '<p class="text-[11px] text-slate-400 mt-2">CAGR annualizes the purchase NAV to the Sale Date NAV for each installment, and annualizes total invested to current value from the first purchase for the summary. XIRR is the SIP rate. Long-term tax is 12.5% after one ₹1.25 lakh exemption on this table. Short-term tax is 20% on installments under 12 months. Exit load is 1% of those young installments. The sheet does not store the scheme load.</p>';
+      panel.innerHTML = txnFrame(title, html);
     }
 
     function nameResizer() {
@@ -2870,6 +2985,9 @@
       }
     }
   </script>
+  <div id="txnShade" class="txn-shade hidden" onclick="if (event.target === this) closeTransactions()">
+    <div id="txnPanel" class="txn-panel" role="dialog" aria-modal="true" aria-label="SIP transactions"></div>
+  </div>
   <div id="themeSwitch" class="theme-switch fixed bottom-1.5 left-3 z-40">
     <button type="button" data-theme="light" onclick="applyTheme('light')">Light</button>
     <button type="button" data-theme="dark" onclick="applyTheme('dark')">Dark</button>

@@ -21,8 +21,9 @@
  *   getFundOverlap loads the latest published equity portfolio for at most 20 schemes and returns pairwise overlap.
  *   Overlap is the sum of the smaller weight of each shared stock, divided by 100. Cash and debt are excluded.
  * - The browser may call only onOpen, showDialog, showWebAppUrl, doGet,
- *   getFundMatrixData, getFundPublishedProfile, and getFundOverlap. Every other function ends in _
- *   so the page cannot call it. This script only reads the spreadsheet.
+ *   getFundMatrixData, getFundPublishedProfile, getFundOverlap, and getSipTransactions.
+ *   Every other function ends in _ so the page cannot call it. This script only reads the spreadsheet.
+ *   getSipTransactions is the on-demand SIP ledger. It is not part of the matrix load.
  */
 
 function onOpen() {
@@ -1099,46 +1100,23 @@ function lookupNav_(series, dateObj) {
 function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
   var empty = { units: 0, invested: 0, corpus: null, profit: null, absoluteReturn: null, xirr: null, redeem: null };
   if (!series || !startDate || !endDate || endDate < startDate) return empty;
-
-  var endNav = lookupNav_(series, endDate);
-  if (endNav === null) return empty;
+  var book = collectSipLots_(series, sipAmount, sipDay, startDate, endDate);
+  if (!book) return empty;
 
   var units = 0;
   var invested = 0;
   var flows = [];
-  var lots = [];
-  var slot = firstSipSlot_(startDate, sipDay);
-
-  while (slot && slot.date.getTime() <= endDate.getTime()) {
-    var boughtOn = firstNavOnOrAfter_(series, slot.date);
-    if (boughtOn && boughtOn.date <= endDate.getTime() && boughtOn.nav > 0) {
-      var bought = sipAmount / boughtOn.nav;
-      units += bought;
-      invested += sipAmount;
-      lots.push({ t: boughtOn.date, cost: sipAmount, units: bought });
-      flows.push({ date: new Date(boughtOn.date), amount: -sipAmount });
-    }
-    slot = nextSipSlot_(slot, sipDay);
+  for (var i = 0; i < book.lots.length; i++) {
+    var lot = book.lots[i];
+    units += lot.units;
+    invested += lot.cost;
+    flows.push({ date: new Date(lot.t), amount: -lot.cost });
   }
-
   if (invested <= 0 || units <= 0) return empty;
 
-  var corpus = units * endNav;
+  var corpus = units * book.endNav;
   flows.push({ date: new Date(endDate.getTime()), amount: corpus });
-  var stcgGain = 0;
-  var ltcgGain = 0;
-  var exitLoad = 0;
-  var yearMs = 365.25 * 86400000;
-  for (var lotIndex = 0; lotIndex < lots.length; lotIndex++) {
-    var lot = lots[lotIndex];
-    var value = lot.units * endNav;
-    var gain = value - lot.cost;
-    if (endDate.getTime() - lot.t >= yearMs) ltcgGain += gain;
-    else {
-      stcgGain += gain;
-      exitLoad += Math.max(0, value) * 0.01;
-    }
-  }
+  var tax = lotTax_(book.lots, endDate.getTime(), book.endNav);
   return {
     units: units,
     invested: invested,
@@ -1147,10 +1125,191 @@ function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
     absoluteReturn: (corpus - invested) / invested,
     xirr: calculateXIRR_(flows),
     redeem: {
-      stcgGain: stcgGain,
-      ltcgGain: ltcgGain,
-      exitLoad: exitLoad
+      stcgGain: tax.stcgGain,
+      ltcgGain: tax.ltcgGain,
+      exitLoad: tax.exitLoad
     }
+  };
+}
+
+/** Installments bought on the next NAV on or after each SIP day, through endDate. Null when that day has no NAV. */
+function collectSipLots_(series, sipAmount, sipDay, startDate, endDate) {
+  var endPoint = lookupPoint_(series, endDate);
+  if (!endPoint) return null;
+  var lots = [];
+  var slot = firstSipSlot_(startDate, sipDay);
+  while (slot && slot.date.getTime() <= endDate.getTime()) {
+    var boughtOn = firstNavOnOrAfter_(series, slot.date);
+    if (boughtOn && boughtOn.date <= endDate.getTime() && boughtOn.nav > 0) {
+      lots.push({
+        t: boughtOn.date,
+        nav: boughtOn.nav,
+        units: sipAmount / boughtOn.nav,
+        cost: sipAmount
+      });
+    }
+    slot = nextSipSlot_(slot, sipDay);
+  }
+  return { lots: lots, endNav: endPoint.nav, endStamp: endPoint.date };
+}
+
+/** Equity illustration: 12.5% LTCG after one ₹1.25 lakh exemption, 20% STCG, 1% exit load on lots under 12 months. */
+function lotTax_(lots, saleMs, endNav) {
+  var stcgGain = 0;
+  var ltcgGain = 0;
+  var exitLoad = 0;
+  var yearMs = 365.25 * 86400000;
+  for (var i = 0; i < lots.length; i++) {
+    var lot = lots[i];
+    var saleNav = lot.saleNav > 0 ? lot.saleNav : endNav;
+    var value = lot.units * saleNav;
+    var gain = value - lot.cost;
+    if (saleMs - lot.t >= yearMs) ltcgGain += gain;
+    else {
+      stcgGain += gain;
+      exitLoad += Math.max(0, value) * 0.01;
+    }
+  }
+  var stcgTax = Math.max(0, stcgGain) * 0.20;
+  var ltcgTax = Math.max(0, ltcgGain - 125000) * 0.125;
+  return {
+    stcgGain: stcgGain,
+    ltcgGain: ltcgGain,
+    exitLoad: exitLoad,
+    stcgTax: stcgTax,
+    ltcgTax: ltcgTax,
+    tax: stcgTax + ltcgTax
+  };
+}
+
+function spanCagr_(startMs, endMs, startValue, endValue) {
+  if (!(startValue > 0) || endValue === null || !isFinite(endValue)) return null;
+  var point = (endValue - startValue) / startValue;
+  var days = (endMs - startMs) / 86400000;
+  if (days <= 0) return point;
+  var base = 1 + point;
+  if (base <= 0) return null;
+  return Math.pow(base, 365.25 / days) - 1;
+}
+
+/**
+ * On-demand SIP ledger for the schemes the page asks for.
+ * Installments run from From Date through Sale Date and are valued at the Sale Date NAV.
+ */
+function getSipTransactions(params) {
+  params = params || {};
+  var today = todayDay_();
+  var sipAmount = Number(params.sipAmount) || 1000;
+  var sipDay = Math.round(Number(params.sipDay) || 5);
+  if (sipDay < 1) sipDay = 1;
+  if (sipDay > 31) sipDay = 31;
+  var fromDate = params.fromDate ? toDay_(params.fromDate) : shiftBack_(today, 'year', 1);
+  var saleDate = params.saleDate ? toDay_(params.saleDate) : today;
+  var wanted = {};
+  var requested = params.codes || [];
+  for (var c = 0; c < requested.length; c++) {
+    var key = String(requested[c] || '').trim();
+    if (key.slice(-2) === '.0') key = key.slice(0, -2);
+    if (key) wanted[key] = true;
+  }
+  var emptySummary = {
+    xirr: null, absoluteReturn: null, cagr: null,
+    invested: 0, corpus: null, profit: null,
+    stcgGain: 0, ltcgGain: 0, stcgTax: 0, ltcgTax: 0, exitLoad: 0, tax: 0, net: null
+  };
+  if (!Object.keys(wanted).length) {
+    return { rows: [], summary: emptySummary, fromDate: formatDay_(fromDate), saleDate: formatDay_(saleDate), note: 'No funds selected.' };
+  }
+  if (saleDate < fromDate) {
+    return { rows: [], summary: emptySummary, fromDate: formatDay_(fromDate), saleDate: formatDay_(saleDate), note: 'Sale Date is before From Date.' };
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  bindSheetZone_(ss);
+  var schemeSheet = ss.getSheetByName('scheme_codes');
+  if (!schemeSheet) throw new Error('Sheet "scheme_codes" not found in the spreadsheet.');
+  var rawSchemes = schemeSheet.getDataRange().getValues();
+  var headers = rawSchemes.length ? rawSchemes[0].map(function(h) { return String(h).trim().toLowerCase(); }) : [];
+  var codeIdx = headers.indexOf('scheme_code');
+  if (codeIdx === -1) codeIdx = 0;
+  var nameIdx = headers.indexOf('scheme_name');
+  if (nameIdx === -1) nameIdx = 1;
+  var schemes = [];
+  for (var i = 1; i < rawSchemes.length; i++) {
+    var code = String(rawSchemes[i][codeIdx] || '').trim();
+    if (code.slice(-2) === '.0') code = code.slice(0, -2);
+    if (!code || !wanted[code]) continue;
+    schemes.push({ code: code, name: String(rawSchemes[i][nameIdx] || 'Unnamed Fund').trim() });
+  }
+
+  var navIndex = loadNavIndex_(ss, wanted);
+  var rows = [];
+  var taxLots = [];
+  var flows = [];
+  var invested = 0;
+  var corpus = 0;
+  var firstMs = null;
+  var priced = 0;
+
+  for (var s = 0; s < schemes.length; s++) {
+    var scheme = schemes[s];
+    var book = collectSipLots_(navIndex[scheme.code], sipAmount, sipDay, fromDate, saleDate);
+    if (!book || !book.lots.length) continue;
+    priced += 1;
+    var fundCorpus = 0;
+    for (var n = 0; n < book.lots.length; n++) {
+      var lot = book.lots[n];
+      fundCorpus += lot.units * book.endNav;
+      invested += lot.cost;
+      if (firstMs === null || lot.t < firstMs) firstMs = lot.t;
+      flows.push({ date: new Date(lot.t), amount: -lot.cost });
+      taxLots.push({ t: lot.t, units: lot.units, cost: lot.cost, saleNav: book.endNav });
+      rows.push({
+        date: formatDay_(new Date(lot.t)),
+        code: scheme.code,
+        name: scheme.name,
+        purchaseNav: lot.nav,
+        units: lot.units,
+        saleNav: book.endNav,
+        saleNavDate: formatDay_(new Date(book.endStamp)),
+        absoluteReturn: (book.endNav - lot.nav) / lot.nav,
+        cagr: spanCagr_(lot.t, saleDate.getTime(), lot.nav, book.endNav)
+      });
+    }
+    corpus += fundCorpus;
+    flows.push({ date: new Date(saleDate.getTime()), amount: fundCorpus });
+  }
+
+  rows.sort(function(a, b) {
+    if (a.date === b.date) return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0);
+    return a.date < b.date ? -1 : 1;
+  });
+
+  var tax = lotTax_(taxLots, saleDate.getTime(), 0);
+  var summary = {
+    xirr: flows.length >= 2 ? calculateXIRR_(flows) : null,
+    absoluteReturn: invested > 0 ? (corpus - invested) / invested : null,
+    cagr: firstMs === null ? null : spanCagr_(firstMs, saleDate.getTime(), invested, corpus),
+    invested: invested,
+    corpus: priced ? corpus : null,
+    profit: priced ? corpus - invested : null,
+    stcgGain: tax.stcgGain,
+    ltcgGain: tax.ltcgGain,
+    stcgTax: tax.stcgTax,
+    ltcgTax: tax.ltcgTax,
+    exitLoad: tax.exitLoad,
+    tax: tax.tax,
+    net: priced ? corpus - tax.exitLoad - tax.tax : null
+  };
+  return {
+    rows: rows,
+    summary: summary,
+    funds: priced,
+    fromDate: formatDay_(fromDate),
+    saleDate: formatDay_(saleDate),
+    sipAmount: sipAmount,
+    sipDay: sipDay,
+    note: priced ? '' : 'No SIP installment falls in this window.'
   };
 }
 
