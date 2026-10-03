@@ -1132,18 +1132,19 @@ function buildSip_(series, sipAmount, sipDay, startDate, endDate) {
   };
 }
 
-/** Installments bought on the next NAV on or after each SIP day, through endDate. Null when that day has no NAV. */
+/** One installment on sipDay each month. Same-day NAV when that date is published; otherwise the next published date. */
 function collectSipLots_(series, sipAmount, sipDay, startDate, endDate) {
   var endPoint = lookupPoint_(series, endDate);
   if (!endPoint) return null;
   var lots = [];
   var slot = firstSipSlot_(startDate, sipDay);
   while (slot && slot.date.getTime() <= endDate.getTime()) {
-    var boughtOn = firstNavOnOrAfter_(series, slot.date);
-    if (boughtOn && boughtOn.date <= endDate.getTime() && boughtOn.nav > 0) {
+    var boughtOn = navForSipDay_(series, slot.date);
+    if (boughtOn && boughtOn.nav > 0) {
       lots.push({
-        t: boughtOn.date,
+        t: slot.date.getTime(),
         nav: boughtOn.nav,
+        navDate: boughtOn.date,
         units: sipAmount / boughtOn.nav,
         cost: sipAmount
       });
@@ -1194,7 +1195,7 @@ function spanCagr_(startMs, endMs, startValue, endValue) {
 
 /**
  * On-demand SIP ledger for the schemes the page asks for.
- * Installments run from From Date through Sale Date and are valued at the Sale Date NAV.
+ * Installments run from From Date through To Date and are valued at the Sale Date NAV.
  */
 function getSipTransactions(params) {
   params = params || {};
@@ -1204,6 +1205,7 @@ function getSipTransactions(params) {
   if (sipDay < 1) sipDay = 1;
   if (sipDay > 31) sipDay = 31;
   var fromDate = params.fromDate ? toDay_(params.fromDate) : shiftBack_(today, 'year', 1);
+  var toDate = params.toDate ? toDay_(params.toDate) : today;
   var saleDate = params.saleDate ? toDay_(params.saleDate) : today;
   var wanted = {};
   var requested = params.codes || [];
@@ -1218,10 +1220,10 @@ function getSipTransactions(params) {
     stcgGain: 0, ltcgGain: 0, stcgTax: 0, ltcgTax: 0, exitLoad: 0, tax: 0, net: null
   };
   if (!Object.keys(wanted).length) {
-    return { rows: [], summary: emptySummary, fromDate: formatDay_(fromDate), saleDate: formatDay_(saleDate), note: 'No funds selected.' };
+    return { rows: [], summary: emptySummary, fromDate: formatDay_(fromDate), toDate: formatDay_(toDate), saleDate: formatDay_(saleDate), note: 'No funds selected.' };
   }
-  if (saleDate < fromDate) {
-    return { rows: [], summary: emptySummary, fromDate: formatDay_(fromDate), saleDate: formatDay_(saleDate), note: 'Sale Date is before From Date.' };
+  if (toDate < fromDate) {
+    return { rows: [], summary: emptySummary, fromDate: formatDay_(fromDate), toDate: formatDay_(toDate), saleDate: formatDay_(saleDate), note: 'To Date is before From Date.' };
   }
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1253,8 +1255,11 @@ function getSipTransactions(params) {
 
   for (var s = 0; s < schemes.length; s++) {
     var scheme = schemes[s];
-    var book = collectSipLots_(navIndex[scheme.code], sipAmount, sipDay, fromDate, saleDate);
-    if (!book || !book.lots.length) continue;
+    var book = collectSipLots_(navIndex[scheme.code], sipAmount, sipDay, fromDate, toDate);
+    var salePoint = lookupPoint_(navIndex[scheme.code], saleDate);
+    if (!book || !book.lots.length || !salePoint) continue;
+    book.endNav = salePoint.nav;
+    book.endStamp = salePoint.date;
     priced += 1;
     var fundCorpus = 0;
     for (var n = 0; n < book.lots.length; n++) {
@@ -1269,6 +1274,7 @@ function getSipTransactions(params) {
         code: scheme.code,
         name: scheme.name,
         purchaseNav: lot.nav,
+        purchaseNavDate: formatDay_(new Date(lot.navDate)),
         units: lot.units,
         saleNav: book.endNav,
         saleNavDate: formatDay_(new Date(book.endStamp)),
@@ -1306,6 +1312,7 @@ function getSipTransactions(params) {
     summary: summary,
     funds: priced,
     fromDate: formatDay_(fromDate),
+    toDate: formatDay_(toDate),
     saleDate: formatDay_(saleDate),
     sipAmount: sipAmount,
     sipDay: sipDay,
@@ -1342,15 +1349,16 @@ function trailingCagr_(series, startDate, endDate, annualized) {
   return Math.pow(base, 365.25 / days) - 1;
 }
 
-function firstNavOnOrAfter_(series, dateObj) {
+/** Published NAV on the SIP calendar day, or the next later published date when that day is missing. */
+function navForSipDay_(series, dateObj) {
   if (!series || !series.dates.length || !dateObj) return null;
-  var target = dateObj.getTime();
+  var key = dayKey_(dateObj);
   var lo = 0;
   var hi = series.dates.length - 1;
   var found = -1;
   while (lo <= hi) {
     var mid = (lo + hi) >> 1;
-    if (series.dates[mid] >= target) {
+    if (dayKey_(new Date(series.dates[mid])) >= key) {
       found = mid;
       hi = mid - 1;
     } else {
@@ -1359,6 +1367,10 @@ function firstNavOnOrAfter_(series, dateObj) {
   }
   if (found < 0) return null;
   return { nav: series.navs[found], date: series.dates[found] };
+}
+
+function dayKey_(dateObj) {
+  return dateObj.getFullYear() * 10000 + dateObj.getMonth() * 100 + dateObj.getDate();
 }
 
 function firstSipSlot_(startDate, sipDay) {
@@ -1457,8 +1469,8 @@ function toDay_(value) {
   if (value === null || value === undefined || value === '') return null;
   if (Object.prototype.toString.call(value) === '[object Date]') {
     if (isNaN(value.getTime())) return null;
-    var shifted = new Date(value.getTime() + SHEET_SHIFT_MS);
-    return new Date(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+    // The cell's own calendar day. The zone shift was moving a 1st onto the 2nd.
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
   return parseDate_(value);
 }
