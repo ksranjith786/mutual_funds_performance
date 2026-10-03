@@ -11,7 +11,7 @@ Google Apps Script bound to one Google Sheet. Local `src/code.gs` and `src/index
 Runtime reads the spreadsheet, not the repo CSVs. Never load all of `nav_data` into context.
 - `scheme_codes`: `scheme_code`, `scheme_name`, `amc_name`, `fund_category`, `plan`, `option`, `min_nav_date`. Names, AMC, and category come from here.
 - `nav_data`: `scheme_code`, `date`, `nav`. Join on `scheme_code` only. `scheme_name` on this sheet is unused and may be removed.
-- `fund_selection`: `list_name`, `scheme_code`, `scheme_name`. Optional. Named fund sets for the search. A partial name is matched to `scheme_codes`, and the screen shows that scheme’s real name.
+- `fund_selection`: `list_name`, `scheme_code`, `sip_date`, `scheme_name`. Optional. Named fund sets for the search. `sip_date` is that row’s SIP day of the month. A blank cell uses the page SIP day. A partial name is matched to `scheme_codes`, and the screen shows that scheme’s real name.
 
 ## Returns
 - Tenure columns look back from **Sale Date**. Each tenure stores SIP XIRR and trailing CAGR. The toolbar switch chooses which is shown.

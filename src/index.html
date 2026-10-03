@@ -408,7 +408,7 @@
         </div>
         <div>
           <label class="field-label">SIP Day of Month</label>
-          <input type="number" id="inputSipDay" value="5" min="1" max="31" step="1" onchange="loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <input type="number" id="inputSipDay" value="5" min="1" max="31" step="1" onchange="forcePageSipDay = true; loadMatrixData()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div>
           <label class="field-label">From Date</label>
@@ -587,6 +587,7 @@
     var pathMonths = [];
     var currentDisplayFunds = [];
     var openedOnFirstList = false;
+    var forcePageSipDay = false;
     var activeMetric = 'xirr';
     var currentSortField = '1Y';
     var currentSortAsc = false;
@@ -750,10 +751,19 @@
       var params = {
         sipAmount: document.getElementById('inputSipAmount').value,
         sipDay: document.getElementById('inputSipDay').value,
+        forceSipDay: forcePageSipDay,
         fromDate: document.getElementById('inputFromDate').value,
         toDate: document.getElementById('inputToDate').value,
         saleDate: document.getElementById('inputSaleDate').value
       };
+      forcePageSipDay = false;
+      if (!params.forceSipDay && allFunds.length) {
+        var keptDays = {};
+        allFunds.forEach(function(fund) {
+          if (fund.sipDay) keptDays[String(fund.code)] = fund.sipDay;
+        });
+        params.sipDays = keptDays;
+      }
       document.getElementById('footerRange').textContent =
         'Custom Range XIRR: ' + formatLongDate(params.fromDate) + ' to ' + formatLongDate(params.toDate) +
         '. Tenure columns look back from Sale Date ' + formatLongDate(params.saleDate) + '.';
@@ -766,7 +776,10 @@
             var pageSipDay = Math.round(Number(document.getElementById('inputSipDay').value) || 5);
             if (pageSipDay < 1) pageSipDay = 1;
             if (pageSipDay > 31) pageSipDay = 31;
-            allFunds.forEach(function(fund) { fund.sipDay = pageSipDay; });
+            allFunds.forEach(function(fund) {
+              var listed = Math.round(Number(fund.sipDay) || 0);
+              fund.sipDay = listed >= 1 && listed <= 31 ? listed : pageSipDay;
+            });
             pathMonths = response.pathMonths || [];
             fundLists = response.lists || [];
             fundListHint = '';
@@ -1254,9 +1267,13 @@
 
     function applySipRow(code, row) {
       var fund = fundByCode(code);
-      if (!fund || !row) return;
-      ['sipDay', 'units', 'investedAmount', 'sipCorpus', 'netProfit', 'absoluteReturn', 'customRangeXirr', 'tenureXirr', 'redeem'].forEach(function(key) {
-        if (row[key] !== undefined) fund[key] = row[key];
+      if (!fund || !row || row.error) {
+        var note = document.getElementById('footerCount');
+        if (note) note.textContent = row && row.error ? row.error : 'This fund could not be recalculated.';
+        return;
+      }
+      Object.keys(row).forEach(function(key) {
+        if (key !== 'code') fund[key] = row[key];
       });
       renderTable(currentDisplayFunds);
       updateKPIs(selectedFundList());

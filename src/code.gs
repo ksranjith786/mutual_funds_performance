@@ -156,6 +156,7 @@ function getFundMatrixData(params) {
 
   // Index only the scheme codes listed on scheme_codes. Match by code, not by fund name.
   var navIndex = loadNavIndex_(ss, wanted);
+  var lists = fundSelectionLists_(ss, schemes);
   var categoriesSet = {};
   var amcSet = {};
   var fundList = [];
@@ -170,7 +171,8 @@ function getFundMatrixData(params) {
       scheme.minNavDate = formatDay_(new Date(series.dates[0]));
     }
 
-    var row = schemeRow_(series, sipAmount, sipDay, fromDate, toDate, saleDate);
+    var rowDay = sipDayForCode_(scheme.code, sipDay, params);
+    var row = schemeRow_(series, sipAmount, rowDay, fromDate, toDate, saleDate);
     row.code = scheme.code;
     row.name = scheme.name;
     row.amc = scheme.amc;
@@ -195,12 +197,44 @@ function getFundMatrixData(params) {
     amcs: Object.keys(amcSet).sort(),
     tenures: TENURE_CONFIG,
     pathMonths: pathMonths,
-    lists: fundSelectionLists_(ss, schemes)
+    lists: lists
   };
 }
 
-// Named sets for the fund search. fund_selection columns: list_name, scheme_code, scheme_name.
+// Named sets for the fund search. fund_selection columns: list_name, scheme_code, sip_date, scheme_name.
+// sip_date is the SIP day of the month for that row. A blank cell uses the page SIP day.
 // A partial scheme_name is matched to scheme_codes. The screen then uses that scheme's real name.
+
+function sipDayForCode_(code, pageDay, params) {
+  params = params || {};
+  if (params.forceSipDay) return pageDay;
+  var overrides = params.sipDays || {};
+  var custom = sipDayValue_(overrides[code]);
+  if (custom) return custom;
+  var listed = sipDayValue_(SELECTION_SIP_DAYS[code]);
+  if (listed) return listed;
+  return pageDay;
+}
+
+function sipDayValue_(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
+    var day = toDay_(value);
+    return day ? day.getDate() : null;
+  }
+  var text = String(value).trim();
+  if (!text) return null;
+  if (text.indexOf('-') !== -1 || text.indexOf('/') !== -1) {
+    var parsed = parseDate_(text);
+    var fromDate = parsed ? parsed.getDate() : null;
+    if (fromDate >= 1 && fromDate <= 31) return fromDate;
+  }
+  var n = Math.round(Number(text));
+  if (n >= 1 && n <= 31) return n;
+  return null;
+}
+
+var SELECTION_SIP_DAYS = {};
 function fundSelectionLists_(ss, schemes) {
   var fromSheet = readFundSelection_(ss, schemes);
   if (fromSheet) return fromSheet;
@@ -220,6 +254,7 @@ function builtinFundLists_() {
 }
 
 function readFundSelection_(ss, schemes) {
+  SELECTION_SIP_DAYS = {};
   var sheet = ss.getSheetByName('fund_selection');
   if (!sheet || sheet.getLastRow() < 2) return null;
   var values = sheet.getDataRange().getValues();
@@ -228,13 +263,14 @@ function readFundSelection_(ss, schemes) {
   if (listIdx === -1) return null;
   var codeIdx = headers.indexOf('scheme_code');
   var nameIdx = headers.indexOf('scheme_name');
+  var sipIdx = headers.indexOf('sip_date');
   var order = [];
   var byName = {};
   for (var i = 1; i < values.length; i++) {
     var listName = String(values[i][listIdx] || '').trim();
     if (!listName) continue;
     if (!byName[listName]) {
-      byName[listName] = { name: listName, codes: [], missing: [] };
+      byName[listName] = { name: listName, codes: [], sipDays: {}, missing: [] };
       order.push(listName);
     }
     var code = codeIdx === -1 ? '' : String(values[i][codeIdx] || '').trim();
@@ -247,6 +283,11 @@ function readFundSelection_(ss, schemes) {
       continue;
     }
     if (byName[listName].codes.indexOf(scheme.code) === -1) byName[listName].codes.push(scheme.code);
+    var listedDay = sipIdx === -1 ? null : sipDayValue_(values[i][sipIdx]);
+    if (listedDay) {
+      byName[listName].sipDays[scheme.code] = listedDay;
+      if (!SELECTION_SIP_DAYS[scheme.code]) SELECTION_SIP_DAYS[scheme.code] = listedDay;
+    }
   }
   if (!order.length) return null;
   return order.map(function(name) { return byName[name]; });
@@ -1112,15 +1153,19 @@ function getFundSipRow(params) {
   var fromDate = params.fromDate ? toDay_(params.fromDate) : shiftBack_(today, 'year', 1);
   var toDate = params.toDate ? toDay_(params.toDate) : today;
   var saleDate = params.saleDate ? toDay_(params.saleDate) : today;
-  if (!code) return { code: '', sipDay: sipDay };
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  bindSheetZone_(ss);
-  var wanted = {};
-  wanted[code] = true;
-  var navIndex = loadNavIndex_(ss, wanted);
-  var row = schemeRow_(navIndex[code] || null, sipAmount, sipDay, fromDate, toDate, saleDate);
-  row.code = code;
-  return row;
+  if (!code) return { code: '', sipDay: sipDay, error: 'No scheme code.' };
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    bindSheetZone_(ss);
+    var wanted = {};
+    wanted[code] = true;
+    var navIndex = loadNavIndex_(ss, wanted);
+    var row = schemeRow_(navIndex[code] || null, sipAmount, sipDay, fromDate, toDate, saleDate);
+    row.code = code;
+    return row;
+  } catch (err) {
+    return { code: code, sipDay: sipDay, error: err && err.message ? err.message : String(err) };
+  }
 }
 
 /**
