@@ -7,7 +7,7 @@
  * - Join on scheme_code. scheme_codes supplies the fund name; nav_data supplies date and NAV.
  * - lookupNav_ uses the last NAV on or before the requested day.
  * - Tenure columns look back from Sale Date only. Do not clip them with From Date or To Date.
- * - Custom Range XIRR, SIP Corpus, Net Profit, and Absolute return use From Date through To Date only.
+ * - Custom Range SIPs run from From Date through To Date and are valued on Sale Date.
  * - Keep TENURE_CONFIG in this order, including 7Y. The same keys and order live in index.html TENURES.
  * - A tenure is null when the scheme has no NAV on or before the window start.
  *   Do not relabel a shorter history as 15Y. SIP XIRR is also null when the window contains no SIP date.
@@ -21,7 +21,7 @@
  *   getFundOverlap loads the latest published equity portfolio for at most 20 schemes and returns pairwise overlap.
  *   Overlap is the sum of the smaller weight of each shared stock, divided by 100. Cash and debt are excluded.
  * - The browser may call only onOpen, showDialog, showWebAppUrl, doGet,
- *   getFundMatrixData, getFundPublishedProfile, getFundOverlap, and getSipTransactions.
+ *   getFundMatrixData, getFundSipRow, getFundPublishedProfile, getFundOverlap, and getSipTransactions.
  *   Every other function ends in _ so the page cannot call it. This script only reads the spreadsheet.
  *   getSipTransactions is the on-demand SIP ledger. It is not part of the matrix load.
  */
@@ -166,62 +166,20 @@ function getFundMatrixData(params) {
     if (scheme.category) categoriesSet[scheme.category] = true;
     if (scheme.amc) amcSet[scheme.amc] = true;
 
-    // Custom range is From Date through To Date. Sale Date is not an input to these figures.
-    var custom = buildSip_(series, sipAmount, sipDay, fromDate, toDate, saleDate);
-    var navStart = lookupPoint_(series, fromDate);
-    var navEnd = lookupPoint_(series, toDate);
-    var saleNav = lookupPoint_(series, saleDate);
-    var tenureXirr = {};
-    var tenureCagr = {};
-    var tenureAbsolute = {};
-
-    for (var t = 0; t < TENURE_CONFIG.length; t++) {
-      var tenure = TENURE_CONFIG[t];
-      // Full window required. A fund that starts inside the window does not get this tenure.
-      var windowStart = shiftBack_(saleDate, tenure.unit, tenure.n);
-      var covered = lookupNav_(series, windowStart) !== null;
-      if (!covered) {
-        tenureXirr[tenure.key] = null;
-        tenureCagr[tenure.key] = null;
-        tenureAbsolute[tenure.key] = null;
-        continue;
-      }
-      var sip = buildSip_(series, sipAmount, sipDay, windowStart, saleDate);
-      tenureXirr[tenure.key] = (tenure.key === '5D' || tenure.key === '15D') ? null : sip.xirr;
-      tenureCagr[tenure.key] = trailingCagr_(series, windowStart, saleDate, tenure.annualized);
-      tenureAbsolute[tenure.key] = trailingCagr_(series, windowStart, saleDate, false);
-    }
-
     if (!scheme.minNavDate && series && series.dates.length) {
       scheme.minNavDate = formatDay_(new Date(series.dates[0]));
     }
 
-    fundList.push({
-      code: scheme.code,
-      name: scheme.name,
-      amc: scheme.amc,
-      category: scheme.category,
-      type: scheme.plan + ' · ' + scheme.option,
-      minNavDate: scheme.minNavDate,
-      navStart: navStart ? navStart.nav : null,
-      navStartDate: navStart ? formatDay_(new Date(navStart.date)) : '',
-      navEnd: navEnd ? navEnd.nav : null,
-      navEndDate: navEnd ? formatDay_(new Date(navEnd.date)) : '',
-      saleNav: saleNav ? saleNav.nav : null,
-      saleNavDate: saleNav ? formatDay_(new Date(saleNav.date)) : '',
-      units: custom.units,
-      investedAmount: custom.invested,
-      sipCorpus: custom.corpus,
-      netProfit: custom.profit,
-      absoluteReturn: custom.absoluteReturn,
-      customRangeXirr: custom.xirr,
-      tenureXirr: tenureXirr,
-      tenureCagr: tenureCagr,
-      tenureAbsolute: tenureAbsolute,
-      redeem: custom.redeem || null,
-      switchPath: threeYearPath_(series, saleDate),
-      risk: buildRiskStats_(series, saleDate)
-    });
+    var row = schemeRow_(series, sipAmount, sipDay, fromDate, toDate, saleDate);
+    row.code = scheme.code;
+    row.name = scheme.name;
+    row.amc = scheme.amc;
+    row.category = scheme.category;
+    row.type = scheme.plan + ' · ' + scheme.option;
+    row.minNavDate = scheme.minNavDate;
+    row.switchPath = threeYearPath_(series, saleDate);
+    row.risk = buildRiskStats_(series, saleDate);
+    fundList.push(row);
   }
 
   attachPeerRisk_(fundList, navIndex, saleDate);
@@ -1092,6 +1050,79 @@ function lookupNav_(series, dateObj) {
   return point ? point.nav : null;
 }
 
+/** One scheme's SIP figures. Tenure price changes do not depend on the SIP day. */
+function schemeRow_(series, sipAmount, sipDay, fromDate, toDate, saleDate) {
+  var custom = buildSip_(series, sipAmount, sipDay, fromDate, toDate, saleDate);
+  var navStart = lookupPoint_(series, fromDate);
+  var navEnd = lookupPoint_(series, toDate);
+  var saleNav = lookupPoint_(series, saleDate);
+  var tenureXirr = {};
+  var tenureCagr = {};
+  var tenureAbsolute = {};
+
+  for (var t = 0; t < TENURE_CONFIG.length; t++) {
+    var tenure = TENURE_CONFIG[t];
+    var windowStart = shiftBack_(saleDate, tenure.unit, tenure.n);
+    var covered = lookupNav_(series, windowStart) !== null;
+    if (!covered) {
+      tenureXirr[tenure.key] = null;
+      tenureCagr[tenure.key] = null;
+      tenureAbsolute[tenure.key] = null;
+      continue;
+    }
+    var sip = buildSip_(series, sipAmount, sipDay, windowStart, saleDate);
+    tenureXirr[tenure.key] = (tenure.key === '5D' || tenure.key === '15D') ? null : sip.xirr;
+    tenureCagr[tenure.key] = trailingCagr_(series, windowStart, saleDate, tenure.annualized);
+    tenureAbsolute[tenure.key] = trailingCagr_(series, windowStart, saleDate, false);
+  }
+
+  return {
+    sipDay: sipDay,
+    navStart: navStart ? navStart.nav : null,
+    navStartDate: navStart ? formatDay_(new Date(navStart.date)) : '',
+    navEnd: navEnd ? navEnd.nav : null,
+    navEndDate: navEnd ? formatDay_(new Date(navEnd.date)) : '',
+    saleNav: saleNav ? saleNav.nav : null,
+    saleNavDate: saleNav ? formatDay_(new Date(saleNav.date)) : '',
+    units: custom.units,
+    investedAmount: custom.invested,
+    sipCorpus: custom.corpus,
+    netProfit: custom.profit,
+    absoluteReturn: custom.absoluteReturn,
+    customRangeXirr: custom.xirr,
+    tenureXirr: tenureXirr,
+    tenureCagr: tenureCagr,
+    tenureAbsolute: tenureAbsolute,
+    redeem: custom.redeem || null
+  };
+}
+
+/**
+ * Recalculates one scheme after its row SIP day changes. Does not change the page SIP day.
+ */
+function getFundSipRow(params) {
+  params = params || {};
+  var code = String(params.code || '').trim();
+  if (code.slice(-2) === '.0') code = code.slice(0, -2);
+  var today = todayDay_();
+  var sipAmount = Number(params.sipAmount) || 1000;
+  var sipDay = Math.round(Number(params.sipDay) || 5);
+  if (sipDay < 1) sipDay = 1;
+  if (sipDay > 31) sipDay = 31;
+  var fromDate = params.fromDate ? toDay_(params.fromDate) : shiftBack_(today, 'year', 1);
+  var toDate = params.toDate ? toDay_(params.toDate) : today;
+  var saleDate = params.saleDate ? toDay_(params.saleDate) : today;
+  if (!code) return { code: '', sipDay: sipDay };
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  bindSheetZone_(ss);
+  var wanted = {};
+  wanted[code] = true;
+  var navIndex = loadNavIndex_(ss, wanted);
+  var row = schemeRow_(navIndex[code] || null, sipAmount, sipDay, fromDate, toDate, saleDate);
+  row.code = code;
+  return row;
+}
+
 /**
  * Monthly SIP from startDate through endDate, redeemed at redeemDate (Sale Date).
  * Cash flows are negative installments plus one positive corpus.
@@ -1207,6 +1238,7 @@ function getSipTransactions(params) {
   var sipDay = Math.round(Number(params.sipDay) || 5);
   if (sipDay < 1) sipDay = 1;
   if (sipDay > 31) sipDay = 31;
+  var sipDays = params.sipDays || {};
   var fromDate = params.fromDate ? toDay_(params.fromDate) : shiftBack_(today, 'year', 1);
   var toDate = params.toDate ? toDay_(params.toDate) : today;
   var saleDate = params.saleDate ? toDay_(params.saleDate) : today;
@@ -1258,7 +1290,10 @@ function getSipTransactions(params) {
 
   for (var s = 0; s < schemes.length; s++) {
     var scheme = schemes[s];
-    var book = collectSipLots_(navIndex[scheme.code], sipAmount, sipDay, fromDate, toDate);
+    var rowDay = Math.round(Number(sipDays[scheme.code]) || sipDay);
+    if (rowDay < 1) rowDay = 1;
+    if (rowDay > 31) rowDay = 31;
+    var book = collectSipLots_(navIndex[scheme.code], sipAmount, rowDay, fromDate, toDate);
     var salePoint = lookupPoint_(navIndex[scheme.code], saleDate);
     if (!book || !book.lots.length || !salePoint) continue;
     book.endNav = salePoint.nav;
@@ -1319,6 +1354,7 @@ function getSipTransactions(params) {
     saleDate: formatDay_(saleDate),
     sipAmount: sipAmount,
     sipDay: sipDay,
+    mixedDays: !!params.mixedDays,
     note: priced ? '' : 'No SIP installment falls in this window.'
   };
 }

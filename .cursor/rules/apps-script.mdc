@@ -9,7 +9,7 @@ alwaysApply: false
 Match the existing `var` / `function` style. Sheet names are exact: `scheme_codes`, `nav_data`, and `fund_selection` when that sheet is present.
 
 ## Entry points — do not rename
-`onOpen` menu **Mutual Fund Matrix**; `showDialog` (1250×820); `doGet` (viewport meta, not embeddable); `getFundMatrixData(params)`; `getFundPublishedProfile`; `getFundOverlap`; `getSipTransactions`. There is no sidebar. `getSipTransactions` runs only when a Transactions link is opened.
+`onOpen` menu **Mutual Fund Matrix**; `showDialog` (1250×820); `doGet` (viewport meta, not embeddable); `getFundMatrixData(params)`; `getFundSipRow`; `getFundPublishedProfile`; `getFundOverlap`; `getSipTransactions`. There is no sidebar. `getSipTransactions` runs only when a Transactions link is opened.
 
 Every other function name ends with `_`. Apps Script lets the browser call any function that does not end with `_`, running as the spreadsheet owner. Do not add a public function, and do not remove the trailing `_`.
 
