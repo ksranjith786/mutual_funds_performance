@@ -1,6 +1,6 @@
 ---
 description: Apps Script calculation contracts for the return matrix
-globs: code.gs
+globs: src/code.gs
 alwaysApply: false
 ---
 

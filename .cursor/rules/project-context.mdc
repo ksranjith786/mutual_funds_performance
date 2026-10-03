@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Mutual Fund Return Matrix
 
-Google Apps Script bound to one Google Sheet. Local `code.gs` and `index.html` mirror that project. The HTML file in Apps Script must be named `Index`. Do not re-ask sheet names, columns, tenures, or entry points.
+Google Apps Script bound to one Google Sheet. Local `src/code.gs` and `src/index.html` mirror that project. The HTML file in Apps Script must be named `Index`. Do not re-ask sheet names, columns, tenures, or entry points.
 
 ## Sheets
 Runtime reads the spreadsheet, not the repo CSVs. Never load all of `nav_data` into context.

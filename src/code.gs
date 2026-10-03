@@ -1021,8 +1021,8 @@ function loadNavIndex_(ss, wanted) {
   var dateIdx = headers.indexOf('date');
   var navIdx = headers.indexOf('nav');
   if (codeIdx === -1) codeIdx = 0;
-  if (dateIdx === -1) dateIdx = 2;
-  if (navIdx === -1) navIdx = 3;
+  if (dateIdx === -1) dateIdx = 1;
+  if (navIdx === -1) navIdx = 2;
 
   for (var i = 1; i < values.length; i++) {
     var row = values[i];

@@ -1,6 +1,6 @@
 ---
 description: Return matrix and Fund Comparator UI contracts
-globs: index.html
+globs: src/index.html
 alwaysApply: false
 ---
 
